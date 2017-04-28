@@ -1,0 +1,1 @@
+../../mpv/scripts/drag-to-pan.lua

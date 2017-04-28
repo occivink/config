@@ -1,0 +1,100 @@
+set-option global tabstop 4
+set-option global indentwidth 4
+set-option global BOM none
+
+set-option global autoinfo command|onkey
+
+set-option global ui_options ncurses_assistant=none
+
+set-option global scrolloff 2,5
+
+set-option global makecmd 'make --jobs=8'
+set-option global grepcmd 'ag --filename --column --ignore tags'
+
+# c and d don't yank
+map global normal d \"_d
+map global normal c \"_c
+
+map global goto n :grep-next<ret>
+map global goto p :grep-prev<ret>
+
+hook global InsertCompletionShow .* %{
+    map window insert <tab> <c-n>
+    map window insert <backtab> <c-p>
+}
+
+hook global InsertCompletionHide .* %{
+    unmap window insert <tab> <c-n>
+    unmap window insert <backtab> <c-p>
+}
+
+#   #sel |  ''   |     sth|
+#  ------------------------
+#   1    | -     | getnext|
+#  ------------------------
+#   2+   | set s | set s  |
+#  ------------------------
+declare-option range-faces phantom_selections
+
+set-face InterItersel black,green
+
+define-command -params 3 mark_to_range_faces %{
+    %sh{
+        printf "set global %s %s" "$1" $(printf %s\\n "$2" | sed -e 's/\([:@]\)/|'"$3"'\1/g' -e 's/\(.*\)@.*%\(.*\)/\2:\1/')
+    }
+}
+
+define-command interactive_itersel %{
+    try %{
+        # >1 sel
+        exec -draft <a-space>
+        # ensure first selection is the main one
+        exec Zz'
+        exec -draft <a-space>\"sZ
+        mark_to_range_faces phantom_selections %reg{s} InterItersel
+        exec <space>
+    } catch %{
+        # 1 sel
+        try %{
+            exec \"sz
+            reg s ''
+            interactive_itersel
+        }
+    }
+}
+map global user i :interactive_itersel<ret>
+
+#interaction with system clipboard through user mappings
+map global user p '<a-!>xsel --output --clipboard<ret>'
+map global user P '!xsel --output --clipboard<ret>'
+define-command yank-to-sys-clip %{ exec -draft '<a-|>xsel --input --clipboard<ret>' }
+map global user y ':yank-to-sys-clip<ret>'
+
+set-face Whitespace rgb:505050,default
+
+hook global WinCreate .* %{
+    add-highlighter ranges phantom_selections
+    add-highlighter number_lines -hlcursor -separator ' '
+    add-highlighter show_matching
+    add-highlighter show_whitespaces
+    add-highlighter dynregex '%reg{/}' 0:default,rgb:373b41
+}
+
+define-command kakrc -docstring "Open kakrc" %{
+    edit %sh{ printf %s ${XDG_CONFIG_HOME}/kak/kakrc }
+}
+
+# doesn't work (yet)
+# 
+#define-command search_add %{
+#    eval -save-regs / %{
+#        exec -save-regs '' Z
+#        prompt \
+#            -on-abort %{ exec z } \
+#            'search add:' %{ exec -save-regs '' ':reg / ' %val{text} <ret>zN }
+#    }
+#}
+#
+#map global user / :search_add<ret>
+
+source ~/.config/kak/gdb.kak

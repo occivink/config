@@ -1,0 +1,77 @@
+#
+# bspwm hotkeys
+#
+
+#Focus the next or previous node
+alt + {_,shift + } Tab
+	bspc node -f {next, prev}
+
+#Quit
+super + alt + Escape 
+	bspc quit
+
+#Close
+super + w
+	bspc node -c
+
+#Toggle floating or fullscreen state for that node
+super + {s,f,t}
+	bspc node -t ~{floating,fullscreen,tiled}
+
+#Swap with the previous node
+super + apostrophe
+	bspc node -s last
+
+#Focus in the given direction
+super + {_,shift + }{h,j,k,l}
+	bspc node -{f,s} {west,south,north,east}
+super + {_,shift + }{Left,Down,Up,Right}
+	bspc node -{f,s} {west,south,north,east}
+
+#Go to next or previous desktop
+super + {comma, period}
+	bspc desktop -f {prev,next}
+
+#Send node to next or previous desktop
+super + shift + {comma, period}
+	bspc node -d {prev,next}
+
+#Grow node by 20 px
+super + alt + {h,j,k,l}
+	bspc node -e {left -20,down +20,up -20,right +20}
+super + alt + {Left,Down,Up,Right}
+	bspc node -e {left -20,down +20,up -20,right +20}
+
+#Shrink node by 20px
+super + alt + shift+ {h,j,k,l}
+	bspc node -e {right -20,up +20,down -20,left +20}
+super + alt + shift + {Left,Down,Up,Right}
+	bspc node -e {right -20,up +20,down -20,left +20}
+
+#
+# wm independent hotkeys
+#
+
+ctrl + alt + t 
+	termite
+
+ctrl + alt + d 
+	fish_startup_command=lf termite
+
+ctrl + alt + w
+	firefox
+
+ctrl + alt + a 
+	lighthouse | sh
+
+#XF86MonBrightness{Up,Down}
+#    backlight {+,-}5%
+
+XF86Audio{Lower,Raise}Volume
+	pamixer {-d,-i} 3
+
+XF86AudioMute
+	pamixer --toggle-mute
+
+XF86TouchpadToggle
+	synclient TouchpadOff=(synclient -l | grep -c 'TouchpadOff.*=.*0')
