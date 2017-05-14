@@ -6,6 +6,7 @@ set -x PAGER "less"
 set -x ESCDELAY 10
 set fish_escape_delay_ms 10
 
+#termite integration
 printf '\033]7;file://%s%s\a' (hostname) (pwd | __fish_urlencode)
 
 set -g fish_key_bindings fish_key_bindings
@@ -16,9 +17,13 @@ if status -l; and test -r /etc/locale.conf
     end </etc/locale.conf
 end
 
+if test -e ~/.config/fish/dayjob.fish
+    source ~/.config/fish/dayjob.fish
+end
+
 if set -q fish_startup_command
     set -l tmp_command $fish_startup_command
-    set -e fish_startup_command
+    set -ex fish_startup_command
     eval $tmp_command
 end
 

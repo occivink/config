@@ -37,6 +37,10 @@ function fish_key_bindings --description 'Key bindings for fish' --argument mode
     bind $argv \e\[H beginning-of-line
     bind $argv \e\[F end-of-line
 
+    # pgup / pgdown
+    bind -k npage ''
+    bind -k ppage ''
+
     bind $argv \es 'prepend_to_command \'sudo \''
     bind $argv \eq 'append_to_command \' >/dev/null ^/dev/null\''
     bind $argv \er 'interactive_history'

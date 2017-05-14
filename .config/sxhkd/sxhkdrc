@@ -23,8 +23,6 @@ super + apostrophe
 	bspc node -s last
 
 #Focus in the given direction
-super + {_,shift + }{h,j,k,l}
-	bspc node -{f,s} {west,south,north,east}
 super + {_,shift + }{Left,Down,Up,Right}
 	bspc node -{f,s} {west,south,north,east}
 
@@ -37,16 +35,15 @@ super + shift + {comma, period}
 	bspc node -d {prev,next}
 
 #Grow node by 20 px
-super + alt + {h,j,k,l}
-	bspc node -e {left -20,down +20,up -20,right +20}
 super + alt + {Left,Down,Up,Right}
 	bspc node -e {left -20,down +20,up -20,right +20}
 
 #Shrink node by 20px
-super + alt + shift+ {h,j,k,l}
-	bspc node -e {right -20,up +20,down -20,left +20}
 super + alt + shift + {Left,Down,Up,Right}
 	bspc node -e {right -20,up +20,down -20,left +20}
+
+super + l
+	i3lock
 
 #
 # wm independent hotkeys
