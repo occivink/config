@@ -5,37 +5,28 @@ audible_bell = false
 mouse_autohide = false
 allow_bold = true
 dynamic_title = true
-urgent_on_bell = true
+urgent_on_bell = false
 clickable_url = true
 font = monospace 14
 scrollback_lines = 10000
 search_wrap = true
-#icon_name = terminal
-#geometry = 640x480
 
 # "system", "on" or "off"
-cursor_blink = system
+cursor_blink = off
 
 # "block", "underline" or "ibeam"
 cursor_shape = block
-
-# $BROWSER is used by default if set, with xdg-open as a fallback
-#browser = xdg-open
-
-# set size hints for the window
-#size_hints = false
 
 # emit escape sequences for other keys modified by Control
 #modify_other_keys = false
 
 [colors]
-#cursor = #dcdccc
+cursor = #dcdccc
+cursor_foreground = #181818
+
 foreground = #d8d8d8
 foreground_bold = #ffffff
 background = #181818
-
-# 20% background transparency (requires a compositor)
-#background = rgba(63, 63, 63, 0.8)
 
 # if unset, will reverse foreground and background
 highlight = #2f2f2f
@@ -57,16 +48,3 @@ color12 = #7cafc2
 color13 = #ba8baf
 color14 = #86c1b9
 color15 = #f8f8f8
-
-[hints]
-#font = Monospace 18
-#foreground = #dcdccc
-#background = #3f3f3f
-#active_foreground = #e68080
-#active_background = #3f3f3f
-padding = 2
-border = #3f3f3f
-border_width = 0.5
-roundness = 2.0
-
-# vim: ft=dosini cms=#%s

@@ -28,6 +28,8 @@ hook global InsertCompletionHide .* %{
     unmap window insert <backtab> <c-p>
 }
 
+map global user d ':lf<ret>'
+
 #interaction with system clipboard through user mappings
 map global user p '<a-!>xsel --output --clipboard<ret>'
 map global user P '!xsel --output --clipboard<ret>'
@@ -60,28 +62,9 @@ define-command search_add %{
 }
 map global user / :search_add<ret>
 
-# Buffers (by danr 2017, public domain)
-map global normal <a-,> :bp<ret>:bufinfo<ret>
-map global normal <a-.> :bn<ret>:bufinfo<ret>
-map global normal <a-minus> ga:bufinfo<ret>
-map global normal <a-d> :db<ret>:bufinfo<ret>
-map global normal <a-q> :db!<ret>:bufinfo<ret>
-def bufinfo %{
-    %sh{
-        printf "info -- %%:"
-        printf "$kak_buflist" | tr ':' '\n' |
-        while read buf; do
-            if [ "$buf" = "$kak_bufname" ]; then
-                printf "> %s <\n" "$buf"
-            else
-                printf "  %s  \n" "$buf"
-            fi
-        done
-        printf :\\n
-    }
-}
-
 source ~/.config/kak/interactive_itersel.kak
 source ~/.config/kak/lf.kak
+source ~/.config/kak/buflist.kak
+source ~/.config/kak/idsession.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }

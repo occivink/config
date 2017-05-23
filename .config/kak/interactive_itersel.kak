@@ -1,4 +1,4 @@
-declare-option range-faces phantom_selections
+declare-option range-specs phantom_selections
 set-face InterItersel black,green
 #1 target scope
 #2 target option
