@@ -5,8 +5,7 @@
    lf %{ %sh{
    if [ -n "$WINDOWID" ]; then
        {
-            setsid -w $kak_opt_termcmd " \
-                lf $@ -selection-path /tmp/lf_selection" < /dev/null > /dev/null 2>&1
+            setsid -w $kak_opt_termcmd "lf $@ -selection-path /tmp/lf_selection" < /dev/null > /dev/null 2>&1
             IFS='
 '
             {

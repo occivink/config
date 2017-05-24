@@ -29,5 +29,4 @@ define-command interactive_itersel %{
         }
     }
 }
-map global user i :interactive_itersel<ret>
 hook global WinCreate .* "add-highlighter ranges phantom_selections"
