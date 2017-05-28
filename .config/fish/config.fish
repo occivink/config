@@ -6,6 +6,8 @@ set -x PAGER "less"
 set -x ESCDELAY 10
 set fish_escape_delay_ms 10
 
+set -gx PATH $PATH ~/.config/bin
+
 #termite integration
 printf '\033]7;file://%s%s\a' (hostname) (pwd | __fish_urlencode)
 

@@ -40,8 +40,8 @@ set-face LineNumbersWrapped rgb:606060,default+i
 hook global WinCreate .* %{
     add-highlighter number_lines -relative -hlcursor -separator ' '
     add-highlighter show_matching
-    add-highlighter show_whitespaces
     add-highlighter dynregex '%reg{/}' 0:default,rgb:373b41
+    add-highlighter show_whitespaces
     add-highlighter wrap -word
 }
 

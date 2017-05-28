@@ -1,5 +1,6 @@
 declare-option range-specs phantom_selections
 set-face InterItersel black,green
+
 #1 target scope
 #2 target option
 #3 source mark register
@@ -9,6 +10,7 @@ define-command -params 4 mark_to_range_faces %{
         printf "set %s %s %s\n" "$1" "$2" $(printf %s "$3" | sed -e 's/\([:@]\)/|'"$4"'\1/g' -e 's/\(.*\)@.*%\(.*\)/\2:\1/')
     }
 }
+
 define-command interactive_itersel %{
     try %{
         # >1 sel
@@ -17,6 +19,7 @@ define-command interactive_itersel %{
         exec Zz'
         exec -draft <a-space>\"sZ
         mark_to_range_faces buffer phantom_selections %reg{s} InterItersel
+        reload-highlighter
         exec <space>
     } catch %{
         # 1 sel
@@ -29,4 +32,14 @@ define-command interactive_itersel %{
         }
     }
 }
-hook global WinCreate .* "add-highlighter ranges phantom_selections"
+
+define-command -hidden reload-highlighter %{
+    try "remove-highlighter hlranges_phantom_selections"
+    add-highlighter ranges phantom_selections
+    # ensure whitespace is always after
+    # kinda hacky
+    try %{
+        remove-highlighter show_whitespaces
+        add-highlighter show_whitespaces
+    }
+}

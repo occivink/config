@@ -1,0 +1,2 @@
+#!/bin/sh
+mpv --config-dir=$HOME/.config/mmp "$@"
