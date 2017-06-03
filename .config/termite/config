@@ -21,15 +21,15 @@ cursor_shape = block
 #modify_other_keys = false
 
 [colors]
-cursor = #dcdccc
-cursor_foreground = #181818
+#cursor = #dcdccc
+#cursor_foreground = #181818
 
 foreground = #d8d8d8
 foreground_bold = #ffffff
 background = #181818
 
 # if unset, will reverse foreground and background
-highlight = #2f2f2f
+# highlight = #2f2f2f
 
 # colors from color0 to color254 can be set
 color0 = #181818

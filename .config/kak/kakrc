@@ -65,11 +65,15 @@ map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
 map -docstring "search add" global user / :search_add<ret>
 map -docstring "lf"  global user d ':lf<ret>'
 map -docstring "itersel" global user i :interactive_itersel<ret>
+map -docstring "surround" global user s :surround<ret>
+map -docstring "expand" global user e :expand<ret>
 
 source ~/.config/kak/interactive_itersel.kak
 source ~/.config/kak/lf.kak
 source ~/.config/kak/buflist.kak
 source ~/.config/kak/idsession.kak
 source ~/.config/kak/find.kak
+source ~/.config/kak/surround.kak
+source ~/.config/kak/expand.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }
