@@ -4,7 +4,7 @@ set-option global BOM none
 
 set-option global autoinfo command|onkey
 
-set-option global ui_options ncurses_assistant=none
+set-option global ui_options ncurses_assistant=clippy
 
 set-option global scrolloff 2,5
 
@@ -34,7 +34,7 @@ map global normal <a-w> <a-i>W
 map global normal W ""
 map global normal <a-W> ""
 
-set-face Whitespace rgb:505050,default
+set-face Whitespace rgb:404040,default
 set-face LineNumbersWrapped rgb:606060,default+i
 
 hook global WinCreate .* %{
@@ -43,6 +43,10 @@ hook global WinCreate .* %{
     add-highlighter dynregex '%reg{/}' 0:default,rgb:373b41
     add-highlighter show_whitespaces
     add-highlighter wrap -word
+}
+
+define-command reload-all -docstring "Reload all open buffers" %{
+    eval -buffer * "edit!"
 }
 
 define-command kakrc -docstring "Open kakrc" %{
@@ -57,14 +61,13 @@ define-command search_add %{
     }
 }
 
-#user mappings
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
 map -docstring "search add" global user / :search_add<ret>
 map -docstring "lf"  global user d ':lf<ret>'
-map -docstring "itersel" global user i :interactive_itersel<ret>
+map -docstring "itersel" global user r :interactive_itersel<ret>
 map -docstring "surround" global user s :surround<ret>
 map -docstring "expand" global user e :expand<ret>
 

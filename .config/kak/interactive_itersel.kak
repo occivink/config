@@ -3,7 +3,7 @@ set-face InterItersel black,green
 
 #1 target scope
 #2 target option
-#3 source mark register
+#3 source marks
 #4 face to use
 define-command -params 4 mark_to_range_faces %{
     %sh{
@@ -22,8 +22,9 @@ define-command interactive_itersel %{
         reload-highlighter
         exec <space>
     } catch %{
-        # 1 sel
+        # ==1 sel
         try %{
+            # previous itersel exist
             exec \"sz
             reg s ''
             interactive_itersel
@@ -34,7 +35,7 @@ define-command interactive_itersel %{
 }
 
 define-command -hidden reload-highlighter %{
-    try "remove-highlighter hlranges_phantom_selections"
+    try %{ remove-highlighter hlranges_phantom_selections }
     add-highlighter ranges phantom_selections
     # ensure whitespace is always after
     # kinda hacky

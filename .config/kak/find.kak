@@ -7,9 +7,9 @@ define-command -params ..1 find %{
         eval -save-regs '' -draft %{
             %sh{
                 if [ -n "$1" ]; then
-                    printf %s\\n "set-register / %arg{1}"
+                    echo "set-register / %arg{1}"
                 else
-                    printf %s\\n "set-register / %val{selection}"
+                    echo "set-register / %val{selection}"
                 fi
             }
             try %{ delete-buffer *find* }
@@ -18,9 +18,9 @@ define-command -params ..1 find %{
                 eval -draft %{ edit -scratch *find* }
                 try %{
                     exec '%s<ret>'
-                    eval -save-regs '/c' -itersel %{
+                    eval -save-regs 'c"' -itersel %{
                         # expand selection beginning and end to yank full lines
-                        exec -draft -save-regs '' '<a-L><a-;><a-H>y'
+                        exec -save-regs '' -draft '<a-L><a-;><a-H>y'
                         # reduce to first character from selection to know the context
                         exec '<a-;>;'
                         set-register c "%val{bufname}:%val{cursor_line}:%val{cursor_column}:"
@@ -44,7 +44,7 @@ define-command -params ..1 find %{
 hook -group find-highlight global WinSetOption filetype=find %{
     add-highlighter group find
     add-highlighter -group find dynregex '%opt{find_pattern}' 0:black,yellow
-    add-highlighter -group find regex "^([^\n]*?):(\d+):(\d+)?" 1:cyan 2:green 3:green
+    add-highlighter -group find regex "^([^\n]*?):(\d+):(\d+)?" 1:cyan,black 2:green,black 3:green,black
     add-highlighter -group find line '%opt{find_current_line}' default+b
     # ensure whitespace is always after
     # kinda hacky
@@ -71,7 +71,7 @@ decl str jumpclient
 def -hidden find-jump %{
     eval -collapse-jumps %{
         try %{
-            exec -save-regs '' 'xs^([^\n]*?):(\d+):(\d+)<ret>'
+            exec -save-regs '' 'xs^([^:]+):(\d+):(\d+)<ret>'
             set buffer find_current_line %val{cursor_line}
             eval -try-client %opt{jumpclient} "edit -existing %reg{1} %reg{2} %reg{3}"
             try %{ focus %opt{jumpclient} }
