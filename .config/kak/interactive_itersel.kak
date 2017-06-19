@@ -5,13 +5,13 @@ set-face InterItersel black,green
 #2 target option
 #3 source marks
 #4 face to use
-define-command -params 4 mark_to_range_faces %{
+define-command -hidden -params 4 mark_to_range_faces %{
     %sh{
         printf "set %s %s %s\n" "$1" "$2" $(printf %s "$3" | sed -e 's/\([:@]\)/|'"$4"'\1/g' -e 's/\(.*\)@.*%\(.*\)/\2:\1/')
     }
 }
 
-define-command interactive_itersel %{
+define-command -hidden interactive_itersel %{
     try %{
         # >1 sel
         exec -draft <a-space>
@@ -38,7 +38,7 @@ define-command -hidden reload-highlighter %{
     try %{ remove-highlighter hlranges_phantom_selections }
     add-highlighter ranges phantom_selections
     # ensure whitespace is always after
-    # kinda hacky
+    # kinda hacky :^)
     try %{
         remove-highlighter show_whitespaces
         add-highlighter show_whitespaces

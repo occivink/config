@@ -13,7 +13,7 @@ def bufinfo %{
         set -add global bufinfo_text "%val{bufname}_%val{modified}"
     }
     %sh{
-        printf "info -- %%:"
+        printf "info -title Buffers -- %%:"
         printf '%s\n' "$kak_opt_bufinfo_text" | tr ':' '\n' |
         while read bufinfo; do
             buf=${bufinfo%_*}

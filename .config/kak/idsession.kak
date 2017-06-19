@@ -4,8 +4,8 @@
 ##
 
 hook global KakBegin .* %{ %sh{
-    readonly adj=$(printf %s\\n kabbalistic keeled knavish knotted keen kind knowledgeable kempt kosher kitsch kleptomaniac)
-    readonly nouns=$(printf %s\\n keeper keg kernel kettle key kid kimono kingdom kiosk kitchen kite kitten klaxon knife kilt knight konga koala kangaroo kraken)
+    adj=$(printf %s\\n kabbalistic kafkaesque keeled knavish knotted keen kind kindred kindled kinetic knowledgeable kempt kosher kitsch kleptomaniac)
+    nouns=$(printf %s\\n keeper keg kernel kettle key kid kimono kingdom kiosk kitchen kite kitten klaxon knife kilt knight konga koala kangaroo kraken)
 
     rnd() {
         printf %s "$1" | shuf -n1

@@ -31,8 +31,15 @@ hook global InsertCompletionHide .* %{
 # use w to select current word
 map global normal w <a-i>w
 map global normal <a-w> <a-i>W
-map global normal W ""
+map global normal W ":exec *\%s<ret><ret>"
 map global normal <a-W> ""
+
+# append registers by default (old behavior)
+map global normal <a-z> "<a-z>a"
+map global normal <a-Z> "<a-Z>a"
+
+#map global normal Z "Z:mark_to_range_faces "
+#map global normal Z "Z:mark_to_range_faces "
 
 set-face Whitespace rgb:404040,default
 set-face LineNumbersWrapped rgb:606060,default+i
