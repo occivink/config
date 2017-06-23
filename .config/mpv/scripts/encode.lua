@@ -2,18 +2,6 @@ local start_timestamp = nil
 local utils = require "mp.utils"
 local options = require "mp.options"
 
-local o = {
-    -- if true, the ffmpeg process will be detached and we won't know if it
-    -- succeeded or not and we can stop mpv at any time
-    -- if false, we know the result of calling ffmpeg, but we can only encode
-    -- one extract at a time and mpv will block on exit
-    detached = false,
-    -- if true, the current working directory of mpv is used for the output
-    -- if false, the directory of the input is used
-    use_current_working_dir = false
-}
-options.read_options(o)
-
 function append_table(lhs, rhs)
     for i = 1,#rhs do
         lhs[#lhs+1] = rhs[i]
@@ -31,15 +19,31 @@ function file_exists(name)
     end
 end
 
-function get_unused_filename(dir, prefix, suffix)
+function get_output_string(dir, format, input, from, to, profile)
     local res = utils.readdir(dir)
+    if not res then
+        return nil
+    end
     local files = {}
     for _, f in ipairs(res) do
         files[f] = true
     end
+    local output = format
+    output = string.gsub(output, "$f", input)
+    output = string.gsub(output, "$s", seconds_to_time_string(from, true))
+    output = string.gsub(output, "$e", seconds_to_time_string(to, true))
+    output = string.gsub(output, "$d", seconds_to_time_string(to-from, true))
+    output = string.gsub(output, "$p", profile)
+    if not string.find(output, "$n") then
+        if not files[output] then
+            return output
+        else
+            return nil
+        end
+    end
     local i = 1
     while true do
-        local potential_name = string.format("%s_%d%s", prefix, i, suffix)
+        local potential_name = string.gsub(output, "$n", tostring(i))
         if not files[potential_name] then
             return potential_name
         end
@@ -47,7 +51,7 @@ function get_unused_filename(dir, prefix, suffix)
     end
 end
 
-function get_video_filters_string()
+function get_video_filters()
     local filters = {}
     local vf_table = mp.get_property_native("vf")
     for _, vf in ipairs(vf_table) do
@@ -73,7 +77,7 @@ function get_video_filters_string()
         end
         filters[#filters + 1] = filter
     end
-    return table.concat(filters, ",")
+    return filters
 end
 
 function get_active_tracks()
@@ -92,19 +96,29 @@ function get_active_tracks()
     return active_tracks
 end
 
-function start_encoding(path, from, to, settings)
-    local filename = mp.get_property("filename/no-ext") or "encode"
+function seconds_to_time_string(seconds, full)
+    local ret = string.format("%02d:%02d.%03d"
+        , math.floor(seconds / 60) % 60
+        , math.floor(seconds) % 60
+        , seconds * 1000 % 1000
+    )
+    if full or seconds > 3600 then
+        ret = string.format("%d:%s", math.floor(seconds / 3600), ret)
+    end
+    return ret
+end
 
+function start_encoding(input_path, from, to, settings)
     local args = {
         "ffmpeg",
         "-loglevel", "panic", "-hide_banner", --stfu ffmpeg
-        "-i", path,
-        "-ss", from,
-        "-to", to
+        "-i", input_path,
+        "-ss", seconds_to_time_string(from, false),
+        "-to", seconds_to_time_string(to, false)
     }
 
     -- map currently playing channels
-    if settings.only_active_tracks == "true" then
+    if settings.only_active_tracks then
         for _, t in ipairs(get_active_tracks()) do
             args = append_table(args, { "-map", t })
         end
@@ -113,13 +127,17 @@ function start_encoding(path, from, to, settings)
     end
 
     -- apply some of the video filters currently in the chain
-    if settings.preserve_filters == "true" then
-        local video_filters = get_video_filters_string()
-        if video_filters ~= "" then
-            args = append_table(args, {
-                "-filter:v", video_filters,
-            })
-        end
+    local filters = {}
+    if settings.preserve_filters then
+        filters = append_table(filters, get_video_filters())
+    end
+    if settings.append_filter ~= "" then
+        filters[#filters + 1] = settings.append_filter
+    end
+    if #filters > 0 then
+        args = append_table(args, {
+            "-filter:v", table.concat(filters, ",")
+        })
     end
 
     -- split the user-passed settings on whitespace
@@ -128,15 +146,40 @@ function start_encoding(path, from, to, settings)
     end
 
     -- path of the output
-    local directory = "."
-    if not o.use_current_working_dir then
-        directory, _ = utils.split_path(path)
+    local output_directory = settings.output_directory
+    if output_directory == "" then
+        output_directory, _ = utils.split_path(input_path)
+    else
+        output_directory = string.gsub(output_directory, "^~", os.getenv("HOME"))
     end
-    local output = get_unused_filename(directory, filename, "." .. settings.container)
-    args[#args + 1] = utils.join_path(directory, output)
+    local output_name = string.format("%s.%s", settings.output_format, settings.container)
+    local input_name = mp.get_property("filename/no-ext") or "encode"
+    output_name = get_output_string(output_directory, output_name, input_name, from, to, settings.profile)
+    if not output_name then
+        mp.osd_message("Invalid path " .. output_directory)
+        return
+    end
+    args[#args + 1] = utils.join_path(output_directory, output_name)
 
-    print(table.concat(args, " "))
-    if o.detached then
+    if settings.print then
+        local o = ""
+        -- fuck this is ugly
+        for i = 1, #args do
+            local fmt = ""
+            if i == 1 then
+                fmt = "%s%s"
+            elseif i >= 2 and i <= 4 then
+                fmt = "%s"
+            elseif args[i-1] == "-i" or i == #args or args[i-1] == "-filter:v" then
+                fmt = "%s \"%s\""
+            else
+                fmt = "%s %s"
+            end
+            o = string.format(fmt, o, args[i])
+        end
+        print(o)
+    end
+    if settings.detached then
         utils.subprocess_detached({ args = args })
     else
         local res = utils.subprocess({ args = args, max_size = 0, cancellable = false })
@@ -148,7 +191,7 @@ function start_encoding(path, from, to, settings)
     end
 end
 
-function set_timestamp(container, only_active_tracks, preserve_filters, codec)
+function set_timestamp(profile)
     local path = mp.get_property("path")
     if not path then
         mp.osd_message("No file currently playing")
@@ -160,25 +203,42 @@ function set_timestamp(container, only_active_tracks, preserve_filters, codec)
     end
 
     if start_timestamp == nil then
-        mp.osd_message("Start timestamp set")
         start_timestamp = mp.get_property_number("time-pos")
+        mp.osd_message("Encoding from " .. seconds_to_time_string(start_timestamp, false))
     else
         local current_timestamp = mp.get_property_number("time-pos")
         if current_timestamp <= start_timestamp then
             mp.osd_message("Second timestamp cannot be before the first")
             return
         end
-        mp.osd_message("End timestamp set, encoding...")
+        mp.osd_message(string.format("Started encoding from %s to %s"
+            , seconds_to_time_string(start_timestamp, false)
+            , seconds_to_time_string(current_timestamp, false)
+        ))
+        -- include the current frame into the extract
+        local fps = mp.get_property_number("container-fps")
+        current_timestamp = current_timestamp + 1 / fps / 2
         local settings = {
-            container = container,
-            only_active_tracks = only_active_tracks,
-            preserve_filters = preserve_filters,
-            codec = codec
+            detached = true,
+            container = "webm",
+            only_active_tracks = false,
+            preserve_filters = true,
+            append_filter = "",
+            codec = "-an -sn -c:v libvpx -crf 10 -b:v 1000k",
+            output_format = "$f_$n",
+            output_directory = "",
+            print = true,
         }
+        if profile then
+            options.read_options(settings, profile)
+            settings.profile = profile
+        else
+            settings.profile = "default"
+        end
         start_encoding(path, start_timestamp, current_timestamp, settings)
         start_timestamp = nil
     end
 end
 
-mp.add_key_binding(nil, "set_timestamp", set_timestamp)
-mp.add_key_binding(nil, "clear_timestamp", function() start_timestamp = nil end)
+mp.add_key_binding(nil, "set-timestamp", set_timestamp)
+mp.add_key_binding(nil, "clear-timestamp", function() start_timestamp = nil end)

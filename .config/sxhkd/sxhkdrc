@@ -53,7 +53,7 @@ ctrl + alt + t
 	termite
 
 ctrl + alt + d 
-	fish_startup_command=lf termite
+	env fish_startup_command=lf termite
 
 ctrl + alt + w
 	firefox

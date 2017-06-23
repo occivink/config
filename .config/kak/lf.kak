@@ -1,4 +1,6 @@
- def \
+# open lf in a separate terminal and use it as a file picker
+
+ define-command \
    -params .. -file-completion \
    -docstring %{lf [<arguments>]: open the file system explorer to select buffers to open
  All the optional arguments are forwarded to the lf utility} \

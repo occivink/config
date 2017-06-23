@@ -1,6 +1,9 @@
-decl str toolsclient
-decl -hidden int find_current_line 0
-decl -hidden str find_pattern
+# search for a regex pattern among all opened buffers
+# similar to grep.kak
+
+declare-option str toolsclient
+declare-option -hidden int find_current_line 0
+declare-option -hidden str find_pattern
 
 define-command -params ..1 find %{
     eval -save-regs '/' %{
@@ -66,9 +69,9 @@ hook global WinSetOption filetype=(?!find).* %{
     remove-hooks buffer find-hooks
 }
 
-decl str jumpclient
+declare-option str jumpclient
 
-def -hidden find-jump %{
+define-command -hidden find-jump %{
     eval -collapse-jumps %{
         try %{
             exec -save-regs '' 'xs^([^:]+):(\d+):(\d+)<ret>'
@@ -79,7 +82,7 @@ def -hidden find-jump %{
     }
 }
 
-def find-next -docstring 'Jump to the next find match' %{
+define-command find-next -docstring 'Jump to the next find match' %{
     eval -collapse-jumps -try-client %opt{jumpclient} %{
         buffer '*find*'
         exec "%opt{find_current_line}ggl/^[^:]+:\d+:<ret>"
@@ -88,7 +91,7 @@ def find-next -docstring 'Jump to the next find match' %{
     try %{ eval -client %opt{toolsclient} %{ exec %opt{find_current_line}g } }
 }
 
-def find-prev -docstring 'Jump to the previous find match' %{
+define-command find-prev -docstring 'Jump to the previous find match' %{
     eval -collapse-jumps -try-client %opt{jumpclient} %{
         buffer '*find*'
         exec "%opt{find_current_line}g<a-/>^[^:]+:\d+:<ret>"

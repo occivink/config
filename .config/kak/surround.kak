@@ -1,3 +1,5 @@
+# manually surround the current selection with known pairs
+
 define-command -hidden surround-add -params 2 %{
     exec -collapse-jumps -no-hooks i %arg{1} <esc> H a %arg{2} <esc>
 }
@@ -7,9 +9,15 @@ define-command -hidden surround-del %{
 
 define-command surround %{
     info -title "surround" \
-%{surround by
-b
-c}
+%{B,{,}:               parentheses
+b,(,):               braces
+r,[,]:               brackets
+a,<,>:               angle brackets
+Q,":                 double quotes
+q,':                 single quotes
+g,`:                 grave quotes
+<space>:             spaces
+<backspace>,<del>,d: delete surrounding}
     on-key %{ %sh{
         case "$kak_key" in
             B|{|})
@@ -36,14 +44,11 @@ c}
             \<space\>)
                 echo "surround-add ' ' ' '"
                 ;;
-            \<backspace\>)
-                echo "surround-del"
-                ;;
-            \<del\>)
+            \<backspace\>|\<del\>|d)
                 echo "surround-del"
                 ;;
             *)
-                echo "info"
+                echo "exec <esc>"
                 ;;
         esac
     }}

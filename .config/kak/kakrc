@@ -4,7 +4,7 @@ set-option global BOM none
 
 set-option global autoinfo command|onkey
 
-set-option global ui_options ncurses_assistant=clippy
+set-option global ui_options ncurses_assistant=none
 
 set-option global scrolloff 2,5
 
@@ -38,14 +38,11 @@ map global normal <a-W> ""
 map global normal <a-z> "<a-z>a"
 map global normal <a-Z> "<a-Z>a"
 
-#map global normal Z "Z:mark_to_range_faces "
-#map global normal Z "Z:mark_to_range_faces "
-
 set-face Whitespace rgb:404040,default
 set-face LineNumbersWrapped rgb:606060,default+i
 
 hook global WinCreate .* %{
-    add-highlighter number_lines -relative -hlcursor -separator ' '
+    add-highlighter number_lines -hlcursor -separator ' '
     add-highlighter show_matching
     add-highlighter dynregex '%reg{/}' 0:default,rgb:373b41
     add-highlighter show_whitespaces
@@ -61,7 +58,7 @@ define-command kakrc -docstring "Open kakrc" %{
 }
 
 # add heterogenous selection (could work better)
-define-command search_add %{
+define-command search-add %{
     eval -save-regs / %{
         exec -save-regs '' Z
         prompt 'search add:' %{ exec -save-regs '' ':reg / ' %val{text} <ret>zN }
@@ -72,18 +69,23 @@ map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
-map -docstring "search add" global user / :search_add<ret>
-map -docstring "lf"  global user d ':lf<ret>'
-map -docstring "itersel" global user r :interactive_itersel<ret>
+map -docstring "search add" global user / :search-add<ret>
+map -docstring "lf"  global user d :lf<ret>
+map -docstring "itersel" global user r :interactive-itersel<ret>
 map -docstring "surround" global user s :surround<ret>
 map -docstring "expand" global user e :expand<ret>
+map -docstring "copy selections down" global user v :copy-selections-down<ret>
+map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
+map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
 
+source ~/.config/kak/friendly_session_names.kak
 source ~/.config/kak/interactive_itersel.kak
 source ~/.config/kak/lf.kak
-source ~/.config/kak/buflist.kak
-source ~/.config/kak/idsession.kak
+source ~/.config/kak/buffers_info.kak
 source ~/.config/kak/find.kak
 source ~/.config/kak/surround.kak
 source ~/.config/kak/expand.kak
+source ~/.config/kak/sudo_write.kak
+source ~/.config/kak/copy_sel_vertically.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }

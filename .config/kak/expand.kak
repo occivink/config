@@ -1,29 +1,26 @@
+# expand the current selection by repeatedly calling "expand"
+
 declare-option -hidden str-list expand_results
 declare-option -hidden str expand_tmp
 
-define-command select_indented_paragraph %{
-    eval -itersel %{
-        exec -draft -save-regs '' '<a-i>pZ'
-        exec '<a-i>i<a-z>i'
-    }
-    exec <esc>
+define-command -hidden select-indented-paragraph %{
+    exec -draft -save-regs '' '<a-i>pZ'
+    exec '<a-i>i<a-z>i'
 }
 
 define-command expand %{
     set-option global expand_results ""
-    exec <space>
-    expand-impl ""
-    # the text object selection commands are found through trial and error
+    exec <space><a-:>
+    # exclude text objects with symetric delimiters as they yield too many false positives
     expand-impl "exec <a-a>b"
     expand-impl "exec <a-a>B"
     expand-impl "exec <a-a>r"
     expand-impl "exec <a-i>i"
-    expand-impl "exec <a-i>p"
-    expand-impl "select_indented_paragraph"
-    expand-impl "exec \%"
     expand-impl "exec /.<ret><a-K>\n<ret><a-i>i"
+    expand-impl "exec <a-/>.<ret><a-K>\n<ret><a-i>i"
+    expand-impl "select_indented_paragraph"
     %sh{
-        # returns 0 if $1 is a superset of $2
+        # returns 0 if $1 is a strict superset of $2
         compare_descs() {
             if [ $1 = $2 ]; then
                 return 1
@@ -43,21 +40,19 @@ define-command expand %{
                 return 1
             fi
         }
+        init_desc=$kak_selection_desc
+        best_desc=0.0,9999999.999
+        best_length=9999999
         printf "%s\n" "$kak_opt_expand_results" | tr ':' '\n' | {
         while read -r current; do
             desc=${current%_*}
             length=${current#*_}
-            if [ ! -n "$best_length" ]; then
-                init_desc=$desc
-                best_length=9999999
-            elif compare_descs $desc $init_desc && [ $length -lt $best_length ]; then
+            if compare_descs $desc $init_desc && [ $length -lt $best_length ]; then
                 best_desc=$desc
                 best_length=$length
             fi
         done
-        if [ -n "$best_desc" ]; then
-            printf "select %s\n" "$best_desc"
-        fi
+        printf "select %s\n" "$best_desc"
         }
     }
 }

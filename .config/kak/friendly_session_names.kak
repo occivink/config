@@ -1,7 +1,5 @@
-##
-## idsession.kak by lenormf
-## Rename newly created sessions to human readable names
-##
+# rename session when starting to a friendlier name
+## originally idsession.kak by lenormf
 
 hook global KakBegin .* %{ %sh{
     adj=$(printf %s\\n kabbalistic kafkaesque keeled knavish knotted keen kind kindred kindled kinetic knowledgeable kempt kosher kitsch kleptomaniac)
