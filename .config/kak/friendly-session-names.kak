@@ -1,4 +1,4 @@
-# rename session when starting to a friendlier name
+# rename session with a friendlier name when starting
 ## originally idsession.kak by lenormf
 
 hook global KakBegin .* %{ %sh{

@@ -2,7 +2,7 @@
 
 declare-option -hidden range-specs phantom_selections
 declare-option -hidden str iitersel_buffer
-set-face InterItersel black,green
+set-face InteractiveItersel black,green
 
 #1 target scope
 #2 target option
@@ -21,7 +21,7 @@ define-command interactive-itersel %{
         # ensure first selection is the main one
         exec Zz'
         exec -draft <a-space>\"sZ
-        mark-to-range-faces buffer phantom_selections %reg{s} InterItersel
+        mark-to-range-faces buffer phantom_selections %reg{s} InteractiveItersel
         set-option global iitersel_buffer %val{bufname}
         reload-highlighter
         exec <space>
@@ -33,20 +33,25 @@ define-command interactive-itersel %{
             reg s ''
             interactive-itersel
         } catch %{
-            eval -buffer %opt{iitersel_buffer} "unset-option buffer phantom_selections"
-            set-option global iitersel_buffer ""
+            interactive-itersel-clear
         }
     }
 }
 
-define-command interactive_itersel_clear %{
+define-command interactive-itersel-clear %{
+    try %{
+        eval -buffer %opt{iitersel_buffer} "unset-option buffer phantom_selections"
+        set-option global iitersel_buffer ""
+        remove-highlighter hlranges_phantom_selections
+    }
 }
 
+# hack: we want this highlighter to be applied after language specific-ones
 define-command -hidden reload-highlighter %{
     try %{ remove-highlighter hlranges_phantom_selections }
     add-highlighter ranges phantom_selections
-    # ensure whitespace is always after
-    # kinda hacky :^)
+    # classic hack within a hack
+    # https://github.com/mawww/kakoune/issues/1251
     try %{
         remove-highlighter show_whitespaces
         add-highlighter show_whitespaces

@@ -1,7 +1,12 @@
 # show information about currently opened buffers
-# originally by danr
+# originally by danr, with cherry-picked ideas from delapouite
 
-hook global WinDisplay .* bufinfo
+declare-option -hidden str current_bufname
+
+hook global WinDisplay .* %{
+    set global current_bufname %val{bufname}
+    buffers-info
+}
 
 map global normal <a-,> :bp<ret>
 map global normal <a-.> :bn<ret>
@@ -10,12 +15,10 @@ map global normal <a-r> :e!<ret>
 map global normal <a-q> :db!<ret>
 
 declare-option -hidden str-list bufinfo_text
-declare-option -hidden str bufinfo_current_buf
 
-define-command -hidden bufinfo %{
-    set global bufinfo_current_buf %val{bufname}
+define-command -hidden buffers-info %{
     eval -no-hooks -buffer *  %{
-        set -add "buffer=%opt{bufinfo_current_buf}" bufinfo_text "%val{bufname}_%val{modified}"
+        set -add "buffer=%opt{current_bufname}" bufinfo_text "%val{bufname}_%val{modified}"
     }
     %sh{
         echo "unset-option buffer bufinfo_text"

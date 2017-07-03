@@ -15,9 +15,6 @@ set-option global grepcmd 'ag --filename --column --ignore tags'
 map global normal d \"_d
 map global normal c \"_c
 
-map -docstring "next grep match" global goto n <esc>:grep-next<ret>
-map -docstring "previous grep match" global goto p <esc>:grep-prev<ret>
-
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
     map window insert <tab> <c-n>
@@ -78,14 +75,14 @@ map -docstring "copy selections down" global user v :copy-selections-down<ret>
 map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
 map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
 
-source ~/.config/kak/friendly_session_names.kak
-source ~/.config/kak/interactive_itersel.kak
+source ~/.config/kak/friendly-session-names.kak
+source ~/.config/kak/interactive-itersel.kak
 source ~/.config/kak/lf.kak
-source ~/.config/kak/buffers_info.kak
+source ~/.config/kak/buffers-info.kak
 source ~/.config/kak/find.kak
 source ~/.config/kak/surround.kak
 source ~/.config/kak/expand.kak
-source ~/.config/kak/sudo_write.kak
-source ~/.config/kak/copy_sel_vertically.kak
+source ~/.config/kak/sudo-write.kak
+source ~/.config/kak/vertical-selection.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }

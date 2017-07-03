@@ -1,24 +1,28 @@
-# expand the current selection by repeatedly calling "expand"
+# increases the size of the current selection by repeatedly calling "expand"
+
+declare-option str-list expand_commands
+# exclude text objects with symetric delimiters as they yield too many false positives
+set -add global expand_commands "exec <a-a>b"
+set -add global expand_commands "exec <a-a>b"
+set -add global expand_commands "exec <a-a>B"
+set -add global expand_commands "exec <a-a>r"
+set -add global expand_commands "exec <a-i>i"
+set -add global expand_commands "exec /.<ret><a-K>\n<ret><a-i>i"
+set -add global expand_commands "exec <a-/>.<ret><a-K>\n<ret><a-i>i"
+set -add global expand_commands "select-indented-paragraph"
 
 declare-option -hidden str-list expand_results
 declare-option -hidden str expand_tmp
 
-define-command -hidden select-indented-paragraph %{
-    exec -draft -save-regs '' '<a-i>pZ'
-    exec '<a-i>i<a-z>i'
-}
-
 define-command expand %{
-    set-option global expand_results ""
     exec <space><a-:>
-    # exclude text objects with symetric delimiters as they yield too many false positives
-    expand-impl "exec <a-a>b"
-    expand-impl "exec <a-a>B"
-    expand-impl "exec <a-a>r"
-    expand-impl "exec <a-i>i"
-    expand-impl "exec /.<ret><a-K>\n<ret><a-i>i"
-    expand-impl "exec <a-/>.<ret><a-K>\n<ret><a-i>i"
-    expand-impl "select_indented_paragraph"
+    unset-option buffer expand_results
+    %sh{
+        printf "%s\n" "$kak_opt_expand_commands" | tr ':' '\n' |
+        while read -r current; do
+            printf "expand-impl \"%s\"\n" "$current"
+        done
+    }
     %sh{
         # returns 0 if $1 is a strict superset of $2
         compare_descs() {
@@ -61,10 +65,14 @@ define-command expand-impl -hidden -params 1 %{
     eval -no-hooks -draft %{
         try %{
             eval %arg{1}
-            set-option global expand_tmp "%val{selection_desc}"
+            set-option buffer expand_tmp "%val{selection_desc}"
             exec "s.<ret>"
-            set-option global expand_tmp "%opt{expand_tmp}_%reg{#}"
-            set-option -add global expand_results "%opt{expand_tmp}"
+            set-option -add buffer expand_results "%opt{expand_tmp}_%reg{#}"
         }
     }
+}
+
+define-command -hidden select-indented-paragraph %{
+    exec -draft -save-regs '' '<a-i>pZ'
+    exec '<a-i>i<a-z>i'
 }

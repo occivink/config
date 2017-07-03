@@ -31,7 +31,7 @@ define-command copy-selections-vertically %{
 }
 
 define-command -hidden copy-selections-impl -params 2 %{
-    eval -save-regs 'p/' %{
+    eval -save-regs 'p/"' %{
         exec \"p<a-*>
         # put the initial pattern in a capture group so we can come back to it
         reg p "(%reg{p})"
@@ -41,7 +41,7 @@ define-command -hidden copy-selections-impl -params 2 %{
             eval -draft %{
                 # select every character on the same line before the pattern
                 exec "<a-:><a-;>;hGhs.<ret>"
-                # and allow as many '[^\n]' to precede the pattern we're searching for
+                # and require as many [^\n] to precede the pattern we're searching for
                 reg p "[^\n]{%reg{#}}%reg{p}"
             }
         }
@@ -50,6 +50,6 @@ define-command -hidden copy-selections-impl -params 2 %{
         reg / "((%reg{p}[^\n]*\n)+|%arg{2})"
         exec "%arg{1}<ret><a-x>"
         # and select the pattern back from this selection
-        exec \"p1s<ret>
+        exec <a-s>\"p1s<ret>
     }
 }

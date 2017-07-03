@@ -22,15 +22,12 @@ define-command sudo-write-impl -params 1 %{
 
 def sudo-write -docstring "Write the content of the buffer using sudo" %{
     %sh{
-        #check if the password is cached
-        sudo -n true > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
+        # check if the password is cached
+        if sudo -n true > /dev/null 2>&1; then
             echo "sudo-write-impl ''"
         else
-            #and ask for it if not
-            echo "prompt -password 'Password: ' %{
-                      sudo-write-impl %val{text}
-                  }"
+            # if not, ask for it
+            echo "prompt -password 'Password: ' %{ sudo-write-impl %val{text} }"
         fi
     }
 }

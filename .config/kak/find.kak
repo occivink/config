@@ -22,8 +22,8 @@ define-command -params ..1 find %{
                 try %{
                     exec '%s<ret>'
                     eval -save-regs 'c"' -itersel %{
-                        # expand selection beginning and end to yank full lines
-                        exec -save-regs '' -draft '<a-L><a-;><a-H>y'
+                        # expand to full lines and yank
+                        exec -save-regs '' -draft '<a-x>Hy'
                         # reduce to first character from selection to know the context
                         exec '<a-;>;'
                         set-register c "%val{bufname}:%val{cursor_line}:%val{cursor_column}:"
@@ -37,9 +37,9 @@ define-command -params ..1 find %{
         }
         eval -try-client %opt{toolsclient} %{
             buffer *find*
-            set buffer find_pattern "%reg{/}"
-            set buffer filetype find
-            set buffer find_current_line 0
+            set-option buffer find_pattern "%reg{/}"
+            set-option buffer filetype find
+            set-option buffer find_current_line 0
         }
     }
 }
@@ -75,7 +75,7 @@ define-command -hidden find-jump %{
     eval -collapse-jumps %{
         try %{
             exec -save-regs '' 'xs^([^:]+):(\d+):(\d+)<ret>'
-            set buffer find_current_line %val{cursor_line}
+            set-option buffer find_current_line %val{cursor_line}
             eval -try-client %opt{jumpclient} "edit -existing %reg{1} %reg{2} %reg{3}"
             try %{ focus %opt{jumpclient} }
         }
