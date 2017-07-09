@@ -10,13 +10,11 @@ function fish_prompt
         set_color white -b purple -o
         printf " "
         if test $CMD_DURATION -gt 3600000
-            printf "%dh" (dash -c 'echo $(('$CMD_DURATION' / 3600000))')
-            printf "%02dm" (dash -c 'echo $(('$CMD_DURATION' % 3600000 / 60000))')
+            sh -c 'printf "%dh%02dm" $(('$CMD_DURATION' / 3600000)) $(('$CMD_DURATION' % 3600000 / 60000))'
         else if test $CMD_DURATION -gt 60000
-            printf "%dm" (dash -c 'echo $(('$CMD_DURATION' / 60000))')
-            printf "%02ds" (dash -c 'echo $(('$CMD_DURATION' % 60000 / 1000))')
+            sh -c 'printf "%dm%02ds" $(('$CMD_DURATION' / 60000)) $(('$CMD_DURATION' % 60000 / 1000))'
         else
-            printf "%ds" (dash -c 'echo $(('$CMD_DURATION' / 1000))')
+            sh -c 'printf "%ds" $(('$CMD_DURATION' / 1000))'
         end
         printf " "
     end
