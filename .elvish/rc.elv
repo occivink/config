@@ -21,17 +21,17 @@ git_completer = [gitcmd @cmd]{
         if (or (eq $subcommand add) (eq $subcommand stage)) {
             put ($gitcmd diff --name-only) ($gitcmd ls-files --others --exclude-standard)
         if (eq $subcommand discard) {
-            put ($gitcmd diff --name-only)
+            $gitcmd diff --name-only
         } elif (eq $subcommand unstage) {
-            put ($gitcmd diff --name-only --cached)
+            $gitcmd diff --name-only --cached
         } elif (eq $subcommand checkout) {
-            put ($gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)')
+            $gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)'
         }
     }
 }
 edit:completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
-        put (kak -l)
+        kak -l
     } else {
         $edit:&complete-filename $cmd[-1]
     }
@@ -59,8 +59,8 @@ edit:before-readline=[ {
 } ]
 
 edit:prompt = {
-    put (edit:styled " "(tilde-abbr $pwd)" " "bg-blue;bold")
-    put (edit:styled " λ " "bg-green;bold")
+    edit:styled " "(tilde-abbr $pwd)" " "bg-blue;bold"
+    edit:styled " λ " "bg-green;bold"
     put " "
 }
 edit:rprompt = { }
