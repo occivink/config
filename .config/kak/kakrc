@@ -62,18 +62,20 @@ define-command search-add %{
     }
 }
 
+map -docstring "surround" global user s :surround<ret>
+map -docstring "surround (repeated)" global user S :surround-repeat<ret>
+map -docstring "expand" global user e :expand<ret>
+map -docstring "expand (repeated)" global user E :expand-repeat<ret>
+map -docstring "itersel" global user r :interactive-itersel<ret>
+map -docstring "copy selections down" global user v :copy-selections-down<ret>
+map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
+map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
 map -docstring "search add" global user / :search-add<ret>
 map -docstring "lf"  global user d :lf<ret>
-map -docstring "itersel" global user r :interactive-itersel<ret>
-map -docstring "surround" global user s :surround<ret>
-map -docstring "expand" global user e :expand<ret>
-map -docstring "copy selections down" global user v :copy-selections-down<ret>
-map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
-map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
 
 source ~/.config/kak/friendly-session-names.kak
 source ~/.config/kak/interactive-itersel.kak

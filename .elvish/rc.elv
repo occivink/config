@@ -19,8 +19,9 @@ git_completer = [gitcmd @cmd]{
     } else {
         subcommand = $cmd[1]
         if (or (eq $subcommand add) (eq $subcommand stage)) {
-            put ($gitcmd diff --name-only) ($gitcmd ls-files --others --exclude-standard)
-        if (eq $subcommand discard) {
+            $gitcmd diff --name-only
+            $gitcmd ls-files --others --exclude-standard
+        } elif (eq $subcommand discard) {
             $gitcmd diff --name-only
         } elif (eq $subcommand unstage) {
             $gitcmd diff --name-only --cached
@@ -36,6 +37,15 @@ edit:completer[kak] = [@cmd]{
         $edit:&complete-filename $cmd[-1]
     }
 }
+edit:completer[ssh] = [@cmd]{
+    cat ~/.ssh/config | each [line]{
+        if (re:match "^Host " $line) {
+            _ host = (re:split &max=2 'Host\s+' $line)
+            put $host
+        }
+    }
+}
+edit:completer[systemctl] = [@cmd]{}
 edit:completer[git] = { $git_completer e:git $@ }
 edit:completer[conf] = { $git_completer e:conf $@ }
 
@@ -48,11 +58,11 @@ edit:before-readline=[ {
         seconds = (% $time_taken 60)
         minutes = (/ (- (% $time_taken 3600) $seconds) 60)
         hours = (/ (- $time_taken (* $minutes 60) $seconds) 3600)
-        echo (edit:styled " "$hours"h"(printf %02d $minutes)"m " "bg-magenta;bold")
+        echo (edit:styled " "$hours"h"(printf %02d\n $minutes)"m " "bg-magenta;bold")
     } elif (> $time_taken 60) {
         seconds = (% $time_taken 60)
         minutes = (/ (- $time_taken $seconds) 60)
-        echo (edit:styled " "$minutes"m"(printf %02d $seconds)"s " "bg-magenta;bold")
+        echo (edit:styled " "$minutes"m"(printf %02d\n $seconds)"s " "bg-magenta;bold")
     } elif (> $time_taken 5) {
         echo (edit:styled " "$time_taken"s " "bg-magenta;bold")
     }

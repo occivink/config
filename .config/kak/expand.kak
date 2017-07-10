@@ -14,6 +14,18 @@ set -add global expand_commands "select-indented-paragraph"
 declare-option -hidden str-list expand_results
 declare-option -hidden str expand_tmp
 
+define-command expand-repeat %{
+    expand
+    info "Expanding"
+    on-key %{ %sh{
+        if [ $kak_key = "<space>" ]; then
+            echo expand-repeat
+        else
+            echo "exec <esc>"
+        fi
+    }}
+}
+
 define-command expand %{
     exec <space><a-:>
     unset-option buffer expand_results
