@@ -17,8 +17,8 @@ map global normal c \"_c
 
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
-    map window insert <tab> <c-n>
     map window insert <backtab> <c-p>
+    map window insert <tab> <c-n>
 }
 hook global InsertCompletionHide .* %{
     unmap window insert <tab> <c-n>
@@ -31,10 +31,7 @@ map global normal <a-w> <a-i>W
 map global normal W ":exec *\%s<ret><ret>"
 map global normal <a-W> ""
 
-# append registers by default (old behavior)
-map global normal <a-z> "<a-z>a"
-map global normal <a-Z> "<a-Z>a"
-
+set-face SecondaryCursor black,rgb:babaa3
 set-face Whitespace rgb:404040,default
 set-face LineNumbersWrapped rgb:606060,default+i
 
@@ -62,20 +59,28 @@ define-command search-add %{
     }
 }
 
+define-command trim-whitespaces %{
+    try %{
+        exec -draft '%s\h+\n<ret>Hd'
+    }
+}
+
 map -docstring "surround" global user s :surround<ret>
-map -docstring "surround (repeated)" global user S :surround-repeat<ret>
+map -docstring "surround (repeat)" global user S :surround-repeat<ret>
 map -docstring "expand" global user e :expand<ret>
-map -docstring "expand (repeated)" global user E :expand-repeat<ret>
+map -docstring "expand (repeat)" global user E :expand-repeat<ret>
 map -docstring "itersel" global user r :interactive-itersel<ret>
+map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
+map -docstring "trim whitespace" global user <a-w> ':trim-whitespaces<ret>'
 map -docstring "copy selections down" global user v :copy-selections-down<ret>
 map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
 map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
+map -docstring "search-add" global user / :search-add<ret>
+map -docstring "lf"  global user d :lf<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
-map -docstring "search add" global user / :search-add<ret>
-map -docstring "lf"  global user d :lf<ret>
 
 source ~/.config/kak/friendly-session-names.kak
 source ~/.config/kak/interactive-itersel.kak
@@ -86,5 +91,6 @@ source ~/.config/kak/surround.kak
 source ~/.config/kak/expand.kak
 source ~/.config/kak/sudo-write.kak
 source ~/.config/kak/vertical-selection.kak
+source ~/.config/kak/multiples.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }

@@ -58,9 +58,6 @@ ctrl + alt + d
 ctrl + alt + w
 	firefox
 
-ctrl + alt + a 
-	lighthouse | sh
-
 #XF86MonBrightness{Up,Down}
 #    backlight {+,-}5%
 

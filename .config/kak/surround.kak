@@ -22,16 +22,16 @@ define-command surround %{
 
 define-command -hidden surround-title %{
     info -title "surround" \
-%{B,{,}:               parentheses
-b,(,):               braces
+%{B,{,}:               braces
+b,(,):               parentheses
 r,[,]:               brackets
 a,<,>:               angle brackets
 Q,":                 double quotes
 q,':                 single quotes
 g,`:                 grave quotes
 <space>:             spaces
-<left>:              
-<right>:             
+<left>:              reduce surrounding
+<right>:             extend surrounding
 <backspace>,<del>,d: delete surrounding}
 }
 
@@ -67,6 +67,24 @@ define-command -hidden surround-impl -params 1 %{
     }
 }
 
+define-command -hidden left-or-up %{
+    try %{
+        # throw if we're at the beginning of a line
+        exec -draft \;Zh<a-z>a<a-space>
+        exec H
+    } catch %{
+        exec KGll
+    }
+}
+define-command -hidden right-or-down %{
+    try %{
+        # throw if we're at the end of a line
+        exec -draft \;Zl<a-z>a<a-space>
+        exec L
+    } catch %{
+        exec JGh
+    }
+}
 define-command -hidden surround-add -params 2 %{
     exec -collapse-jumps -no-hooks i %arg{1} <esc> H a %arg{2} <esc>
 }
@@ -74,8 +92,8 @@ define-command -hidden surround-del %{
     exec -collapse-jumps i<del><esc>a<backspace><esc>
 }
 define-command -hidden surround-in %{
-    exec -collapse-jumps "<a-:>H<a-;>L<a-;>"
+    exec -collapse-jumps "<a-:>:left-or-up<ret><a-;>:right-or-down<ret><a-;>"
 }
 define-command -hidden surround-out %{
-    exec -collapse-jumps "<a-:>L<a-;>H<a-;>"
+    exec -collapse-jumps "<a-:>:right-or-down<ret><a-;>:left-or-up<ret><a-;>"
 }

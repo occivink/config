@@ -1,9 +1,12 @@
 function music
     set -l dir ~/media/music/working
+    set -l n (count $argv)
     set -l listen
-    if not set -q argv[1]
+    if test $n -eq 0
         set listen (find $dir -mindepth 2 -maxdepth 2 -type d | shuf -n1)
-    else if test -d $dir/$argv[1]
+    else if test $n -eq 2
+        set listen $dir/$argv[1]/$argv[2]
+    else if test $n -eq 1
         set listen $dir/$argv[1]
     else
         return 1

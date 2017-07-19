@@ -14,13 +14,17 @@ local o = {
     -- Default key bindings
     key_oneshot = "i",
     key_toggle = "I",
+    key_page_1 = "1",
+    key_page_2 = "2",
+    key_page_3 = "3",
 
-    duration = 3,
+    duration = 4,
     redraw_delay = 1,                -- acts as duration in the toggling case
     ass_formatting = true,
     timing_warning = true,
     timing_warning_th = 0.85,        -- *no* warning threshold (warning when > target_fps * timing_warning_th)
-    print_perfdata_total = false,    -- prints an additional line adding up the perfdata lines
+    print_perfdata_total = true,     -- prints an additional line adding up the perfdata lines
+    print_perfdata_passes = false,   -- when true, print the full information about all passes
     debug = false,
 
     -- Graph options and style
@@ -53,11 +57,11 @@ local o = {
 
     -- Text formatting
     -- With ASS
-    nl = "\\N",
-    indent = "\\h\\h\\h\\h\\h",
-    prefix_sep = "\\h\\h",
-    b1 = "{\\b1}",
-    b0 = "{\\b0}",
+    ass_nl = "\\N",
+    ass_indent = "\\h\\h\\h\\h\\h",
+    ass_prefix_sep = "\\h\\h",
+    ass_b1 = "{\\b1}",
+    ass_b0 = "{\\b0}",
     -- Without ASS
     no_ass_nl = "\n",
     no_ass_indent = "\t",
@@ -69,29 +73,52 @@ options.read_options(o)
 
 local format = string.format
 local max = math.max
+
 -- Function used to record performance data
 local recorder = nil
 -- Timer used for toggling
-local timer = nil
+local toggle_timer = nil
+-- Timer used to remove forced keybindings
+local binding_timer = nil
+-- Current page and <page key>:<page function> mappings
+local curr_page = o.key_page_1
+local pages = {}
+
 -- Save these sequences locally as we'll need them a lot
 local ass_start = mp.get_property_osd("osd-ass-cc/0")
 local ass_stop = mp.get_property_osd("osd-ass-cc/1")
 
 -- Ring buffers for the values used to construct a graph.
 -- .pos denotes the current position, .len the buffer length
--- .max is the max value in the corresponding buffer as computed in record_data().
--- `plast_buf` is a table of buffers for the "last" value of performance data
--- for render/present/upload.
-local plast_buf, vsratio_buf, vsjitter_buf
+-- .max is the max value in the corresponding buffer
+local vsratio_buf, vsjitter_buf
 local function init_buffers()
-    plast_buf = {{0, max = 0}, {0, max = 0}, {0, max = 0}, pos = 1, len = 50}
     vsratio_buf = {0, pos = 1, len = 50, max = 0}
     vsjitter_buf = {0, pos = 1, len = 50, max = 0}
 end
 
+-- Save all properties known to this version of mpv
+local property_list = {}
+for p in string.gmatch(mp.get_property("property-list"), "([^,]+)") do property_list[p] = true end
+-- Mapping of properties to their deprecated names
+local property_aliases = {
+    ["decoder-frame-drop-count"] = "drop-frame-count",
+    ["frame-drop-count"] = "vo-drop-frame-count",
+    ["container-fps"] = "fps",
+}
+
+
+-- Return deprecated name for the given property
+local function compat(p)
+    while not property_list[p] and property_aliases[p] do
+        p = property_aliases[p]
+    end
+    return p
+end
+
 
 local function set_ASS(b)
-    if not o.ass_formatting then
+    if not o.use_ass then
         return ""
     end
     return b and ass_start or ass_stop
@@ -109,7 +136,7 @@ end
 
 
 local function text_style()
-    if not o.ass_formatting then
+    if not o.use_ass then
         return ""
     end
     if o.custom_header and o.custom_header ~= "" then
@@ -152,24 +179,31 @@ end
 -- Generate a graph from the given values.
 -- Returns an ASS formatted vector drawing as string.
 --
--- values: Array/Table of numbers representing the data. Used like a ring buffer
+-- values: Array/table of numbers representing the data. Used like a ring buffer
 --         it will get iterated backwards `len` times starting at position `i`.
 -- i     : Index of the latest data value in `values`.
 -- len   : The length/amount of numbers in `values`.
 -- v_max : The maximum number in `values`. It is used to scale all data
 --         values to a range of 0 to `v_max`.
+-- v_avg : The average number in `values`. It is used to try and center graphs
+--         if possible. May be left as nil
 -- scale : A value that will be multiplied with all data values.
-local function generate_graph(values, i, len, v_max, scale)
+-- x_tics: Horizontal width multiplier for the steps
+local function generate_graph(values, i, len, v_max, v_avg, scale, x_tics)
     -- Check if at least one value exists
     if not values[i] then
         return ""
     end
 
-    local x_tics = 1
     local x_max = (len - 1) * x_tics
     local y_offset = o.border_size
     local y_max = o.font_size * 0.66
     local x = 0
+
+    -- try and center the graph if possible, but avoid going above `scale`
+    if v_avg then
+        scale = math.min(scale, v_max / (2 * v_avg))
+    end
 
     local s = {format("m 0 0 n %f %f l ", x, y_max - (y_max * values[i] / v_max * scale))}
     i = ((i - 2) % len) + 1
@@ -228,25 +262,38 @@ local function append_property(s, prop, attr, excluded)
 end
 
 
-local function append_perfdata(s)
-    local vo_p = mp.get_property_native("vo-performance")
+local function append_perfdata(s, full)
+    local vo_p = mp.get_property_native("vo-passes")
     if not vo_p then
         return
     end
 
     local ds = mp.get_property_bool("display-sync-active", false)
     local target_fps = ds and mp.get_property_number("display-fps", 0)
-                       or mp.get_property_number("container-fps", 0)
-                       or mp.get_property_number("fps", 0)
-    if target_fps > 0 then target_fps = 1 / target_fps * 1e6 end
+                       or mp.get_property_number(compat("container-fps"), 0)
+    if target_fps > 0 then target_fps = 1 / target_fps * 1e9 end
 
-    local last_s = vo_p["render-last"] + vo_p["present-last"] + vo_p["upload-last"]
-    local avg_s = vo_p["render-avg"] + vo_p["present-avg"] + vo_p["upload-avg"]
-    local peak_s = vo_p["render-peak"] + vo_p["present-peak"] + vo_p["upload-peak"]
+    local last_s, avg_s, peak_s = {}, {}, {}
+
+    for frame, data in pairs(vo_p) do
+        last_s[frame], avg_s[frame], peak_s[frame] = 0, 0, 0
+        for _, pass in ipairs(data) do
+            last_s[frame] = last_s[frame] + pass["last"]
+            avg_s[frame]  = avg_s[frame]  + pass["avg"]
+            peak_s[frame] = peak_s[frame] + pass["peak"]
+        end
+    end
 
     -- Highlight i with a red border when t exceeds the time for one frame
     -- or yellow when it exceeds a given threshold
     local function hl(i, t)
+        if t == nil then
+            t = i
+        end
+
+        -- rescale to microseconds for a saner display
+        i = i / 1000
+
         if o.timing_warning and target_fps > 0 then
             if t > target_fps then
                 return format("{\\bord0.5}{\\3c&H0000FF&}%05d{\\bord%s}{\\3c&H%s&}",
@@ -259,49 +306,43 @@ local function append_perfdata(s)
         return format("%05d", i)
     end
 
+    s[#s+1] = format("%s%s%s%s{\\fs%s}%s{\\fs%s}", o.nl, o.indent,
+                     b("Frame Timings:"), o.prefix_sep, o.font_size * 0.66,
+                     "(last/average/peak  μs)", o.font_size)
 
-    local rsuffix, psuffix, usuffix
+    for frame, data in pairs(vo_p) do
+        local f = "%s%s{\\fn%s}%s / %s / %s{\\fn%s}%s%s%s"
 
-    -- Plot graphs when configured and we are toggled
-    if o.plot_perfdata and o.ass_formatting and timer:is_enabled() then
-        local pmax = {plast_buf[1].max, plast_buf[2].max, plast_buf[3].max}
-        if o.global_max then
-            pmax[1] = max(pmax[1], pmax[2], pmax[3])
-            pmax[2], pmax[3] = pmax[1], pmax[1]
+        if full then
+            s[#s+1] = format("%s%s%s%s:", o.nl, o.indent, o.indent,
+                             b(frame:gsub("^%l", string.upper)))
+
+            for _, pass in ipairs(data) do
+                s[#s+1] = format(f, o.nl, o.indent .. o.indent .. o.indent,
+                                 o.font_mono, hl(pass["last"], last_s[frame]),
+                                 hl(pass["avg"], avg_s[frame]), hl(pass["peak"]),
+                                 o.font, o.prefix_sep, o.prefix_sep, pass["desc"])
+
+                if o.plot_perfdata and o.use_ass then
+                    s[#s+1] = generate_graph(pass["samples"], pass["count"],
+                                             pass["count"], pass["peak"],
+                                             pass["avg"], 0.9, 0.25)
+                end
+            end
+
+            if o.print_perfdata_total then
+                s[#s+1] = format(f, o.nl, o.indent .. o.indent .. o.indent,
+                                 o.font_mono, hl(last_s[frame]),
+                                 hl(avg_s[frame]), hl(peak_s[frame]), o.font,
+                                 o.prefix_sep, o.prefix_sep, b("Total"))
+            end
+        else
+            -- for the simplified view, we just print the sum of each pass
+            s[#s+1] = format(f, o.nl, o.indent .. o.indent, o.font_mono,
+                            hl(last_s[frame]), hl(avg_s[frame]),
+                            hl(peak_s[frame]), o.font, o.prefix_sep,
+                            o.prefix_sep, frame:gsub("^%l", string.upper))
         end
-
-        rsuffix = generate_graph(plast_buf[1], plast_buf.pos, plast_buf.len, pmax[1], 0.8)
-        psuffix = generate_graph(plast_buf[2], plast_buf.pos, plast_buf.len, pmax[2], 0.8)
-        usuffix = generate_graph(plast_buf[3], plast_buf.pos, plast_buf.len, pmax[3], 0.8)
-
-        s[#s+1] = format("%s%s%s%s{\\fs%s}%s%s%s{\\fs%s}", o.nl, o.indent,
-                         b("Frame Timings:"), o.prefix_sep, o.font_size * 0.66,
-                         "Render  ⏎  Present  ⏎  Upload", o.prefix_sep,
-                         "(last/average/peak  μs)", o.font_size)
-    else
-        rsuffix = o.prefix_sep .. "Render"
-        psuffix = o.prefix_sep .. "Present"
-        usuffix = o.prefix_sep .. "Upload"
-
-        s[#s+1] = format("%s%s%s%s{\\fs%s}%s{\\fs%s}", o.nl, o.indent,
-                         b("Frame Timings:"), o.prefix_sep, o.font_size * 0.66,
-                         "(last/average/peak  μs)", o.font_size)
-    end
-
-    local f = "%s%s%s{\\fn%s}%s / %s / %s{\\fn%s}%s%s"
-    s[#s+1] = format(f, o.nl, o.indent, o.indent, o.font_mono,
-                    hl(vo_p["render-last"], last_s), hl(vo_p["render-avg"], avg_s),
-                    hl(vo_p["render-peak"], -math.huge), o.font, o.prefix_sep, rsuffix)
-    s[#s+1] = format(f, o.nl, o.indent, o.indent, o.font_mono,
-                    hl(vo_p["present-last"], last_s), hl(vo_p["present-avg"], avg_s),
-                    hl(vo_p["present-peak"], -math.huge), o.font, o.prefix_sep, psuffix)
-    s[#s+1] = format(f, o.nl, o.indent, o.indent, o.font_mono,
-                    hl(vo_p["upload-last"], last_s), hl(vo_p["upload-avg"], avg_s),
-                    hl(vo_p["upload-peak"], -math.huge), o.font, o.prefix_sep, usuffix)
-    if o.print_perfdata_total then
-        s[#s+1] = format(f, o.nl, o.indent, o.indent, o.font_mono,
-                        hl(last_s, last_s), hl(avg_s, avg_s),
-                        hl(peak_s, peak_s), o.font, o.prefix_sep, o.prefix_sep .. "Total")
     end
 end
 
@@ -321,14 +362,14 @@ local function append_display_sync(s)
     end
 
     -- As we need to plot some graphs we print jitter and ratio on their own lines
-    if timer:is_enabled() and (o.plot_vsync_ratio or o.plot_vsync_jitter) and o.ass_formatting then
+    if toggle_timer:is_enabled() and (o.plot_vsync_ratio or o.plot_vsync_jitter) and o.use_ass then
         local ratio_graph = ""
         local jitter_graph = ""
         if o.plot_vsync_ratio then
-            ratio_graph = generate_graph(vsratio_buf, vsratio_buf.pos, vsratio_buf.len, vsratio_buf.max, 0.8)
+            ratio_graph = generate_graph(vsratio_buf, vsratio_buf.pos, vsratio_buf.len, vsratio_buf.max, nil, 0.8, 1)
         end
         if o.plot_vsync_jitter then
-            jitter_graph = generate_graph(vsjitter_buf, vsjitter_buf.pos, vsjitter_buf.len, vsjitter_buf.max, 0.8)
+            jitter_graph = generate_graph(vsjitter_buf, vsjitter_buf.pos, vsjitter_buf.len, vsjitter_buf.max, nil, 0.8, 1)
         end
         append_property(s, "vsync-ratio", {prefix="VSync Ratio:", suffix=o.prefix_sep .. ratio_graph})
         append_property(s, "vsync-jitter", {prefix="VSync Jitter:", suffix=o.prefix_sep .. jitter_graph})
@@ -374,13 +415,8 @@ local function add_video(s)
                         {no=true, [""]=true})
     end
     append_property(s, "avsync", {prefix="A-V:"})
-    if append_property(s, "decoder-frame-drop-count", {prefix="Dropped:"}) then
-        append_property(s, "frame-drop-count", {prefix="VO:", nl=""})
-        append_property(s, "mistimed-frame-count", {prefix="Mistimed:", nl=""})
-        append_property(s, "vo-delayed-frame-count", {prefix="Delayed:", nl=""})
-    -- Deprecated FPS properties for backwards compatibility
-    elseif append_property(s, "drop-frame-count", {prefix="Dropped:"}) then
-        append_property(s, "vo-drop-frame-count", {prefix="VO:", nl=""})
+    if append_property(s, compat("decoder-frame-drop-count"), {prefix="Dropped:"}) then
+        append_property(s, compat("frame-drop-count"), {prefix="VO:", nl=""})
         append_property(s, "mistimed-frame-count", {prefix="Mistimed:", nl=""})
         append_property(s, "vo-delayed-frame-count", {prefix="Delayed:", nl=""})
     end
@@ -391,8 +427,7 @@ local function add_video(s)
         append_property(s, "estimated-display-fps",
                         {prefix="Display FPS:", suffix=" (estimated)"})
     end
-    if append_property(s, "container-fps", {prefix="FPS:", suffix=" (specified)"}) or
-        append_property(s, "fps", {prefix="FPS:", suffix=" (specified)"}) then
+    if append_property(s, compat("container-fps"), {prefix="FPS:", suffix=" (specified)"}) then
         append_property(s, "estimated-vf-fps",
                         {suffix=" (estimated)", nl="", indent=""})
     else
@@ -401,7 +436,7 @@ local function add_video(s)
     end
 
     append_display_sync(s)
-    append_perfdata(s)
+    append_perfdata(s, o.print_perfdata_passes)
 
     if append_property(s, "video-params/w", {prefix="Native Resolution:"}) then
         append_property(s, "video-params/h",
@@ -420,8 +455,8 @@ local function add_video(s)
     -- Append HDR metadata conditionally (only when present and interesting)
     local hdrpeak = mp.get_property_number("video-params/sig-peak", 0)
     local hdrinfo = ""
-    if hdrpeak > 0 then
-        hdrinfo = " (HDR peak: " .. hdrpeak .. " cd/m²)"
+    if hdrpeak > 1 then
+        hdrinfo = " (HDR peak: " .. hdrpeak .. ")"
     end
 
     append_property(s, "video-params/gamma", {prefix="Gamma:", suffix=hdrinfo})
@@ -441,16 +476,16 @@ local function add_audio(s)
 end
 
 
-local function print_stats(duration)
-    local stats = {
-        header = {},
-        file = {},
-        video = {},
-        audio = {},
-    }
-
-    o.ass_formatting = o.ass_formatting and has_vo_window()
-    if not o.ass_formatting then
+-- Determine whether ASS formatting shall/can be used
+local function eval_ass_formatting()
+    o.use_ass = o.ass_formatting and has_vo_window()
+    if o.use_ass then
+        o.nl = o.ass_nl
+        o.indent = o.ass_indent
+        o.prefix_sep = o.ass_prefix_sep
+        o.b1 = o.ass_b1
+        o.b0 = o.ass_b0
+    else
         o.nl = o.no_ass_nl
         o.indent = o.no_ass_indent
         o.prefix_sep = o.no_ass_prefix_sep
@@ -462,18 +497,72 @@ local function print_stats(duration)
             o.b0 = o.no_ass_b0
         end
     end
-
-    add_header(stats.header)
-    add_file(stats.file)
-    add_video(stats.video)
-    add_audio(stats.audio)
-
-    mp.osd_message(table.concat(stats.header) .. table.concat(stats.file) ..
-                   table.concat(stats.video) .. table.concat(stats.audio),
-                   duration or o.duration)
 end
 
 
+-- Returns an ASS string with "normal" stats
+local function default_stats()
+    local stats = {}
+    eval_ass_formatting()
+    add_header(stats)
+    add_file(stats)
+    add_video(stats)
+    add_audio(stats)
+    return table.concat(stats)
+end
+
+
+-- Returns an ASS string with extended VO stats
+local function vo_stats()
+    local stats = {}
+    eval_ass_formatting()
+    add_header(stats)
+    append_perfdata(stats, true)
+    return table.concat(stats)
+end
+
+
+-- Returns an ASS string with stats about filters/profiles/shaders
+local function filter_stats()
+    return "coming soon"
+end
+
+
+-- Call the function for `page` and print it to OSD
+local function print_page(page, duration)
+    mp.osd_message(pages[page](), duration or o.duration)
+end
+
+
+-- Add keybindings for every page
+local function add_page_bindings()
+    local function a(k)
+        return function()
+            -- In single invocation case we need to reset the timer because
+            -- stats are printed again for o.duration
+            if not toggle_timer:is_enabled() then
+                binding_timer:kill()
+                binding_timer:resume()
+            end
+            curr_page = k
+            print_page(k, toggle_timer:is_enabled() and o.redraw_delay + 1 or nil)
+        end
+    end
+
+    for k, _ in pairs(pages) do
+        mp.add_forced_key_binding(k, k, a(k), {repeatable=true})
+    end
+end
+
+
+local function remove_page_bindings()
+    for k, _ in pairs(pages) do
+        mp.remove_key_binding(k)
+    end
+end
+
+
+-- Returns a function to record vsratio/jitter with the specified `skip` value
 local function record_data(skip)
     init_buffers()
     skip = max(skip, 0)
@@ -484,19 +573,6 @@ local function record_data(skip)
             return
         else
             i = 0
-        end
-
-        if o.plot_perfdata then
-            local vo_p = mp.get_property_native("vo-performance")
-            if vo_p then
-                plast_buf.pos = (plast_buf.pos % plast_buf.len) + 1
-                plast_buf[1][plast_buf.pos] = vo_p["render-last"]
-                plast_buf[1].max = max(plast_buf[1].max, plast_buf[1][plast_buf.pos])
-                plast_buf[2][plast_buf.pos] = vo_p["present-last"]
-                plast_buf[2].max = max(plast_buf[2].max, plast_buf[2][plast_buf.pos])
-                plast_buf[3][plast_buf.pos] = vo_p["upload-last"]
-                plast_buf[3].max = max(plast_buf[3].max, plast_buf[3][plast_buf.pos])
-            end
         end
 
         if o.plot_vsync_jitter then
@@ -522,46 +598,78 @@ end
 
 local function toggle_stats()
     -- Disable
-    if timer:is_enabled() then
+    if toggle_timer:is_enabled() then
         if recorder then
             mp.unregister_event(recorder)
             recorder = nil
         end
-        timer:kill()
-        mp.osd_message("", 0)
+        toggle_timer:kill()
+        mp.osd_message("", 0)   -- clear the screen
+        remove_page_bindings()
     -- Enable
     else
-        if o.plot_perfdata or o.plot_vsync_jitter or o.plot_vsync_ratio then
+        if o.plot_vsync_jitter or o.plot_vsync_ratio then
             recorder = record_data(o.skip_frames)
             mp.register_event("tick", recorder)
         end
-        timer:resume()
-        print_stats(o.redraw_delay + 1)
+        add_page_bindings()
+        toggle_timer:resume()
+        print_page(curr_page, o.redraw_delay + 1)
     end
 end
 
 
--- Create timer used for toggling, pause it immediately
-timer = mp.add_periodic_timer(o.redraw_delay, function() print_stats(o.redraw_delay + 1) end)
-timer:kill()
-
--- Check if timer has required method
-if not pcall(function() timer:is_enabled() end) then
-    local txt = "Stats.lua: your version of mpv does not possess required functionality. \nPlease upgrade mpv or use an older version of this script."
-    print(txt)
-    mp.osd_message(txt, 15)
-    return
+local function oneshot_stats(page)
+    -- Ignore single invocations while stats are toggled
+    if toggle_timer:is_enabled() then
+        return
+    end
+    binding_timer:kill()
+    binding_timer:resume()
+    add_page_bindings()
+    print_page(page or curr_page)
 end
 
+
+-- Current page and <page key>:<page function> mapping
+curr_page = o.key_page_1
+pages = {
+    [o.key_page_1] = default_stats,
+    [o.key_page_2] = vo_stats,
+    [o.key_page_3] = filter_stats,
+}
+
+
+-- Create timer used for toggling, pause it immediately
+toggle_timer = mp.add_periodic_timer(o.redraw_delay, function() print_page(curr_page, o.redraw_delay + 1) end)
+toggle_timer:kill()
+
+-- Create timer used to remove forced key bindings, only in the "single invocation" case
+binding_timer = mp.add_periodic_timer(o.duration,
+    function()
+        if not toggle_timer:is_enabled() then
+            remove_page_bindings()
+        end
+    end)
+binding_timer.oneshot = true
+binding_timer:kill()
+
 -- Single invocation key binding
-mp.add_key_binding(o.key_oneshot, "display_stats", print_stats, {repeatable=true})
+mp.add_key_binding(o.key_oneshot, "display-stats", oneshot_stats, {repeatable=true})
+
+-- Single invocation bindings without key, can be used in input.conf to create
+-- bindings for a specific page: "e script-binding stats/display-page-2"
+for k, _ in pairs(pages) do
+    mp.add_key_binding(nil, "display-page-" .. k, function() oneshot_stats(k) end, {repeatable=true})
+end
 
 -- Toggling key binding
-mp.add_key_binding(o.key_toggle, "display_stats_toggle", toggle_stats, {repeatable=false})
+mp.add_key_binding(o.key_toggle, "display-stats-toggle", toggle_stats, {repeatable=false})
+
+-- Reprint stats immediately when VO was reconfigured, only when toggled
 mp.register_event("video-reconfig",
         function()
-            if timer:is_enabled() then
-                print_stats(o.redraw_delay + 1)
+            if toggle_timer:is_enabled() then
+                print_page(curr_page, o.redraw_delay + 1)
             end
         end)
-

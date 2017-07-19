@@ -1,0 +1,1 @@
+/usr/share/kak/rc/base/git.kak
