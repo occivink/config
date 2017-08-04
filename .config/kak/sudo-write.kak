@@ -14,7 +14,7 @@ define-command sudo-write-impl -params 1 %{
         if [ $? -eq 0 ]; then
             echo "edit!"
         else
-            echo "echo -color Error 'Couldn't write, incorrect password?'"
+            echo "echo -markup '{Error}Couldn't write, incorrect password?'"
         fi
         rm -f "$kak_opt_sudo_write_tmp"
     }

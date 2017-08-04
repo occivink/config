@@ -1,0 +1,4 @@
+#!/bin/sh
+maim --format png --quality 1 | mpv --force-window=immediate --config-dir=$HOME/.config/screenshot -
+exit $?
+

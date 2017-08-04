@@ -1,8 +1,8 @@
-edit:completer[kak] = {
-    if (eq $args[-2] -c) {
+edit:completer[kak] = [@cmd]{
+    if (eq $cmd[-2] -c) {
         kak -l
     } else {
-        $edit:&complete-filename $args[-1]
+        $edit:&complete-filename $cmd[-1]
     }
 }
 edit:completer[k] = $edit:completer[kak]
@@ -19,9 +19,7 @@ edit:completer[systemctl] = [@cmd]{
         put suspend poweroff reboot enable disable start stop restart daemon-reload edit
     } else {
         subcommand = $cmd[1]
-        if (re:match "^(start|stop|disable|restart|edit)$" $subcommand) {
-           for service [/etc/systemd/system/**.service] { put $service[20:-8] }
-        } 
+        # systemctl list-stuff
     }
 }
 
