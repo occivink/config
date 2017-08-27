@@ -17,14 +17,14 @@ map global normal <a-q> :db!<ret>
 declare-option -hidden str-list bufinfo_text
 
 define-command -hidden buffers-info %{
-    eval -no-hooks -buffer *  %{
+    eval -no-hooks -buffer * %{
         set -add "buffer=%opt{current_bufname}" bufinfo_text "%val{bufname}_%val{modified}"
     }
     %sh{
         echo "unset-option buffer bufinfo_text"
         printf "info -title Buffers -- %%:"
-        printf '%s\n' "$kak_opt_bufinfo_text" | tr ':' '\n' |
-        while read bufinfo; do
+        IFS=:
+        for bufinfo in $kak_opt_bufinfo_text; do
             buf=${bufinfo%_*}
             if [ "$buf" = "$kak_bufname" ]; then
                 printf "> %s" "$buf"

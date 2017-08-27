@@ -8,6 +8,7 @@ hook global KakBegin .* %{ %sh{
     rnd() {
         printf %s "$1" | shuf -n1
     }
-
-    printf 'rename-session %s-%s' $(rnd "$adj") $(rnd "$nouns")
+    if [ $(expr "$kak_session" : '^[0-9]*$') -gt 0 ]; then
+        printf 'rename-session %s-%s' $(rnd "$adj") $(rnd "$nouns")
+    fi
 } }

@@ -1,4 +1,4 @@
-edit:binding[insert][Alt-Backspace] = { edit:kill-word-left }
+edit:binding[insert][Alt-Backspace] = { edit:kill-small-word-left }
 edit:binding[insert][Alt-Delete] = { edit:move-dot-right-word; edit:kill-word-left }
 edit:binding[insert][Alt-Left] = { edit:move-dot-left-word }
 edit:binding[insert][Alt-Right] = { edit:move-dot-right-word }

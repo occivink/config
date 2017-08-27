@@ -27,12 +27,12 @@ hook global InsertCompletionHide .* %{
 
 # use w to select current word
 map global normal w <a-i>w
-map global normal <a-w> <a-i>W
-map global normal W ":exec *\%s<ret><ret>"
+map global normal W <a-i>W
+map global normal <a-w> ""
 map global normal <a-W> ""
 
 set-face SecondaryCursor black,rgb:babaa3
-set-face Whitespace rgb:404040,default
+set-face Whitespace rgb:363636,default
 set-face LineNumbersWrapped rgb:606060,default+i
 
 hook global WinCreate .* %{
@@ -73,7 +73,6 @@ map -docstring "expand" global user e :expand<ret>
 map -docstring "expand (repeat)" global user E :expand-repeat<ret>
 map -docstring "itersel" global user r :interactive-itersel<ret>
 map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
-map -docstring "trim whitespace" global user <a-w> ':trim-whitespaces<ret>'
 map -docstring "copy selections down" global user v :copy-selections-down<ret>
 map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
 map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>

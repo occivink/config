@@ -14,37 +14,54 @@ edit:completer[ssh] = {
         }
     }
 }
-edit:completer[systemctl] = [@cmd]{
+#edit:completer[systemctl] = [@cmd]{
+#    if (eq (count $cmd) 2) {
+#        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
+#    } else {
+#        subcommand = $cmd[1]
+#        if (eq $subcommand "enabled") {
+#            systemctl list-unit-files --no-legend--state=disabled
+#        } elif (eq $subcommand "disabled") {
+#        } elif (eq $subcommand "disabled") {
+#        } elif (eq $subcommand "disabled") {
+#        } elif (eq $subcommand "disabled") {
+#        } elif (eq $subcommand "disabled") {
+#        # systemctl list-stuff
+#    }
+#}
+
+edit:completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
-        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
-    } else {
-        subcommand = $cmd[1]
-        # systemctl list-stuff
+        put -i
+    } elif (eq $cmd[-2] -i) {
+        $edit:&complete-filename $cmd[-1]
     }
 }
 
 # kind of lazy, but what else do you need really?
-edit:completer[pacman] = [@cmd]{
+pac_completer = [paccmd @cmd]{
     if (eq (count $cmd) 2) {
         put -S -Syu -Rns -Qdt
     } else {
         operation = $cmd[1]
         if (re:match "^(-S|--sync$)" $operation) {
-            pacman -Ssq
+            $paccmd -Ssq
         } elif (re:match "^(-R|--remove$)" $operation) {
-            pacman -Qsq
+            $paccmd -Qsq
         }
     }
 }
-edit:completer[pacaur] = $edit:completer[pacman] 
+edit:completer[pacman] = [@cmd]{ $pac_completer e:pacman $@cmd }
+edit:completer[pacaur] = [@cmd]{ $pac_completer e:pacaur $@cmd }
 
 # git
 git_completer = [gitcmd @cmd]{
+    # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
         put add stage unstage show status mv rm commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
     } else {
         subcommand = $cmd[1]
-        if (or (eq $subcommand add) (eq $subcommand stage)) {
+        if (re:match "^(add|stage)$" $subcommand) {
             $gitcmd diff --name-only
             $gitcmd ls-files --others --exclude-standard
         } elif (eq $subcommand discard) {
@@ -56,6 +73,6 @@ git_completer = [gitcmd @cmd]{
         }
     }
 }
-edit:completer[git] = { $git_completer e:git $@ }
+edit:completer[git] = [@cmd]{ $git_completer e:git $@cmd }
 edit:completer[g] = $edit:completer[git]
-edit:completer[conf] = { $git_completer e:conf $@ }
+edit:completer[conf] = [@cmd]{ $git_completer e:conf $@cmd }

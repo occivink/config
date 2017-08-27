@@ -30,6 +30,7 @@ define-command expand %{
     exec <space><a-:>
     unset-option buffer expand_results
     %sh{
+        # brittle: can't handle : in each expansion command
         printf "%s\n" "$kak_opt_expand_commands" | tr ':' '\n' |
         while read -r current; do
             printf "expand-impl \"%s\"\n" "$current"
@@ -59,8 +60,8 @@ define-command expand %{
         init_desc=$kak_selection_desc
         best_desc=0.0,9999999.999
         best_length=9999999
-        printf "%s\n" "$kak_opt_expand_results" | tr ':' '\n' | {
-        while read -r current; do
+        IFS=:
+        for current in $kak_opt_expand_results; do
             desc=${current%_*}
             length=${current#*_}
             if compare_descs $desc $init_desc && [ $length -lt $best_length ]; then
@@ -69,7 +70,6 @@ define-command expand %{
             fi
         done
         printf "select %s\n" "$best_desc"
-        }
     }
 }
 
