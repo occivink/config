@@ -23,7 +23,6 @@ local o = {
     ass_formatting = true,
     timing_warning = true,
     timing_warning_th = 0.85,        -- *no* warning threshold (warning when > target_fps * timing_warning_th)
-    print_perfdata_total = true,     -- prints an additional line adding up the perfdata lines
     print_perfdata_passes = false,   -- when true, print the full information about all passes
     debug = false,
 
@@ -41,7 +40,7 @@ local o = {
     -- Text style
     font = "Source Sans Pro",
     font_mono = "Source Sans Pro",   -- monospaced digits are sufficient
-    font_size = 9,
+    font_size = 8,
     font_color = "FFFFFF",
     border_size = 0.8,
     border_color = "262626",
@@ -73,6 +72,7 @@ options.read_options(o)
 
 local format = string.format
 local max = math.max
+local min = math.min
 
 -- Function used to record performance data
 local recorder = nil
@@ -142,7 +142,7 @@ local function text_style()
     if o.custom_header and o.custom_header ~= "" then
         return set_ASS(true) .. o.custom_header
     else
-        return format("%s{\\fs%d}{\\fn%s}{\\bord%f}{\\3c&H%s&}{\\1c&H%s&}{\\alpha&H%s&}{\\xshad%f}{\\yshad%f}{\\4c&H%s&}",
+        return format("%s{\\r}{\\an7}{\\fs%d}{\\fn%s}{\\bord%f}{\\3c&H%s&}{\\1c&H%s&}{\\alpha&H%s&}{\\xshad%f}{\\yshad%f}{\\4c&H%s&}",
                         set_ASS(true), o.font_size, o.font, o.border_size,
                         o.border_color, o.font_color, o.alpha, o.shadow_x_offset,
                         o.shadow_y_offset, o.shadow_color)
@@ -202,7 +202,7 @@ local function generate_graph(values, i, len, v_max, v_avg, scale, x_tics)
 
     -- try and center the graph if possible, but avoid going above `scale`
     if v_avg then
-        scale = math.min(scale, v_max / (2 * v_avg))
+        scale = min(scale, v_max / (2 * v_avg))
     end
 
     local s = {format("m 0 0 n %f %f l ", x, y_max - (y_max * values[i] / v_max * scale))}
@@ -220,7 +220,7 @@ local function generate_graph(values, i, len, v_max, v_avg, scale, x_tics)
 
     local bg_box = format("{\\bord0.5}{\\3c&H%s&}{\\1c&H%s&}m 0 %f l %f %f %f 0 0 0",
                           o.plot_bg_border_color, o.plot_bg_color, y_max, x_max, y_max, x_max)
-    return format("%s{\\r}{\\pbo%f}{\\shad0}{\\alpha&H00}{\\p1}%s{\\p0}{\\bord0}{\\1c&H%s}{\\p1}%s{\\p0}{\\r}%s",
+    return format("%s{\\r}{\\pbo%f}{\\shad0}{\\alpha&H00}{\\p1}%s{\\p0}{\\bord0}{\\1c&H%s}{\\p1}%s{\\p0}%s",
                   o.prefix_sep, y_offset, bg_box, o.plot_color, table.concat(s), text_style())
 end
 
@@ -262,7 +262,7 @@ local function append_property(s, prop, attr, excluded)
 end
 
 
-local function append_perfdata(s, full)
+local function append_perfdata(s, dedicated_page)
     local vo_p = mp.get_property_native("vo-passes")
     if not vo_p then
         return
@@ -273,8 +273,8 @@ local function append_perfdata(s, full)
                        or mp.get_property_number(compat("container-fps"), 0)
     if target_fps > 0 then target_fps = 1 / target_fps * 1e9 end
 
+    -- Sums of all last/avg/peak values
     local last_s, avg_s, peak_s = {}, {}, {}
-
     for frame, data in pairs(vo_p) do
         last_s[frame], avg_s[frame], peak_s[frame] = 0, 0, 0
         for _, pass in ipairs(data) do
@@ -306,21 +306,33 @@ local function append_perfdata(s, full)
         return format("%05d", i)
     end
 
-    s[#s+1] = format("%s%s%s%s{\\fs%s}%s{\\fs%s}", o.nl, o.indent,
+    -- Format n/m with a font weight based on the ratio
+    local function p(n, m)
+        local i = 0
+        if m > 0 then
+            i = tonumber(n) / m
+        end
+        -- Calculate font weight. 100 is minimum, 400 is normal, 700 bold, 900 is max
+        local w = (700 * math.sqrt(i)) + 200
+        return format("{\\b%d}%02d%%{\\b0}", w, i * 100)
+    end
+
+    s[#s+1] = format("%s%s%s%s{\\fs%s}%s{\\fs%s}", dedicated_page and "" or o.nl, dedicated_page and "" or o.indent,
                      b("Frame Timings:"), o.prefix_sep, o.font_size * 0.66,
                      "(last/average/peak  μs)", o.font_size)
 
     for frame, data in pairs(vo_p) do
-        local f = "%s%s{\\fn%s}%s / %s / %s{\\fn%s}%s%s%s"
+        local f = "%s%s%s{\\fn%s}%s / %s / %s %s%s{\\fn%s}%s%s%s"
 
-        if full then
-            s[#s+1] = format("%s%s%s%s:", o.nl, o.indent, o.indent,
+        if dedicated_page then
+            s[#s+1] = format("%s%s%s:", o.nl, o.indent,
                              b(frame:gsub("^%l", string.upper)))
 
             for _, pass in ipairs(data) do
-                s[#s+1] = format(f, o.nl, o.indent .. o.indent .. o.indent,
+                s[#s+1] = format(f, o.nl, o.indent, o.indent,
                                  o.font_mono, hl(pass["last"], last_s[frame]),
                                  hl(pass["avg"], avg_s[frame]), hl(pass["peak"]),
+                                 o.prefix_sep .. o.prefix_sep, p(pass["last"], last_s[frame]),
                                  o.font, o.prefix_sep, o.prefix_sep, pass["desc"])
 
                 if o.plot_perfdata and o.use_ass then
@@ -330,18 +342,17 @@ local function append_perfdata(s, full)
                 end
             end
 
-            if o.print_perfdata_total then
-                s[#s+1] = format(f, o.nl, o.indent .. o.indent .. o.indent,
-                                 o.font_mono, hl(last_s[frame]),
-                                 hl(avg_s[frame]), hl(peak_s[frame]), o.font,
-                                 o.prefix_sep, o.prefix_sep, b("Total"))
-            end
+            -- Print sum of timing values as "Total"
+            s[#s+1] = format(f, o.nl, o.indent, o.indent,
+                             o.font_mono, hl(last_s[frame]),
+                             hl(avg_s[frame]), hl(peak_s[frame]), "", "", o.font,
+                             o.prefix_sep, o.prefix_sep, b("Total"))
         else
             -- for the simplified view, we just print the sum of each pass
-            s[#s+1] = format(f, o.nl, o.indent .. o.indent, o.font_mono,
-                            hl(last_s[frame]), hl(avg_s[frame]),
-                            hl(peak_s[frame]), o.font, o.prefix_sep,
-                            o.prefix_sep, frame:gsub("^%l", string.upper))
+            s[#s+1] = format(f, o.nl, o.indent, o.indent, o.font_mono,
+                            hl(last_s[frame]), hl(avg_s[frame]), hl(peak_s[frame]),
+                            "", "", o.font, o.prefix_sep, o.prefix_sep,
+                            frame:gsub("^%l", string.upper))
         end
     end
 end
@@ -360,6 +371,9 @@ local function append_display_sync(s)
         append_property(s, "audio-speed-correction",
                         {prefix="DS:" .. o.prefix_sep .. " - / ", prefix_sep=""})
     end
+
+    append_property(s, "mistimed-frame-count", {prefix="Mistimed:", nl=""})
+    append_property(s, "vo-delayed-frame-count", {prefix="Delayed:", nl=""})
 
     -- As we need to plot some graphs we print jitter and ratio on their own lines
     if toggle_timer:is_enabled() and (o.plot_vsync_ratio or o.plot_vsync_jitter) and o.use_ass then
@@ -382,7 +396,7 @@ end
 
 
 local function add_header(s)
-    s[1] = text_style()
+    s[#s+1] = text_style()
 end
 
 
@@ -415,10 +429,8 @@ local function add_video(s)
                         {no=true, [""]=true})
     end
     append_property(s, "avsync", {prefix="A-V:"})
-    if append_property(s, compat("decoder-frame-drop-count"), {prefix="Dropped:"}) then
-        append_property(s, compat("frame-drop-count"), {prefix="VO:", nl=""})
-        append_property(s, "mistimed-frame-count", {prefix="Mistimed:", nl=""})
-        append_property(s, "vo-delayed-frame-count", {prefix="Delayed:", nl=""})
+    if append_property(s, compat("decoder-frame-drop-count"), {prefix="Dropped Frames:", suffix=" (decoder)"}) then
+        append_property(s, compat("frame-drop-count"), {suffix=" (output)", nl="", indent=""})
     end
     if append_property(s, "display-fps", {prefix="Display FPS:", suffix=" (specified)"}) then
         append_property(s, "estimated-display-fps",
@@ -530,7 +542,7 @@ end
 
 -- Call the function for `page` and print it to OSD
 local function print_page(page, duration)
-    mp.osd_message(pages[page](), duration or o.duration)
+    mp.osd_message(pages[page].f(), duration or o.duration)
 end
 
 
@@ -634,9 +646,9 @@ end
 -- Current page and <page key>:<page function> mapping
 curr_page = o.key_page_1
 pages = {
-    [o.key_page_1] = default_stats,
-    [o.key_page_2] = vo_stats,
-    [o.key_page_3] = filter_stats,
+    [o.key_page_1] = { f = default_stats, desc = "Default" },
+    [o.key_page_2] = { f = vo_stats, desc = "Extended Frame Timings" },
+    [o.key_page_3] = { f = filter_stats, desc = "Dummy" },
 }
 
 

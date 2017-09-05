@@ -1,4 +1,8 @@
 #!/bin/sh
-maim --format png --quality 1 | mpv --force-window=immediate --config-dir=$HOME/.config/screenshot -
-exit $?
+s=$(mktemp -u)
+maim --format png --quality 1 $s
+mpv --config-dir ~/.config/screengrab $s
+status=$?
+rm $s
+exit $status
 

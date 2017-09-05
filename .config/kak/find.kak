@@ -12,7 +12,7 @@ define-command -params ..1 find %{
                 if [ -n "$1" ]; then
                     echo "set-register / %arg{1}"
                 else
-                    echo "set-register / %val{selection}"
+                    echo "set-register / \"\Q%val{selection}\E\""
                 fi
             }
             try %{ delete-buffer *find* }

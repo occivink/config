@@ -8,8 +8,8 @@ set-option global ui_options ncurses_assistant=none
 
 set-option global scrolloff 2,5
 
-set-option global makecmd 'make --jobs=8'
-set-option global grepcmd 'ag --filename --column --ignore tags'
+declare-option str makecmd 'make --jobs=8'
+declare-option str grepcmd 'ag --filename --column --ignore tags'
 
 # stop c and d from yanking
 map global normal d \"_d
@@ -95,5 +95,6 @@ source ~/.config/kak/expand.kak
 source ~/.config/kak/sudo-write.kak
 source ~/.config/kak/vertical-selection.kak
 source ~/.config/kak/multiples.kak
+source ~/.config/kak/single-process-pipe.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }
