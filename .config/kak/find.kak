@@ -6,13 +6,13 @@ declare-option -hidden int find_current_line 0
 declare-option -hidden str find_pattern
 
 define-command -params ..1 find %{
-    eval -save-regs '/' %{
+    eval -no-hooks -save-regs '/' %{
         eval -save-regs '' -draft %{
             %sh{
                 if [ -n "$1" ]; then
                     echo "set-register / %arg{1}"
                 else
-                    echo "set-register / \"\Q%val{selection}\E\""
+                    echo "exec -save-regs '' <a-*>"
                 fi
             }
             try %{ delete-buffer *find* }
@@ -33,6 +33,7 @@ define-command -params ..1 find %{
                     }
                 }
             }
+            # delete empty line at the top
             exec -buffer *find* d
         }
         eval -try-client %opt{toolsclient} %{
@@ -82,7 +83,7 @@ define-command -hidden find-jump %{
     }
 }
 
-define-command find-next -docstring 'Jump to the next find match' %{
+define-command find-next-match -docstring 'Jump to the next find match' %{
     eval -collapse-jumps -try-client %opt{jumpclient} %{
         buffer '*find*'
         exec "%opt{find_current_line}ggl/^[^:]+:\d+:<ret>"
@@ -91,7 +92,7 @@ define-command find-next -docstring 'Jump to the next find match' %{
     try %{ eval -client %opt{toolsclient} %{ exec %opt{find_current_line}g } }
 }
 
-define-command find-prev -docstring 'Jump to the previous find match' %{
+define-command find-previous-match -docstring 'Jump to the previous find match' %{
     eval -collapse-jumps -try-client %opt{jumpclient} %{
         buffer '*find*'
         exec "%opt{find_current_line}g<a-/>^[^:]+:\d+:<ret>"

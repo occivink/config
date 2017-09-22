@@ -10,6 +10,7 @@ set-option global scrolloff 2,5
 
 declare-option str makecmd 'make --jobs=8'
 declare-option str grepcmd 'ag --filename --column --ignore tags'
+declare-option str termcmd 'termite -e'
 
 # stop c and d from yanking
 map global normal d \"_d
@@ -72,12 +73,13 @@ map -docstring "surround (repeat)" global user S :surround-repeat<ret>
 map -docstring "expand" global user e :expand<ret>
 map -docstring "expand (repeat)" global user E :expand-repeat<ret>
 map -docstring "itersel" global user r :interactive-itersel<ret>
+map -docstring "itersel" global user <a-r> :interactive-itersel-clear<ret>
 map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
-map -docstring "copy selections down" global user v :copy-selections-down<ret>
-map -docstring "copy selections up" global user <a-v> :copy-selections-up<ret>
-map -docstring "copy selections vertically" global user V :copy-selections-vertically<ret>
+map -docstring "select down" global user v :select-down<ret>
+map -docstring "select up" global user <a-v> :select-up<ret>
+map -docstring "select vertically" global user V :select-vertically<ret>
 map -docstring "search-add" global user / :search-add<ret>
-map -docstring "lf"  global user d :lf<ret>
+map -docstring "lf" global user d :lf<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'

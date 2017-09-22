@@ -4,8 +4,8 @@ define-command math %{
 }
 
 # pad each selection
-# $1: character to pad with
-# $2: resulting length
+# $1: character to pad with (default <space>)
+# $2: resulting length (default length of the biggest input)
 define-command -params ..2 pad %{
     eval -save-regs 'pc' %{
         %sh{

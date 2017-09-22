@@ -1,18 +1,9 @@
 # manually iterate over current selections by repeatedly calling interactive-itersel
 
-declare-option -hidden range-specs phantom_selections
-declare-option -hidden str iitersel_buffer
 set-face InteractiveItersel black,green
 
-#1 target scope
-#2 target option
-#3 source marks
-#4 face to use
-define-command -hidden -params 4 mark-to-range-faces %{
-    %sh{
-        printf "set %s %s %s\n" "$1" "$2" $(printf %s "$3" | sed -e 's/\([:@]\)/|'"$4"'\1/g' -e 's/\(.*\)@.*%\(.*\)/\2:\1/')
-    }
-}
+declare-option -hidden range-specs phantom_selections
+declare-option -hidden str iitersel_buffer
 
 define-command interactive-itersel %{
     try %{
@@ -20,17 +11,19 @@ define-command interactive-itersel %{
         exec -draft <a-space>
         # ensure first selection is the main one
         exec Zz'
-        exec -draft <a-space>\"sZ
-        mark-to-range-faces buffer phantom_selections %reg{s} InteractiveItersel
+        exec -draft '<a-space>"sZ'
+        %sh{
+            printf "set buffer phantom_selections %s\n"  $(printf %s "$kak_reg_s" | sed -e 's/\([:@]\)/|InteractiveItersel\1/g' -e 's/\(.*\)@.*%\(.*\)/\2:\1/')
+        }
         set-option global iitersel_buffer %val{bufname}
         reload-highlighter
         exec <space>
     } catch %{
-        # ==1 sel
+        # 1 sel
         try %{
             # previous itersel exist
-            exec \"sz
-            reg s ''
+            exec '"sz'
+            set-register s ''
             interactive-itersel
         } catch %{
             interactive-itersel-clear

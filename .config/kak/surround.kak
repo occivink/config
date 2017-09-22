@@ -73,7 +73,7 @@ define-command -hidden left-or-up %{
         exec -draft \;Zh<a-z>a<a-space>
         exec H
     } catch %{
-        exec KGll
+        exec KGlL
     }
 }
 define-command -hidden right-or-down %{

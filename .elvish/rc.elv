@@ -2,19 +2,19 @@ use bindings
 use timer
 use completers
 
-fn ls { e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal -v $@ }
-fn ffmpeg { e:ffmpeg -hide_banner $@ }
-fn cp { e:cp --no-clobber $@ }
-fn mv { e:mv --no-clobber $@ }
-fn lf {
+fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal -v $@args }
+fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
+fn cp [@args]{ e:cp --no-clobber $@args }
+fn mv [@args]{ e:mv --no-clobber $@args }
+fn lf [@args]{
     t = (mktemp --tmpdir lf_last_dir_XXX)
     e:lf -last-dir-path $t $@args
     # cd in disguise
     (cat $t | slurp)
     rm $t
 }
-fn k { e:kak $@ }
-fn g { e:git $@ }
+fn k [@args]{ e:kak $@args }
+fn g [@args]{ e:git $@args }
 
 edit:prompt = {
     edit:styled " "(tilde-abbr $pwd)" " "bg-blue;bold"

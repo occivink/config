@@ -1,12 +1,12 @@
-edit:completer[kak] = [@cmd]{
+edit:arg-completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
         kak -l
     } else {
         $edit:&complete-filename $cmd[-1]
     }
 }
-edit:completer[k] = $edit:completer[kak]
-edit:completer[ssh] = {
+edit:arg-completer[k] = $edit:arg-completer[kak]
+edit:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {
             _ host = (re:split &max=2 'Host\s+' $line)
@@ -14,7 +14,7 @@ edit:completer[ssh] = {
         }
     }
 }
-#edit:completer[systemctl] = [@cmd]{
+#edit:arg-completer[systemctl] = [@cmd]{
 #    if (eq (count $cmd) 2) {
 #        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
 #    } else {
@@ -30,7 +30,7 @@ edit:completer[ssh] = {
 #    }
 #}
 
-edit:completer[ffmpeg] = [@cmd]{
+edit:arg-completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
         put -i
     } elif (eq $cmd[-2] -i) {
@@ -51,8 +51,8 @@ pac_completer = [paccmd @cmd]{
         }
     }
 }
-edit:completer[pacman] = [@cmd]{ $pac_completer e:pacman $@cmd }
-edit:completer[pacaur] = [@cmd]{ $pac_completer e:pacaur $@cmd }
+edit:arg-completer[pacman] = [@cmd]{ $pac_completer e:pacman $@cmd }
+edit:arg-completer[pacaur] = [@cmd]{ $pac_completer e:pacaur $@cmd }
 
 # git
 git_completer = [gitcmd @cmd]{
@@ -73,6 +73,6 @@ git_completer = [gitcmd @cmd]{
         }
     }
 }
-edit:completer[git] = [@cmd]{ $git_completer e:git $@cmd }
-edit:completer[g] = $edit:completer[git]
-edit:completer[conf] = [@cmd]{ $git_completer e:conf $@cmd }
+edit:arg-completer[git] = [@cmd]{ $git_completer e:git $@cmd }
+edit:arg-completer[g] = $edit:arg-completer[git]
+edit:arg-completer[conf] = [@cmd]{ $git_completer e:conf $@cmd }

@@ -58,8 +58,8 @@ ctrl + alt + d
 ctrl + alt + w
 	firefox
 
-#XF86MonBrightness{Up,Down}
-#    backlight {+,-}5%
+XF86MonBrightness{Up,Down}
+    backlight {+,-}5%
 
 XF86Audio{Lower,Raise}Volume
 	pamixer {-d,-i} 3
