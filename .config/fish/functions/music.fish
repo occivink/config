@@ -7,7 +7,7 @@ function music
     else if test $n -eq 2
         set listen $dir/$argv[1]/$argv[2]
     else if test $n -eq 1
-        set listen $dir/$argv[1]
+        set listen (find $dir/$argv[1] -mindepth 1 -maxdepth 1 -type d | shuf -n1)
     else
         return 1
     end

@@ -48,10 +48,6 @@ map e $$EDITOR "$f"
 map x $"$f"
 map X !"$f"
 
-# dedicated keys for file opener actions
-#map o &/bin/vendor_perl/mimeopen -- $fx
-#map O $/bin/vendor_perl/mimeopen -- $fx
-
 cmd trash ${{
     trash-put $fx
 }}
@@ -62,24 +58,17 @@ cmd restore ${{
 map D restore; renew
 
 #define a custom `open-file` command
- cmd open-file ${{
-     case $(file --mime-type "$f" -b) in
-         text/*) $EDITOR $fx;;
-         image/*) mvi $fx;;
-         video/*) mpv $fx;;
-         audio/*) mmp $fx;;
-         *) for f in $fx; do xdg-open "$f" &> /dev/null & done;;
-     esac
- }}
+cmd open-file ${{
+    case $(file --mime-type "$f" -b) in
+        text/*) $EDITOR $fx;;
+        image/*) mvi $fx;;
+        video/*) mpv $fx;;
+        audio/*) mmp $fx;;
+        *) for f in $fx; do xdg-open "$f" &> /dev/null & done;;
+    esac
+}}
 map o open-file
 map O open-file
-
-# rename current file without overwrite
-#cmd rename $[ -e "$1" ] || mv "$f" "$1"
-#map r push :rename<space>
-
-# show disk usage
-#cmd usage $du -h . | less
 
 # move current file or selected files to trash folder
 # (see 'man mv' or 'mv --help' for backup options)
@@ -94,8 +83,3 @@ map O open-file
 #    tar czvf "$1.tar.gz" "$1"
 #    rm -rf "$1"
 #}}
-
-cmd test !{{
-for i in $fx; do printf "%s\n" $i; done
-}}
-

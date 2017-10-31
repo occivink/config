@@ -1,6 +1,0 @@
-#!/bin/sh
-if [ $# -eq 0 ]; then
-    setxkbmap en_US
-else 
-    setxkbmap $1
-fi

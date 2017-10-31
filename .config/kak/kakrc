@@ -45,11 +45,11 @@ hook global WinCreate .* %{
 }
 
 define-command reload-all -docstring "Reload all open buffers" %{
-    eval -buffer * "edit!"
+    eval -buffer * edit!
 }
 
 define-command kakrc -docstring "Open kakrc" %{
-    edit %sh{ printf %s ${XDG_CONFIG_HOME}/kak/kakrc }
+    edit ~/.config/kak/kakrc
 }
 
 # add heterogenous selection (could work better)
@@ -62,7 +62,7 @@ define-command search-add %{
 
 define-command trim-whitespaces %{
     try %{
-        exec -draft '%s\h+\n<ret>Hd'
+        exec -draft '%s\h+$<ret>d'
     } catch %{
         echo "Nothing to trim"
     }
@@ -79,7 +79,8 @@ map -docstring "select down" global user v :select-down<ret>
 map -docstring "select up" global user <a-v> :select-up<ret>
 map -docstring "select vertically" global user V :select-vertically<ret>
 map -docstring "search-add" global user / :search-add<ret>
-map -docstring "lf" global user d :lf<ret>
+map -docstring "lf (dir)" global user d :lf-current-dir<ret>
+map -docstring "lf (file)" global user D :lf-file-dir<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
@@ -98,5 +99,7 @@ source ~/.config/kak/sudo-write.kak
 source ~/.config/kak/vertical-selection.kak
 source ~/.config/kak/multiples.kak
 source ~/.config/kak/single-process-pipe.kak
+source ~/.config/kak/gdb.kak
+source ~/.config/kak/gdb-helper.kak
 try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }
