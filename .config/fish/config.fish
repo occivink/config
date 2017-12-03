@@ -9,7 +9,7 @@ set fish_escape_delay_ms 10
 set -gx PATH $PATH ~/.config/bin
 
 #termite integration
-printf '\033]7;file://%s%s\a' (hostname) (pwd | __fish_urlencode)
+#printf '\033]7;file://%s%s\a' (hostname) (pwd | __fish_urlencode)
 
 set -g fish_key_bindings fish_key_bindings
 

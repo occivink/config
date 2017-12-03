@@ -30,13 +30,9 @@ declare-option -hidden str gdb_location_info
 declare-option -hidden line-specs gdb_breakpoints_flags
 declare-option -hidden line-specs gdb_location_flag
 
-add-highlighter -group / group -passes move gdb
-add-highlighter -group /gdb flag_lines GdbLocation gdb_location_flag
-add-highlighter -group /gdb flag_lines GdbBreakpoint gdb_breakpoints_flags
-
-hook global WinCreate .* %{
-    add-highlighter ref -passes move gdb
-}
+add-highlighter shared/ group -passes move gdb
+add-highlighter shared/gdb flag_lines GdbLocation gdb_location_flag
+add-highlighter shared/gdb flag_lines GdbBreakpoint gdb_breakpoints_flags
 
 define-command -params .. -file-completion gdb-session-new %{
     gdb-session-connect-internal
@@ -196,6 +192,7 @@ define-command -hidden gdb-session-connect-internal %{
     hook -group gdb global KakEnd .* %{
         gdb-session-stop
     }
+    add-highlighter global ref -passes move gdb
 }
 
 define-command gdb-session-stop %{
@@ -217,6 +214,7 @@ define-command gdb-session-stop %{
         gdb-clear-location
         gdb-clear-breakpoints
 
+        remove-highlighter global/gdb
         remove-hooks global gdb
     }
 }
@@ -314,6 +312,7 @@ define-command gdb-backtrace %{
             set buffer backtrace_current_line 0
             hook -group fifo buffer BufCloseFifo .* %{
                 nop %sh{ rm -f "${kak_opt_gdb_dir}/backtrace" }
+                exec ged
                 remove-hooks buffer fifo
             }
         }
@@ -450,3 +449,6 @@ define-command -hidden gdb-clear-breakpoints %{
     set-option global gdb_breakpoints_info ""
 }
 
+declare-option str gdb_breakpoint_active_symbol "x"
+declare-option str gdb_breakpoint_inactive_symbol "o"
+declare-option str gdb_location_symbol "->"

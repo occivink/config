@@ -16,13 +16,9 @@ function burl
         echo "Number of files before and after do not match" >&2
         return 1
     end
-    #if grep '/' $renaming_file >&-
-    #    rm $renaming_file
-    #    echo "Invalid '/' in new names." >&2
-    #    return 1
-    #end
     rm $renaming_file
-    
+
+    mkdir -p (dirname $new_names)
     for i in (seq (count $new_names))
         mv --no-clobber $old_names[$i] $new_names[$i] ^&-
     end

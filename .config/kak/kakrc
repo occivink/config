@@ -36,13 +36,11 @@ set-face SecondaryCursor black,rgb:babaa3
 set-face Whitespace rgb:363636,default
 set-face LineNumbersWrapped rgb:606060,default+i
 
-hook global WinCreate .* %{
-    add-highlighter number_lines -hlcursor -separator ' '
-    add-highlighter show_matching
-    add-highlighter dynregex '%reg{/}' 0:default,rgb:373b41
-    add-highlighter show_whitespaces
-    add-highlighter wrap -word
-}
+add-highlighter global number_lines -hlcursor -separator ' '
+add-highlighter global show_matching
+add-highlighter global dynregex '%reg{/}' 0:default,+u
+add-highlighter global show_whitespaces
+add-highlighter global wrap -word
 
 define-command reload-all -docstring "Reload all open buffers" %{
     eval -buffer * edit!
@@ -101,5 +99,11 @@ source ~/.config/kak/multiples.kak
 source ~/.config/kak/single-process-pipe.kak
 source ~/.config/kak/gdb.kak
 source ~/.config/kak/gdb-helper.kak
-try %{ source ~/prog/forks/kakoune/rc/extra/gdb.kak }
 try %{ source ~/.config/kak/dayjob.kak }
+
+set global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
+
+declare-option str gdb_breakpoint_active_symbol "x"
+declare-option str gdb_breakpoint_inactive_symbol "o"
+declare-option str gdb_location_symbol "->"
+
