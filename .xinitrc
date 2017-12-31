@@ -7,4 +7,3 @@ xrdb ~/.Xresources
 sxhkd -m 1 &
 setxkbmap -option caps:swapescape
 exec bspwm
-#exec gnome-session

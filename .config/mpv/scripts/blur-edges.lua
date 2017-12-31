@@ -3,6 +3,7 @@ local options = require 'mp.options'
 local opts = {
     blur_radius = 10,
     blur_power = 10,
+    minimum_black_bar_size = 3,
     mode = "all",
     active = true,
     reapply_delay = 0.5,
@@ -11,16 +12,11 @@ options.read_options(opts)
 
 local active = opts.active
 local applied = false
-local cache = {
-    par,
-    height,
-    width,
-    video_aspect,
-    window_aspect
-}
 
 function set_lavfi_complex(filter)
+    if not filter and mp.get_property("lavfi-complex") == "" then return end
     local force_window = mp.get_property("force-window")
+    local sub = mp.get_property("sub")
     mp.set_property("force-window", "yes")
     if not filter then
         mp.set_property("lavfi-complex", "")
@@ -29,10 +25,13 @@ function set_lavfi_complex(filter)
         mp.set_property("vid", "no")
         mp.set_property("lavfi-complex", filter)
     end
+    mp.set_property("sub", "no")
     mp.set_property("force-window", force_window)
+    mp.set_property("sub", sub)
 end
 
 function set_blur()
+    if applied then return end
     if not mp.get_property("video-out-params") then return end
     local video_aspect = mp.get_property_number("video-aspect")
     local ww, wh = mp.get_osd_size()
@@ -47,20 +46,25 @@ function set_blur()
     
     local split = "[vid1] split=3 [a] [v] [b]"
     local crop_format = "crop=%s:%s:%s:%s"
-    local blur = string.format("boxblur=lr=%i:lp=%i", opts.blur_radius, opts.blur_power)
 
-    local stack_direction, crop_1, crop_2
+    local stack_direction, crop_1, crop_2, blur_size
     if  ww/wh > video_aspect then
-        local blur_width = math.floor(((ww/wh)*height/par-width)/2)
-        crop_1 = string.format(crop_format, blur_width, height, "0", "0")
-        crop_2 = string.format(crop_format, blur_width, height, width - blur_width, "0")
+        blur_size = math.min(math.floor(((ww/wh)*height/par-width)/2), width/2)
+        crop_1 = string.format(crop_format, blur_size, height, "0", "0")
+        crop_2 = string.format(crop_format, blur_size, height, width - blur_size, "0")
         stack_direction = "h"
     else
-        local blur_height = math.floor(((wh/ww)*width*par-height)/2)
-        crop_1 = string.format(crop_format, width, blur_height, "0", "0")
-        crop_2 = string.format(crop_format, width, blur_height, "0", height - blur_height)
+        blur_size = math.min(math.floor(((wh/ww)*width*par-height)/2), height/2)
+        crop_1 = string.format(crop_format, width, blur_size, "0", "0")
+        crop_2 = string.format(crop_format, width, blur_size, "0", height - blur_size)
         stack_direction = "v"
     end
+    if blur_size < math.max(1, opts.minimum_black_bar_size) then return end
+    local lr = math.min(opts.blur_radius, math.floor(blur_size/2)-1)
+    local cr = math.min(opts.blur_radius, math.floor(blur_size/4)-1)
+    local blur = string.format("boxblur=lr=%i:lp=%i:cr=%i:cp=%i",
+        lr, opts.blur_power, cr, opts.blur_power)
+
     zone_1 = string.format("[a] %s,%s [a_fin]", crop_1, blur)
     zone_2 = string.format("[b] %s,%s [b_fin]", crop_2, blur)
 
@@ -80,41 +84,35 @@ function unset_blur()
     applied = false
 end
 
-local reapplication_timer = nil
+local reapplication_timer = mp.add_timeout(opts.reapply_delay, set_blur)
+reapplication_timer:kill()
 
-function reset_blur()
+function reset_blur(k,v)
     unset_blur()
-    if reapplication_timer then
-        reapplication_timer:kill()
-    end
-    reapplication_timer = mp.add_timeout(opts.reapply_delay, set_blur)
-end
-
-function activate()
-    active = true
-    set_blur()
-    local properties = { "osd-width", "osd-height", "path" }
-    for _, p in ipairs(properties) do
-        mp.observe_property(p, "native", reset_blur)
-    end
-end
-
-function deactivate()
-    active = false
-    unset_blur()
-    mp.unobserve_property(reset_blur)
+    reapplication_timer:kill()
+    reapplication_timer:resume()
 end
 
 function toggle()
     if active then
-        deactivate()
+        active = false
+        unset_blur()
+        mp.unobserve_property(reset_blur)
     else
-        activate()
+        active = true
+        set_blur()
+        local properties = { "osd-width", "osd-height", "path" }
+        for _, p in ipairs(properties) do
+            mp.observe_property(p, "native", reset_blur)
+        end
     end
 end
 
-if opts.active then
-    activate()
+if active then
+    active = false
+    toggle()
 end
 
 mp.add_key_binding(nil, "toggle-blur", toggle)
+mp.add_key_binding(nil, "set-blur", set_blur)
+mp.add_key_binding(nil, "unset-blur", unset_blur)

@@ -50,14 +50,6 @@ define-command kakrc -docstring "Open kakrc" %{
     edit ~/.config/kak/kakrc
 }
 
-# add heterogenous selection (could work better)
-define-command search-add %{
-    eval -save-regs / %{
-        exec -save-regs '' Z
-        prompt 'search add:' %{ exec -save-regs '' ':reg / ' %val{text} <ret>zN }
-    }
-}
-
 define-command trim-whitespaces %{
     try %{
         exec -draft '%s\h+$<ret>d'
