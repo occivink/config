@@ -1,7 +1,7 @@
 # script summary:
 # a long running shell process starts a gdb session (or connects to an existing one) and handles input/output
-# input (common gdb commands) to the gdb session is done by writing to a fifo
-# output is converted into corresponding kak commands to update the presented information
+# kakoune -> gdb communication is done by writing the gdb commands to a fifo
+# gdb -> kakoune communication is done by an awk process that translates gdb events into kakoune commands
  
 declare-option str gdb_breakpoint_active_symbol "●"
 declare-option str gdb_breakpoint_inactive_symbol "○"
@@ -449,6 +449,3 @@ define-command -hidden gdb-clear-breakpoints %{
     set-option global gdb_breakpoints_info ""
 }
 
-declare-option str gdb_breakpoint_active_symbol "x"
-declare-option str gdb_breakpoint_inactive_symbol "o"
-declare-option str gdb_location_symbol "->"

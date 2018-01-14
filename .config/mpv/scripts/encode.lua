@@ -2,6 +2,9 @@ local utils = require "mp.utils"
 local options = require "mp.options"
 
 local start_timestamp = nil
+local profile_start = ""
+
+-- implementation detail of the osd message
 local timer = nil
 local timer_duration = 2
 
@@ -63,20 +66,20 @@ function get_video_filters()
         local filter
         if name == "crop" then
             local p = vf["params"]
-            filter = string.format("crop=%d:%d:%d:%d", p["w"], p["h"], p["x"], p["y"])
+            filter = string.format("crop=%d:%d:%d:%d", p.w, p.h, p.x, p.y)
         elseif name == "mirror" then
             filter = "hflip"
         elseif name == "flip" then
             filter = "vflip"
         elseif name == "rotate" then
-            local rotation = tonumber(vf["params"]["angle"])
+            local rotation = vf["params"]["angle"]
             -- rotate is NOT the filter we want here
-            if rotation == 90 then
-                filter = string.format("transpose=clock")
-            elseif rotation == 180 then
-                filter = string.format("transpose=clock,transpose=clock")
-            elseif rotation == 270 then
-                filter = string.format("transpose=cclock")
+            if rotation == "90" then
+                filter = "transpose=clock"
+            elseif rotation == "180" then
+                filter = "transpose=clock,transpose=clock"
+            elseif rotation == "270" then
+                filter = "transpose=cclock"
             end
         end
         filters[#filters + 1] = filter
@@ -85,14 +88,13 @@ function get_video_filters()
 end
 
 function get_active_tracks()
-    local tracks = mp.get_property_native("track-list")
     local accepted = {
         video = true,
         audio = not mp.get_property_bool("mute"),
         sub = mp.get_property_bool("sub-visibility")
     }
     local active_tracks = {}
-    for _, track in ipairs(tracks) do
+    for _, track in ipairs(mp.get_property_native("track-list")) do
         if track["selected"] and accepted[track["type"]] then
             active_tracks[#active_tracks + 1] = string.format("0:%d", track["ff-index"])
         end
@@ -116,9 +118,9 @@ function start_encoding(input_path, from, to, settings)
     local args = {
         "ffmpeg",
         "-loglevel", "panic", "-hide_banner", --stfu ffmpeg
-        "-i", input_path,
         "-ss", seconds_to_time_string(from, false),
-        "-to", seconds_to_time_string(to, false)
+        "-i", input_path,
+        "-to", tostring(to-from)
     }
 
     -- map currently playing channels
@@ -154,7 +156,7 @@ function start_encoding(input_path, from, to, settings)
     if output_directory == "" then
         output_directory, _ = utils.split_path(input_path)
     else
-        output_directory = string.gsub(output_directory, "^~", os.getenv("HOME"))
+        output_directory = string.gsub(output_directory, "^~", os.getenv("HOME") or "~")
     end
     local output_name = string.format("%s.%s", settings.output_format, settings.container)
     local input_name = mp.get_property("filename/no-ext") or "encode"
@@ -199,7 +201,9 @@ end
 function clear_timestamp()
     timer:kill()
     start_timestamp = nil
+    profile_start = ""
     mp.remove_key_binding("encode-ESC")
+    mp.remove_key_binding("encode-ENTER")
     mp.osd_message("", 0)
 end
 
@@ -214,7 +218,8 @@ function set_timestamp(profile)
         return
     end
 
-    if not start_timestamp then
+    if not start_timestamp or profile ~= profile_start then
+        profile_start = profile
         start_timestamp = mp.get_property_number("time-pos")
         local msg = function()
             mp.osd_message(
@@ -225,6 +230,7 @@ function set_timestamp(profile)
         msg()
         timer = mp.add_periodic_timer(timer_duration, msg)
         mp.add_forced_key_binding("ESC", "encode-ESC", clear_timestamp)
+        mp.add_forced_key_binding("ENTER", "encode-ENTER", function() set_timestamp(profile) end)
     else
         local from = start_timestamp
         local to = mp.get_property_number("time-pos")

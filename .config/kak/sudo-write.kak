@@ -4,7 +4,9 @@
 declare-option -hidden str sudo_write_tmp
 
 define-command -hidden sudo-write-impl %{
-    set-option buffer sudo_write_tmp %sh{ mktemp --tmpdir XXXXXXXX }
+    %sh{
+        echo "set-option buffer sudo_write_tmp '$(mktemp --tmpdir XXXXXXXX)'"
+    }
     write %opt{sudo_write_tmp}
     %sh{
         sudo -- dd if="$kak_opt_sudo_write_tmp" of="$kak_buffile" >/dev/null 2>&1
@@ -19,12 +21,12 @@ define-command -hidden sudo-write-impl %{
 }
 
 define-command -hidden -params 1 cache-password %{
-    evaluate-commands -no-hooks -draft %{
+    eval -no-hooks -draft %{
         edit -scratch *sudo_write_pass*
-        set-register '"' %arg{1}
-        execute-keys "<a-p>|sudo -S echo ok<ret>"
+        reg '"' %arg{1}
+        exec "<a-p>|sudo -S echo ok<ret>"
         try %{
-            execute-keys <a-k>ok<ret>
+            exec <a-k>ok<ret>
             delete-buffer
         } catch %{
             delete-buffer

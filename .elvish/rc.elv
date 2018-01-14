@@ -2,7 +2,7 @@ use bindings
 use timer
 use completers
 
-fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal -v $@args }
+fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
 fn cp [@args]{ e:cp --no-clobber $@args }
 fn mv [@args]{ e:mv --no-clobber $@args }
@@ -52,11 +52,12 @@ fn subedit [pre input_matroska post]{
         trackorder = (joins "," [(for i [(seq 0 (- $tracks_count 1))] {
             if (not (eq $i $subtrack_id)) { put "0:"$i } else { put 1:0 }
         })])
-        merged = (mktemp -u $input_matroska"XXXX")
+        merged=(mktemp -u $input_matroska"XXXX")
 
         mkvmerge -o $merged --track-order $trackorder --subtitle-tracks !$subtrack_id $input_matroska $ass_file > /dev/null
         rm $input_matroska
         mv $merged $input_matroska
+
     } finally {
         rm $ass_file
     }
