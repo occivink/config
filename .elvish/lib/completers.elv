@@ -1,3 +1,5 @@
+use re
+
 edit:arg-completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
         kak -l
@@ -39,40 +41,40 @@ edit:arg-completer[ffmpeg] = [@cmd]{
 }
 
 # kind of lazy, but what else do you need really?
-pac_completer = [paccmd @cmd]{
+pac_completer = [paccmd~ @cmd]{
     if (eq (count $cmd) 2) {
         put -S -Syu -Rns -Qdt
     } else {
         operation = $cmd[1]
         if (re:match "^(-S|--sync$)" $operation) {
-            $paccmd -Ssq
+            paccmd -Ssq
         } elif (re:match "^(-R|--remove$)" $operation) {
-            $paccmd -Qsq
+            paccmd -Qsq
         }
     }
 }
-edit:arg-completer[pacman] = [@cmd]{ $pac_completer e:pacman $@cmd }
-edit:arg-completer[pacaur] = [@cmd]{ $pac_completer e:pacaur $@cmd }
+edit:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
+edit:arg-completer[pacaur] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
 
 # git
-git_completer = [gitcmd @cmd]{
+git_completer = [gitcmd~ @cmd]{
     # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
         put add stage unstage show status mv rm commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
     } else {
         subcommand = $cmd[1]
         if (re:match "^(add|stage)$" $subcommand) {
-            $gitcmd diff --name-only
-            $gitcmd ls-files --others --exclude-standard
+            gitcmd diff --name-only
+            gitcmd ls-files --others --exclude-standard
         } elif (eq $subcommand discard) {
-            $gitcmd diff --name-only
+            gitcmd diff --name-only
         } elif (eq $subcommand unstage) {
-            $gitcmd diff --name-only --cached
+            gitcmd diff --name-only --cached
         } elif (eq $subcommand checkout) {
-            $gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)'
+            gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)'
         }
     }
 }
-edit:arg-completer[git] = [@cmd]{ $git_completer e:git $@cmd }
+edit:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
 edit:arg-completer[g] = $edit:arg-completer[git]
-edit:arg-completer[conf] = [@cmd]{ $git_completer e:conf $@cmd }
+edit:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }

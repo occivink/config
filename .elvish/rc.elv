@@ -1,6 +1,7 @@
 use bindings
 use timer
 use completers
+use smart-matcher
 
 fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
@@ -62,3 +63,4 @@ fn subedit [pre input_matroska post]{
         rm $ass_file
     }
 }
+
