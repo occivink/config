@@ -62,8 +62,6 @@ map -docstring "surround" global user s :surround<ret>
 map -docstring "surround (repeat)" global user S :surround-repeat<ret>
 map -docstring "expand" global user e :expand<ret>
 map -docstring "expand (repeat)" global user E :expand-repeat<ret>
-map -docstring "itersel" global user r :interactive-itersel<ret>
-map -docstring "itersel" global user <a-r> :interactive-itersel-clear<ret>
 map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
 map -docstring "select down" global user v :select-down<ret>
 map -docstring "select up" global user <a-v> :select-up<ret>
@@ -91,11 +89,10 @@ source ~/.config/kak/multiples.kak
 source ~/.config/kak/single-process-pipe.kak
 source ~/.config/kak/gdb.kak
 source ~/.config/kak/gdb-helper.kak
-try %{ source ~/.config/kak/dayjob.kak }
 
-#set global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
-
+set global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
 declare-option str gdb_breakpoint_active_symbol "x"
 declare-option str gdb_breakpoint_inactive_symbol "o"
 declare-option str gdb_location_symbol "->"
 
+try %{ source ~/.config/kak/dayjob.kak }

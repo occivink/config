@@ -1,13 +1,43 @@
 use re
 
+# useless as of yet since completer output is sorted
+#complete-filename-sorted = [prefix]{
+#    matches=[$prefix*[nomatch-ok]]
+#    if (== (count $matches) 0) { return }
+#    matches=[(ls -p -L -d $@matches)]
+#    put $@matches |
+#        each [i]{ if (re:match '/$' $i) { put $i } } |
+#        each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
+#    put $@matches |
+#        each [i]{ if (not (re:match '/$' $i)) { put $i } } |
+#        each [file]{ edit:complex-candidate $file }
+#}
+
 edit:arg-completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
         kak -l
     } else {
-        $edit:&complete-filename $cmd[-1]
+        edit:complete-filename $cmd[-1]
     }
 }
 edit:arg-completer[k] = $edit:arg-completer[kak]
+
+edit:arg-completer[cd] = [@cmd]{
+    if (> (count $cmd) 2) {
+        return
+    }
+    prefix=
+    if (== (count $cmd) 2) {
+        prefix=$cmd[1]
+    }
+    matches=[$prefix*[nomatch-ok]]
+    if (>= (count $matches) 1) {
+        put (ls -p -L -d $@matches) |
+            each [i]{ if (re:match '/$' $i) { put $i } } |
+            each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
+    }
+}
+
 edit:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {
@@ -16,13 +46,14 @@ edit:arg-completer[ssh] = [@cmd]{
         }
     }
 }
+
 #edit:arg-completer[systemctl] = [@cmd]{
 #    if (eq (count $cmd) 2) {
 #        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
 #    } else {
 #        subcommand = $cmd[1]
 #        if (eq $subcommand "enabled") {
-#            systemctl list-unit-files --no-legend--state=disabled
+#            systemctl list-unit-files --no-legend --state=disabled;7D
 #        } elif (eq $subcommand "disabled") {
 #        } elif (eq $subcommand "disabled") {
 #        } elif (eq $subcommand "disabled") {
@@ -34,9 +65,11 @@ edit:arg-completer[ssh] = [@cmd]{
 
 edit:arg-completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
-        put -i
+        put -i -ss
     } elif (eq $cmd[-2] -i) {
-        $edit:&complete-filename $cmd[-1]
+        edit:complete-filename $cmd[-1]
+    } elif (eq $cmd[-2] -map) {
+        edit:complete-filename $cmd[-1]
     }
 }
 

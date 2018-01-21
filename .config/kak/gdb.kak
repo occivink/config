@@ -319,14 +319,16 @@ define-command gdb-backtrace %{
     }
 }
 
-hook -group backtrace-highlight global WinSetOption filetype=backtrace %{
-    add-highlighter group backtrace
-    add-highlighter -group backtrace regex "^([^\n]*?):(\d+)" 1:cyan 2:green
-    add-highlighter -group backtrace line '%opt{backtrace_current_line}' default+b
+hook -group backtrace-highlight global BufSetOption filetype=backtrace %{
+    add-highlighter buffer group backtrace
+    add-highlighter buffer/backtrace regex "^([^\n]*?):(\d+)" 1:cyan 2:green
+    add-highlighter buffer/backtrace line '%opt{backtrace_current_line}' default+b
+    map buffer normal <ret> :gdb-backtrace-jump<ret>
 }
 
-hook global WinSetOption filetype=backtrace %{
-    hook buffer -group backtrace-hooks NormalKey <ret> gdb-backtrace-jump
+hook global BufSetOption filetype=(?!backtrace).* %{
+    remove-highlighter buffer/backtrace
+    unmap buffer normal <ret> :gdb-backtrace-jump<ret>
 }
 
 define-command -hidden gdb-backtrace-jump %{

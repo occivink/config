@@ -1,4 +1,4 @@
-# A matcher that tries the following matchers: prefix match, smart-case prefix
+# A matcher that tries the folldwing matchers: prefix match, smart-case prefix
 # match, substring match, smart-case substring match, subsequence match and
 # smart-case subsequence match.
 #

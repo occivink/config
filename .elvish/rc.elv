@@ -2,6 +2,11 @@ use bindings
 use timer
 use completers
 use smart-matcher
+use re
+
+E:EDITOR=kak
+E:MESA_GL_VERSION_OVERRIDE=4.5COMPAT
+E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
 
 fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
@@ -18,7 +23,8 @@ fn k [@args]{ e:kak $@args }
 fn g [@args]{ e:git $@args }
 
 edit:prompt = {
-    edit:styled " "(tilde-abbr $pwd)" " "bg-blue;bold"
+    # abbreviate path by shortening the parent directories
+    edit:styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" " "bg-blue;bold"
     edit:styled " λ " "bg-green;bold"
     put " "
 }

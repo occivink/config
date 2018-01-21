@@ -1,1 +1,0 @@
-/usr/share/kak/rc/base/css.kak
