@@ -62,19 +62,20 @@ map -docstring "surround" global user s :surround<ret>
 map -docstring "surround (repeat)" global user S :surround-repeat<ret>
 map -docstring "expand" global user e :expand<ret>
 map -docstring "expand (repeat)" global user E :expand-repeat<ret>
-map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
 map -docstring "select down" global user v :select-down<ret>
 map -docstring "select up" global user <a-v> :select-up<ret>
 map -docstring "select vertically" global user V :select-vertically<ret>
-map -docstring "search-add" global user / :search-add<ret>
+map -docstring "phantom next" global user f :phantom-sel-iterate-next<ret>
+map -docstring "phantom prev" global user <a-f> :phantom-sel-iterate-prev<ret>
+map -docstring "phantom clear" global user F ":phantom-sel-select-all; phantom-sel-clear<ret>"
+map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
+map -docstring "trim-whitespaces" global user W :trim-whitespaces<ret>
 map -docstring "lf (dir)" global user d :lf-current-dir<ret>
 map -docstring "lf (file)" global user D :lf-file-dir<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
-
-map global insert <a-r> "<a-;>,r"
 
 source ~/.config/kak/friendly-session-names.kak
 source ~/.config/kak/phantom-selection.kak

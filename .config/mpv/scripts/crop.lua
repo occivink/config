@@ -1,12 +1,48 @@
+local opts = {
+    draw_shade = true,
+    shade_opacity = "77",
+    draw_crosshair = true,
+    draw_text = true,
+    mouse_support=true,
+    coarse_movement=30,
+    left_coarse="LEFT",
+    right_coarse="RIGHT",
+    up_coarse="UP",
+    down_coarse="DOWN",
+    fine_movement=1,
+    left_fine="ALT+LEFT",
+    right_fine="ALT+RIGHT",
+    up_fine="ALT+UP",
+    down_fine="ALT+DOWN",
+    accept="ENTER,MOUSE_BTN0",
+    cancel="ESC",
+}
+(require 'mp.options').read_options(opts)
+
+function split(input)
+    local ret = {}
+    for str in string.gmatch(input, "([^,]+)") do
+        ret[#ret + 1] = str
+    end
+    return ret
+end
+opts.accept = split(opts.accept)
+opts.cancel = split(opts.cancel)
+
 local assdraw = require 'mp.assdraw'
 local needs_drawing = false
 local dimensions_changed = false
 local crop_first_corner = nil -- in video space
+local crop_cursor = {
+    x = -1,
+    y = -1
+}
 
 function get_video_dimensions()
     if not dimensions_changed then return _video_dimensions end
     -- this function is very much ripped from video/out/aspect.c in mpv's source
     local video_params = mp.get_property_native("video-out-params")
+    if not video_params then return nil end
     dimensions_changed = false
     local keep_aspect = mp.get_property_bool("keepaspect")
     local w = video_params["w"]
@@ -131,10 +167,10 @@ end
 function draw_shade(ass, unshaded, video)
     ass:new_event()
     ass:pos(0, 0)
-    ass:append('{\\bord0}')
-    ass:append('{\\shad0}')
-    ass:append('{\\c&H000000&}')
-    ass:append('{\\alpha&H77}')
+    ass:append("{\\bord0}")
+    ass:append("{\\shad0}")
+    ass:append("{\\c&H000000&}")
+    ass:append("{\\alpha&H" .. opts.shade_opacity .. "}")
     local c1, c2 = unshaded.top_left, unshaded.bottom_right
     local v = video
     --          c1.x   c2.x
@@ -157,10 +193,10 @@ end
 
 function draw_crosshair(ass, center, window_size)
     ass:new_event()
-    ass:append('{\\bord0}')
-    ass:append('{\\shad0}')
-    ass:append('{\\c&HBBBBBB&}')
-    ass:append('{\\alpha&H00&}')
+    ass:append("{\\bord0}")
+    ass:append("{\\shad0}")
+    ass:append("{\\c&HBBBBBB&}")
+    ass:append("{\\alpha&H00&}")
     ass:pos(0, 0)
     ass:draw_start()
     ass:rect_cw(center.x - 0.5, 0, center.x + 0.5, window_size.h)
@@ -181,9 +217,9 @@ function draw_position_text(ass, text, position, window_size, offset)
         align = align + 6
         ofy = 1
     end
-    ass:append('{\\an'..align..'}')
-    ass:append('{\\fs26}')
-    ass:append('{\\bord1.5}')
+    ass:append("{\\an"..align.."}")
+    ass:append("{\\fs26}")
+    ass:append("{\\bord1.5}")
     ass:pos(ofx*offset + position.x, ofy*offset + position.y)
     ass:append(text)
 end
@@ -198,15 +234,13 @@ function draw_crop_zone()
 
         local window_size = {}
         window_size.w, window_size.h = mp.get_osd_size()
-        local cursor_pos = {}
-        cursor_pos.x, cursor_pos.y = mp.get_mouse_pos()
-        cursor_pos = clamp_point(video_dim.top_left, cursor_pos, video_dim.bottom_right)
+        crop_cursor = clamp_point(video_dim.top_left, crop_cursor, video_dim.bottom_right)
         local ass = assdraw.ass_new()
 
-        if crop_first_corner then
+        if opts.draw_shade and crop_first_corner then
             local first_corner = video_to_screen(crop_first_corner, video_dim)
             local unshaded = {}
-            unshaded.top_left, unshaded.bottom_right = sort_corners(first_corner, cursor_pos)
+            unshaded.top_left, unshaded.bottom_right = sort_corners(first_corner, crop_cursor)
             -- don't draw shade over non-visible video parts
             local window = {
                 top_left = { x = 0, y = 0 },
@@ -219,17 +253,21 @@ function draw_crop_zone()
             draw_shade(ass, unshaded, video_visible)
         end
 
-        draw_crosshair(ass, cursor_pos, window_size)
-
-        cursor_video = screen_to_video(cursor_pos, video_dim)
-        local text = string.format("%d, %d", cursor_video.x, cursor_video.y)
-        if crop_first_corner then
-            text = string.format("%s (%dx%d)", text,
-                math.abs(cursor_video.x - crop_first_corner.x),
-                math.abs(cursor_video.y - crop_first_corner.y)
-            )
+        if opts.draw_crosshair then
+            draw_crosshair(ass, crop_cursor, window_size)
         end
-        draw_position_text(ass, text, cursor_pos, window_size, 6)
+
+        if opts.draw_text then
+            cursor_video = screen_to_video(crop_cursor, video_dim)
+            local text = string.format("%d, %d", cursor_video.x, cursor_video.y)
+            if crop_first_corner then
+                text = string.format("%s (%dx%d)", text,
+                    math.abs(cursor_video.x - crop_first_corner.x),
+                    math.abs(cursor_video.y - crop_first_corner.y)
+                )
+            end
+            draw_position_text(ass, text, crop_cursor, window_size, 6)
+        end
 
         mp.set_osd_ass(window_size.w, window_size.h, ass.text)
         needs_drawing = false
@@ -256,14 +294,13 @@ function update_crop_zone_state()
         cancel_crop()
         return
     end
-    local second_corner = {}
-    second_corner.x, second_corner.y = mp.get_mouse_pos()
-    second_corner = clamp_point(dim.top_left, second_corner, dim.bottom_right)
-    second_corner = screen_to_video(second_corner, dim)
+    crop_cursor = clamp_point(dim.top_left, crop_cursor, dim.bottom_right)
+    corner_video = screen_to_video(crop_cursor, dim)
     if crop_first_corner == nil then
-        crop_first_corner = second_corner
+        crop_first_corner = corner_video
+        needs_drawing = true
     else
-        local c1, c2 = sort_corners(crop_first_corner, second_corner)
+        local c1, c2 = sort_corners(crop_first_corner, corner_video)
         crop_video(c1.x, c1.y, c2.x - c1.x, c2.y - c1.y)
         cancel_crop()
     end
@@ -274,43 +311,78 @@ function reset_crop()
     needs_drawing = true
 end
 
-function start_crop()
-    if not mp.get_property("video-out-params", nil) then return end
-    needs_drawing = true
-    dimensions_changed = true
-    mp.add_forced_key_binding("mouse_move", "crop-mouse-moved", function() needs_drawing = true end)
-    mp.add_forced_key_binding("MOUSE_BTN0", "crop-mouse-click", update_crop_zone_state)
-    mp.add_forced_key_binding("ENTER", "crop-enter", update_crop_zone_state)
-    mp.add_forced_key_binding("ESC", "crop-esc", cancel_crop)
-    local properties = {
-        "keepaspect",
-        "video-out-params",
-        "video-unscaled",
-        "panscan",
-        "video-zoom",
-        "video-align-x",
-        "video-pan-x",
-        "video-align-y",
-        "video-pan-y",
-        "osd-width",
-        "osd-height",
-    }
-    mp.register_idle(draw_crop_zone)
-    for _, p in ipairs(properties) do
-        mp.observe_property(p, "native", reset_crop)
-    end
-end
+local bindings = {}
+local bindings_repeat = {}
 
 function cancel_crop()
     needs_drawing = false
     crop_first_corner = nil
-    mp.remove_key_binding("crop-mouse-moved")
-    mp.remove_key_binding("crop-mouse-click")
-    mp.remove_key_binding("crop-enter")
-    mp.remove_key_binding("crop-esc")
+    for key, _ in pairs(bindings) do
+        mp.remove_key_binding("crop-"..key)
+    end
+    for key, _ in pairs(bindings_repeat) do
+        mp.remove_key_binding("crop-"..key)
+    end
     mp.unobserve_property(reset_crop)
     mp.unregister_idle(draw_crop_zone)
     mp.set_osd_ass(1280, 720, '')
+end
+
+-- bindings
+if opts.mouse_support then
+    bindings["MOUSE_MOVE"] = function() crop_cursor.x, crop_cursor.y = mp.get_mouse_pos(); needs_drawing = true end
+end
+for _, key in ipairs(opts.accept) do
+    bindings[key] = update_crop_zone_state
+end
+for _, key in ipairs(opts.cancel) do
+    bindings[key] = cancel_crop
+end
+function movement_func(move_x, move_y)
+    return function()
+        crop_cursor.x = crop_cursor.x + move_x
+        crop_cursor.y = crop_cursor.y + move_y
+        needs_drawing = true
+    end
+end
+bindings_repeat[opts.left_coarse]  = movement_func(-opts.coarse_movement, 0)
+bindings_repeat[opts.right_coarse] = movement_func(opts.coarse_movement, 0)
+bindings_repeat[opts.up_coarse]    = movement_func(0, -opts.coarse_movement)
+bindings_repeat[opts.down_coarse]  = movement_func(0, opts.coarse_movement)
+bindings_repeat[opts.left_fine]    = movement_func(-opts.fine_movement, 0)
+bindings_repeat[opts.right_fine]   = movement_func(opts.fine_movement, 0)
+bindings_repeat[opts.up_fine]      = movement_func(0, -opts.fine_movement)
+bindings_repeat[opts.down_fine]    = movement_func(0, opts.fine_movement)
+
+local properties = {
+    "keepaspect",
+    "video-out-params",
+    "video-unscaled",
+    "panscan",
+    "video-zoom",
+    "video-align-x",
+    "video-pan-x",
+    "video-align-y",
+    "video-pan-y",
+    "osd-width",
+    "osd-height",
+}
+
+function start_crop()
+    crop_cursor.x, crop_cursor.y = mp.get_mouse_pos()
+    if not mp.get_property("video-out-params", nil) then return end
+    needs_drawing = true
+    dimensions_changed = true
+    for key, func in pairs(bindings) do
+        mp.add_forced_key_binding(key, "crop--"..key, func)
+    end
+    for key, func in pairs(bindings_repeat) do
+        mp.add_forced_key_binding(key, "crop--"..key, func, { repeatable = true })
+    end
+    mp.register_idle(draw_crop_zone)
+    for _, p in ipairs(properties) do
+        mp.observe_property(p, "native", reset_crop)
+    end
 end
 
 function toggle_crop()
