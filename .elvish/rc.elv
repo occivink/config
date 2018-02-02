@@ -8,6 +8,8 @@ E:EDITOR=kak
 E:MESA_GL_VERSION_OVERRIDE=4.5COMPAT
 E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
 
+edit:max-height=15
+
 fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
 fn cp [@args]{ e:cp --no-clobber $@args }
@@ -21,6 +23,7 @@ fn lf [@args]{
 }
 fn k [@args]{ e:kak $@args }
 fn g [@args]{ e:git $@args }
+fn fzf [@args]{ e:fzf --height 40% $@args }
 
 edit:prompt = {
     # abbreviate path by shortening the parent directories

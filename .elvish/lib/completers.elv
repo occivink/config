@@ -48,7 +48,7 @@ edit:arg-completer[ssh] = [@cmd]{
 #    } else {
 #        subcommand = $cmd[1]
 #        if (eq $subcommand "enabled") {
-#            systemctl list-unit-files --no-legend --state=disabled;7D
+#            systemctl list-unit-files --no-legend --state=disabled
 #        } elif (eq $subcommand "disabled") {
 #        } elif (eq $subcommand "disabled") {
 #        } elif (eq $subcommand "disabled") {
@@ -92,12 +92,12 @@ git_completer = [gitcmd~ @cmd]{
     } else {
         subcommand = $cmd[1]
         if (re:match "^(add|stage)$" $subcommand) {
-            gitcmd diff --name-only
+            gitcmd diff --name-only --relative .
             gitcmd ls-files --others --exclude-standard
         } elif (eq $subcommand discard) {
-            gitcmd diff --name-only
+            gitcmd diff --name-only --relative .
         } elif (eq $subcommand unstage) {
-            gitcmd diff --name-only --cached
+            gitcmd diff --name-only --cached --relative .
         } elif (eq $subcommand checkout) {
             gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)'
         }
