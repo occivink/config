@@ -35,7 +35,7 @@ define-command -hidden -params 1 cache-password %{
     }
 }
 
-def sudo-write -docstring "Write the content of the buffer using sudo" %{
+define-command sudo-write -docstring "Write the content of the buffer using sudo" %{
     %sh{
         # check if the password is cached
         if sudo -n true > /dev/null 2>&1; then

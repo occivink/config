@@ -19,6 +19,7 @@ local opts = {
 
     margin_x = 15,
     margin_y = 15,
+    max_thumbnails = 64,
 
     show_scrollbar = true,
     scrollbar_side = "left",
@@ -56,6 +57,7 @@ if on_windows then
 else
     opts.thumbs_dir = string.gsub(opts.thumbs_dir, "^~", os.getenv("HOME") or "~")
 end
+opts.max_thumbnails = math.min(opts.max_thumbnails, 64)
 
 local sha256
 --[[
@@ -160,6 +162,7 @@ function select_under_cursor()
             quit_gallery_view(selection.now)
         else
             selection.now = new_sel
+            pending.selection = new_sel
             ass_show(true, false, false)
         end
     end
@@ -167,7 +170,7 @@ end
 
 do
     local function increment_func(increment, clamp)
-        local new = selection.now + increment
+        local new = pending.selection + increment
         if new <= 0 or new > #playlist then
             if not clamp then return end
             new = math.max(1, math.min(new, #playlist))
@@ -205,9 +208,8 @@ do
     end
 
     local function idle_handler()
-        if pending.selection ~= 0 then
+        if pending.selection ~= selection.now then
             increment_selection(pending.selection)
-            pending.selection = 0
         end
         if pending.window_size_changed then
             pending.window_size_chaned = false
@@ -268,11 +270,11 @@ function save_and_clear_playlist()
     if opts.resume_when_picking then
         resume[playlist[mp.get_property_number("playlist-pos-1")]] = mp.get_property_number("time-pos")
     end
-    mp.command("playlist-clear")
-    mp.command("playlist-remove current")
+    mp.command("stop")
 end
 
 function restore_playlist_and_select(select)
+    mp.set_property_bool("pause", false)
     mp.commandv("loadfile", playlist[select], "replace")
     if opts.resume_when_picking then
         local time = resume[playlist[select]]
@@ -322,15 +324,10 @@ function get_geometry(window_w, window_h)
     geometry.size_y = opts.thumbnail_height
     geometry.rows = math.floor((geometry.window_h - margin_y) / (geometry.size_y + margin_y))
     geometry.columns = math.floor((geometry.window_w - opts.margin_x) / (geometry.size_x + opts.margin_x))
-    if (geometry.rows * geometry.columns > 64) then
-        if (geometry.rows > 8 and geometry.columns > 8) then
-            geometry.rows = 8
-            geometry.columns = 8
-        else
-            local r = math.sqrt(geometry.rows * geometry.columns / 64)
-            geometry.rows = math.floor(geometry.rows / r)
-            geometry.columns = math.floor(geometry.columns / r)
-        end
+    if (geometry.rows * geometry.columns > opts.max_thumbnails) then
+        local r = math.sqrt(geometry.rows * geometry.columns / opts.max_thumbnails)
+        geometry.rows = math.floor(geometry.rows / r)
+        geometry.columns = math.floor(geometry.columns / r)
     end
     geometry.margin_x = (geometry.window_w - geometry.columns * geometry.size_x) / (geometry.columns + 1)
     geometry.margin_y = (geometry.window_h - geometry.rows * geometry.size_y) / (geometry.rows + 1)
@@ -338,6 +335,7 @@ end
 
 function increment_selection(inc)
     selection.now = inc
+    pending.selection = inc
     max_thumbs = geometry.rows * geometry.columns
     if selection.now < view.first or selection.now > view.last then
         if selection.now < view.first then
@@ -475,13 +473,15 @@ do
             box:new_event()
             local an = 5
             y = y + geometry.size_y + geometry.margin_y / 2
-            if col == 0 then
-                an = 4
-            elseif col == geometry.columns - 1 then
-                x = x + geometry.size_x
-                an = 6
-            else
-                x = x + geometry.size_x / 2
+            x = x + geometry.size_x / 2
+            if geometry.columns > 1 then
+                if col == 0 then
+                    x = x - geometry.size_x / 2
+                    an = 4
+                elseif col == geometry.columns - 1 then
+                    x = x + geometry.size_x / 2
+                    an = 6
+                end
             end
             box:an(an)
             box:pos(x, y)
@@ -585,6 +585,7 @@ function start_gallery_view()
     save_properties()
     selection.old = mp.get_property_number("playlist-pos-1")
     selection.now = selection.old
+    pending.selection = selection.now
     local old_playlist_size = #playlist
     local max_thumbs = geometry.rows * geometry.columns
     save_and_clear_playlist()

@@ -1,12 +1,11 @@
 local options = require 'mp.options'
-local utils = require 'mp.utils'
 
 local opts = {
     blur_radius = 10,
     blur_power = 10,
     minimum_black_bar_size = 3,
     mode = "all",
-    active = false,
+    active = true,
     reapply_delay = 0.5,
 }
 options.read_options(opts)
@@ -22,7 +21,7 @@ function set_lavfi_complex(filter)
     if not filter then
         mp.set_property("lavfi-complex", "")
         mp.set_property("vid", "1")
-   else
+    else
         mp.set_property("vid", "no")
         mp.set_property("lavfi-complex", filter)
     end
@@ -32,9 +31,9 @@ function set_lavfi_complex(filter)
 end
 
 function set_blur()
-   if applied then return end
-   if not mp.get_property("video-out-params") then return end
-   local video_aspect = mp.get_property_number("video-aspect")
+    if applied then return end
+    if not mp.get_property("video-out-params") then return end
+    local video_aspect = mp.get_property_number("video-aspect")
     local ww, wh = mp.get_osd_size()
 
     if math.abs(ww/wh - video_aspect) < 0.05 then return end
@@ -81,7 +80,7 @@ function set_blur()
 end
 
 function unset_blur()
-   set_lavfi_complex()
+    set_lavfi_complex()
     applied = false
 end
 
@@ -89,7 +88,7 @@ local reapplication_timer = mp.add_timeout(opts.reapply_delay, set_blur)
 reapplication_timer:kill()
 
 function reset_blur(k,v)
-   unset_blur()
+    unset_blur()
     reapplication_timer:kill()
     reapplication_timer:resume()
 end
@@ -101,11 +100,11 @@ function toggle()
         mp.unobserve_property(reset_blur)
     else
         active = true
+        set_blur()
         local properties = { "osd-width", "osd-height", "path" }
         for _, p in ipairs(properties) do
             mp.observe_property(p, "native", reset_blur)
         end
-        set_blur()
     end
 end
 
@@ -117,12 +116,3 @@ end
 mp.add_key_binding(nil, "toggle-blur", toggle)
 mp.add_key_binding(nil, "set-blur", set_blur)
 mp.add_key_binding(nil, "unset-blur", unset_blur)
-
-
-mp.add_key_binding('h', "ESSST", function()
-    mp.set_property("video", "no")
-    mp.set_property("lavfi-complex", "[vid1] split,hstack [vo]")
-end)
-mp.add_key_binding('g', "TESSST", function()
-    mp.set_property("video", "1")
-end)

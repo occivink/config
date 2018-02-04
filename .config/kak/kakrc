@@ -77,9 +77,7 @@ map -docstring "phantom next" global user f :phantom-sel-iterate-next<ret>
 map -docstring "phantom prev" global user <a-f> :phantom-sel-iterate-prev<ret>
 map -docstring "phantom clear" global user F ":phantom-sel-select-all; phantom-sel-clear<ret>"
 map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
-map -docstring "trim-whitespaces" global user W :trim-whitespaces<ret>
-map -docstring "lf (dir)" global user d :lf-current-dir<ret>
-map -docstring "lf (file)" global user D :lf-file-dir<ret>
+map -docstring "trim whitespaces" global user W :trim-whitespaces<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
@@ -92,19 +90,19 @@ map global normal <a-r> :e!<ret>
 map global normal <a-d> :db<ret>
 map global normal <a-q> :db!<ret>
 
-source "%val{config}/friendly-session-names.kak"
-source "%val{config}/phantom-selection.kak"
-source "%val{config}/filetree.kak"
 source "%val{config}/buffers-info.kak"
-source "%val{config}/find.kak"
-source "%val{config}/surround.kak"
 source "%val{config}/expand.kak"
-source "%val{config}/sudo-write.kak"
-source "%val{config}/vertical-selection.kak"
-source "%val{config}/multiples.kak"
-source "%val{config}/single-process-pipe.kak"
-source "%val{config}/gdb.kak"
+source "%val{config}/filetree.kak"
+source "%val{config}/find.kak"
+source "%val{config}/friendly-session-names.kak"
 source "%val{config}/gdb-helper.kak"
+source "%val{config}/gdb.kak"
+source "%val{config}/multiples.kak"
+source "%val{config}/phantom-selection.kak"
+source "%val{config}/single-process-pipe.kak"
+source "%val{config}/sudo-write.kak"
+source "%val{config}/surround.kak"
+source "%val{config}/vertical-selection.kak"
 
 set global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
 declare-option str gdb_breakpoint_active_symbol "x"
