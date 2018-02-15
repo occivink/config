@@ -6,11 +6,13 @@ set-face FileTreeFileName default,default
 
 define-command -hidden filetree %{
     eval %{
+	    try %{ delete-buffer *filetree* }
         set-register / "^\Q./%val{bufname}\E$"
         edit -scratch *filetree*
-        exec '<a-!>find .  -not -type d -and -not -path "*/\.*"<ret>'
+        #exec '<a-!>find .  -not -type d -and -not -path "*/\.*"<ret>'
+        exec '<a-!>elvish -c "use find; pprint (find:find &dirs=\$false)"<ret>'
         exec 'ged'
-        exec '%|sort<ret>'
+        #exec '%|sort<ret>'
         # center view on previous file
         try %{ exec '/<ret>vc' }
         addhl buffer dynregex '%opt{filetree_open_files}' 0:FileTreeOpenFiles
@@ -43,7 +45,8 @@ hook global BufClose  .* %{ buflist-to-regex %val{hook_param} }
 define-command -hidden filetree-open-files %{
     eval -draft -itersel %{
         exec ';<a-x>H'
-        eval -draft "edit -existing %reg{.}"
+        # don't force -existing, so that this can be used to create files
+        eval -draft "edit %reg{.}"
     }
     exec '<space>;<a-x>H'
     eval -try-client %opt{jumpclient} %{ buffer %reg{.} }

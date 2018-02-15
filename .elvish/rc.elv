@@ -72,4 +72,3 @@ fn subedit [pre input_matroska post]{
         rm $ass_file
     }
 }
-

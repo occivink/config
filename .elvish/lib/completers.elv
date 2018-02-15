@@ -33,6 +33,27 @@ edit:arg-completer[cd] = [@cmd]{
         each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
 }
 
+# multi-path completer
+#edit:arg-completer[cd] = [@cmd]{
+#    if (> (count $cmd) 2) {
+#        return
+#    }
+#    components = [(splits / $cmd[1])]
+#    parents = ['']
+#    if (and (> (count $components) 1) (eq $components[0] '')) { 
+#        _ @components = $@components
+#        parents = [/] 
+#    }
+#    put $@components | each [prefix]{
+#        parents=[(
+#            put $@parents | each [parent]{
+#                put $parent$prefix*[nomatch-ok]/
+#            }
+#        )]
+#    }
+#    put $@parents
+#}
+
 edit:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {

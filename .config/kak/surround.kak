@@ -86,14 +86,14 @@ define-command -hidden right-or-down %{
     }
 }
 define-command -hidden surround-add -params 2 %{
-    exec -collapse-jumps -no-hooks i %arg{1} <esc> H a %arg{2} <esc>
+    exec -collapse-jumps -no-hooks "i%arg{1}<esc>Ha%arg{2}" <esc>
 }
 define-command -hidden surround-del %{
-    exec -collapse-jumps i<del><esc>a<backspace><esc>
+    exec -collapse-jumps -no-hooks i<del><esc>a<backspace><esc>
 }
 define-command -hidden surround-in %{
-    exec -collapse-jumps "<a-:>:left-or-up<ret><a-;>:right-or-down<ret><a-;>"
+    exec -collapse-jumps -no-hooks "<a-:>:left-or-up<ret><a-;>:right-or-down<ret><a-;>"
 }
 define-command -hidden surround-out %{
-    exec -collapse-jumps "<a-:>:right-or-down<ret><a-;>:left-or-up<ret><a-;>"
+    exec -collapse-jumps -no-hooks "<a-:>:right-or-down<ret><a-;>:left-or-up<ret><a-;>"
 }

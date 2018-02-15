@@ -1,1 +1,0 @@
-/usr/share/kak/rc/extra/x11-repl.kak

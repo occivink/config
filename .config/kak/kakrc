@@ -1,7 +1,56 @@
+source "%val{runtime}/rc/core/c-family.kak"
+source "%val{runtime}/rc/core/comment.kak"
+source "%val{runtime}/rc/core/diff.kak"
+source "%val{runtime}/rc/core/doc.kak"
+source "%val{runtime}/rc/core/formatter.kak"
+source "%val{runtime}/rc/core/grep.kak"
+source "%val{runtime}/rc/core/kakrc.kak"
+source "%val{runtime}/rc/core/makefile.kak"
+source "%val{runtime}/rc/core/make.kak"
+source "%val{runtime}/rc/core/man.kak"
+source "%val{runtime}/rc/core/python.kak"
+source "%val{runtime}/rc/core/sh.kak"
+
+source "%val{runtime}/rc/base/ctags.kak"
+source "%val{runtime}/rc/base/etc.kak"
+source "%val{runtime}/rc/base/file.kak"
+source "%val{runtime}/rc/base/git.kak"
+source "%val{runtime}/rc/base/go.kak"
+source "%val{runtime}/rc/base/javascript.kak"
+source "%val{runtime}/rc/base/json.kak"
+source "%val{runtime}/rc/base/lint.kak"
+source "%val{runtime}/rc/base/lua.kak"
+source "%val{runtime}/rc/base/markdown.kak"
+source "%val{runtime}/rc/base/rust.kak"
+source "%val{runtime}/rc/base/x11.kak"
+
+source "%val{runtime}/rc/extra/autorestore.kak"
+source "%val{runtime}/rc/extra/clang.kak"
+source "%val{runtime}/rc/extra/git-tools.kak"
+source "%val{runtime}/rc/extra/x11-repl.kak"
+
+source "%val{config}/buffers-info.kak"
+source "%val{config}/expand.kak"
+source "%val{config}/filetree.kak"
+source "%val{config}/find.kak"
+source "%val{config}/friendly-session-names.kak"
+source "%val{config}/gdb-helper.kak"
+source "%val{config}/gdb.kak"
+source "%val{config}/multiples.kak"
+source "%val{config}/phantom-selection.kak"
+source "%val{config}/single-process-pipe.kak"
+source "%val{config}/sudo-write.kak"
+source "%val{config}/surround.kak"
+source "%val{config}/vertical-selection.kak"
+
 set-option global tabstop 4
 set-option global indentwidth 4
 set-option global BOM none
 set-option global eolformat lf
+
+set-option global gdb_breakpoint_active_symbol "x"
+set-option global gdb_breakpoint_inactive_symbol "o"
+set-option global gdb_location_symbol "->"
 
 set-option global autoinfo command|onkey
 
@@ -9,13 +58,18 @@ set-option global ui_options ncurses_assistant=none
 
 set-option global scrolloff 2,5
 
-declare-option str makecmd 'make --jobs=8'
-declare-option str grepcmd 'ag --filename --column --ignore tags'
-declare-option str termcmd 'termite -e'
+set-option global makecmd 'make --jobs=8'
+set-option global grepcmd 'ag --filename --column --ignore tags'
+set-option global termcmd 'termite -e'
+
+set-option global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
 
 # stop c and d from yanking
 map global normal d \"_d
 map global normal c \"_c
+
+map global goto p "<esc>:find<ret>"
+map global goto d "<esc>:ctags-search<ret>"
 
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
@@ -51,11 +105,12 @@ define-command kakrc -docstring "Open kakrc" %{
     edit ~/.config/kak/kakrc
 }
 
-define-command trim-whitespaces %{
-    try %{
+define-command trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
+   try %{
         exec -draft '%s\h+$<ret>d'
+        echo -markup "{Information}trimmed"
     } catch %{
-        echo "Nothing to trim"
+        echo -markup "{Information}nothing to trim"
     }
 }
 
@@ -89,24 +144,5 @@ map global normal <a-w> :w<ret>
 map global normal <a-r> :e!<ret>
 map global normal <a-d> :db<ret>
 map global normal <a-q> :db!<ret>
-
-source "%val{config}/buffers-info.kak"
-source "%val{config}/expand.kak"
-source "%val{config}/filetree.kak"
-source "%val{config}/find.kak"
-source "%val{config}/friendly-session-names.kak"
-source "%val{config}/gdb-helper.kak"
-source "%val{config}/gdb.kak"
-source "%val{config}/multiples.kak"
-source "%val{config}/phantom-selection.kak"
-source "%val{config}/single-process-pipe.kak"
-source "%val{config}/sudo-write.kak"
-source "%val{config}/surround.kak"
-source "%val{config}/vertical-selection.kak"
-
-set global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
-declare-option str gdb_breakpoint_active_symbol "x"
-declare-option str gdb_breakpoint_inactive_symbol "o"
-declare-option str gdb_location_symbol "->"
 
 try %{ source "%val{config}/dayjob.kak" }
