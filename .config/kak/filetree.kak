@@ -1,18 +1,19 @@
 declare-option -hidden str filetree_open_files
 
+declare-option str filetree_find_cmd 'find .  -not -type d -and -not -path "*/\.*"'
+
 set-face FileTreeOpenFiles black,yellow
 set-face FileTreeDirName rgb:606060,default
 set-face FileTreeFileName default,default
 
-define-command -hidden filetree %{
+define-command filetree %{
     eval %{
-	    try %{ delete-buffer *filetree* }
+        try %{ delete-buffer *filetree* }
         set-register / "^\Q./%val{bufname}\E$"
         edit -scratch *filetree*
-        #exec '<a-!>find .  -not -type d -and -not -path "*/\.*"<ret>'
-        exec '<a-!>elvish -c "use find; pprint (find:find &dirs=\$false)"<ret>'
+        set-register '|' %opt{filetree_find_cmd}
+        exec '<a-!><ret>'
         exec 'ged'
-        #exec '%|sort<ret>'
         # center view on previous file
         try %{ exec '/<ret>vc' }
         addhl buffer dynregex '%opt{filetree_open_files}' 0:FileTreeOpenFiles
@@ -45,7 +46,7 @@ hook global BufClose  .* %{ buflist-to-regex %val{hook_param} }
 define-command -hidden filetree-open-files %{
     eval -draft -itersel %{
         exec ';<a-x>H'
-        # don't force -existing, so that this can be used to create files
+        # don't -existing, so that this can be used to create files
         eval -draft "edit %reg{.}"
     }
     exec '<space>;<a-x>H'

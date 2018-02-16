@@ -2,7 +2,7 @@
 # dumb but simple implementation
 
 define-command surround-repeat %{
-    surround-title
+    surround-title " (repeat)"
     on-key %{
         try %{
             surround-impl %val{key}
@@ -20,80 +20,52 @@ define-command surround %{
     }
 }
 
-define-command -hidden surround-title %{
-    info -title "surround" \
-%{B,{,}:               braces
-b,(,):               parentheses
+define-command -hidden surround-title -params ..1 %{
+    info -title "surround%arg{1}" \
+%{b,(,):               parentheses
+B,{,}:               braces
 r,[,]:               brackets
 a,<,>:               angle brackets
 Q,":                 double quotes
 q,':                 single quotes
 g,`:                 grave quotes
 <space>:             spaces
-<left>:              reduce surrounding
-<right>:             extend surrounding
-<backspace>,<del>,d: delete surrounding}
+h,<left>:            reduce
+j,<right>:           extend
+k,<up>:              shrink
+l,<down>:            grow
+<backspace>,<del>,d: delete}
 }
 
 define-command -hidden surround-impl -params 1 %{
+    # clear the infobox
+    info
     %sh{
         case "$1" in
-            B|{|})
-                echo "surround-add { }" ;;
-            b|\(|\))
-                echo "surround-add ( )" ;;
-            r|[|])
-                echo "surround-add [ ]" ;;
-            a|\<lt\>|\<gt\>)
-                echo "surround-add < >" ;;
-            Q|\")
-                echo 'surround-add "\"" "\""' ;;
-            q|\')
-                echo "surround-add '\'' '\''" ;;
-            g|\`)
-                echo "surround-add \` \`" ;;
-            \<space\>)
-                echo "surround-add ' ' ' '" ;;
-            \<backspace\>|\<del\>|d)
-                echo "surround-del" ;;
-            \<left\>)
-                echo "surround-in" ;;
-            \<right\>)
-                echo "surround-out" ;;
-            *)
-                echo "exec <esc>"
-                echo raise ;;
+            B|{|}) echo "surround-add { }" ;;
+            b|\(|\)) echo "surround-add ( )" ;;
+            r|[|]) echo "surround-add [ ]" ;;
+            a|\<lt\>|\<gt\>) echo "surround-add <lt> <gt>" ;;
+            Q|\") echo 'surround-add "\"" "\""' ;;
+            q|\') echo "surround-add '\'' '\''" ;;
+            g|\`) echo "surround-add \` \`" ;;
+            \<space\>) echo "surround-add ' ' ' '" ;;
+            \<backspace\>|\<del\>|d) echo "surround-del" ;;
+            h|\<left\>) echo "surround-move H L" ;;
+            l|\<right\>) echo "surround-move L H" ;;
+            k|\<up\>) echo "surround-move K J" ;;
+            j|\<down\>) echo "surround-move J K" ;;
+            *) echo "fail" ;;
         esac
     }
 }
 
-define-command -hidden left-or-up %{
-    try %{
-        # throw if we're at the beginning of a line
-        exec -draft \;Zh<a-z>a<a-space>
-        exec H
-    } catch %{
-        exec KGlL
-    }
-}
-define-command -hidden right-or-down %{
-    try %{
-        # throw if we're at the end of a line
-        exec -draft \;Zl<a-z>a<a-space>
-        exec L
-    } catch %{
-        exec JGh
-    }
-}
 define-command -hidden surround-add -params 2 %{
     exec -collapse-jumps -no-hooks "i%arg{1}<esc>Ha%arg{2}" <esc>
 }
 define-command -hidden surround-del %{
     exec -collapse-jumps -no-hooks i<del><esc>a<backspace><esc>
 }
-define-command -hidden surround-in %{
-    exec -collapse-jumps -no-hooks "<a-:>:left-or-up<ret><a-;>:right-or-down<ret><a-;>"
-}
-define-command -hidden surround-out %{
-    exec -collapse-jumps -no-hooks "<a-:>:right-or-down<ret><a-;>:left-or-up<ret><a-;>"
+define-command -hidden surround-move -params 2 %{
+    exec -collapse-jumps -no-hooks "<a-:>%arg{1}<a-;>%arg{2}<a-;>"
 }
