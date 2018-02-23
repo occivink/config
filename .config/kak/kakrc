@@ -29,6 +29,7 @@ source "%val{runtime}/rc/extra/clang.kak"
 source "%val{runtime}/rc/extra/git-tools.kak"
 source "%val{runtime}/rc/extra/x11-repl.kak"
 
+source "%val{config}/auto-percent.kak"
 source "%val{config}/buffers-info.kak"
 source "%val{config}/expand.kak"
 source "%val{config}/filetree.kak"
@@ -69,8 +70,8 @@ set-option global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_
 map global normal d \"_d
 map global normal c \"_c
 
-map global goto p "<esc>:find<ret>"
-map global goto d "<esc>:ctags-search<ret>"
+map -docstring "find"    global goto p "<esc>:find<ret>"
+map -docstring "jump to" global goto d "<esc>:ctags-search<ret>"
 
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
@@ -81,6 +82,13 @@ hook global InsertCompletionHide .* %{
     unmap window insert <tab> <c-n>
     unmap window insert <backtab> <c-p>
 }
+
+# auto-percent mappings
+map global normal <a-s> ':auto-percent <lt>a-s> \%<ret>'
+map global normal s ':auto-percent-prompt s \%<ret>'
+map global normal S ':auto-percent-prompt S \%<ret>'
+map global normal <a-k> ':auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
+map global normal <a-K> ':auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
 # use w to select current word
 map global normal w <a-i>w
@@ -120,6 +128,20 @@ define-command ide %{
     new rename-client tools
     set global toolsclient tools
     set global jumpclient main
+}
+
+# delete the *scratch* buffer as soon as another is created, but only if it's empty
+# asldlas
+hook global BufCreate '^\*scratch\*$' %{
+    echo -debug kekeke
+    hook -group delete-scratch global BufCreate '^((?!\*scratch\*).{,9}|.{10,})$' %{
+        try %{
+            # throw if the buffer has more than one character
+            execute-keys -buffer *scratch* '/.<ret><a-K>..<ret>'
+            delete-buffer *scratch*
+        }
+        remove-hooks global delete-scratch
+    }
 }
 
 map -docstring "surround" global user s :surround<ret>

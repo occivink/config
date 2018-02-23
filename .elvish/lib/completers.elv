@@ -26,10 +26,18 @@ edit:arg-completer[cd] = [@cmd]{
     if (> (count $cmd) 2) {
         return
     }
-    prefix = (re:replace '[^/]*$' '' $cmd[1])
-    files = [(if (eq '' $prefix) { e:ls -p -L } else { e:ls -p -L -d $prefix* })]
-    put $@files |
-        each [i]{ if (re:match '/$' $i) { put $i } } |
+    # uses ls so that we get resolving of symlinks
+    path = $cmd[1]
+    dir base = (if (re:match '/' $path) {
+        re:replace '/[^/]*$' '/' $path
+        re:replace '.*/' '' $path
+    } else {
+        put './' $path
+    })
+    # show hidden directories if last path component starts with '.'
+    flags = [-p -L (if (has-prefix $base '.') { put -a })]
+    e:ls $@flags $dir |
+        each [i]{ if (re:match '/$' $i) { put (path-clean $dir$i)/ } } |
         each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
 }
 

@@ -19,4 +19,9 @@ qt5printers.register_printers(gdb.current_objfile())
 
 from STL.v6.printers import register_libstdcxx_printers
 register_libstdcxx_printers (None)
+
+sys.path.insert(0, os.path.expanduser('~/.config/gdb/eigen'))
+from printers import register_eigen_printers
+register_eigen_printers (None)
+
 end
