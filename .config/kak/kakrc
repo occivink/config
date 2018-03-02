@@ -86,6 +86,7 @@ hook global InsertCompletionHide .* %{
 
 # auto-percent mappings
 map global normal <a-s> ':auto-percent <lt>a-s> \%<ret>'
+map global normal <a-S> ':auto-percent <lt>a-S> \%<ret>'
 map global normal s ':auto-percent-prompt s \%<ret>'
 map global normal S ':auto-percent-prompt S \%<ret>'
 map global normal <a-k> ':auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
@@ -132,9 +133,7 @@ define-command ide %{
 }
 
 # delete the *scratch* buffer as soon as another is created, but only if it's empty
-# asldlas
 hook global BufCreate '^\*scratch\*$' %{
-    echo -debug kekeke
     hook -group delete-scratch global BufCreate '^((?!\*scratch\*).{,9}|.{10,})$' %{
         try %{
             # throw if the buffer has more than one character

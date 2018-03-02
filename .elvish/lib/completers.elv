@@ -13,16 +13,16 @@ use re
 #        each [file]{ edit:complex-candidate $file }
 #}
 
-edit:arg-completer[kak] = [@cmd]{
+edit:completion:arg-completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
         kak -l
     } else {
         edit:complete-filename $cmd[-1]
     }
 }
-edit:arg-completer[k] = $edit:arg-completer[kak]
+edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
 
-edit:arg-completer[cd] = [@cmd]{
+edit:completion:arg-completer[cd] = [@cmd]{
     if (> (count $cmd) 2) {
         return
     }
@@ -42,7 +42,7 @@ edit:arg-completer[cd] = [@cmd]{
 }
 
 # multi-path completer
-#edit:arg-completer[cd] = [@cmd]{
+#edit:completion:arg-completer[cd] = [@cmd]{
 #    if (> (count $cmd) 2) {
 #        return
 #    }
@@ -62,7 +62,7 @@ edit:arg-completer[cd] = [@cmd]{
 #    put $@parents
 #}
 
-edit:arg-completer[ssh] = [@cmd]{
+edit:completion:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {
             _ host = (re:split &max=2 'Host\s+' $line)
@@ -71,7 +71,7 @@ edit:arg-completer[ssh] = [@cmd]{
     }
 }
 
-#edit:arg-completer[systemctl] = [@cmd]{
+#edit:completion:arg-completer[systemctl] = [@cmd]{
 #    if (eq (count $cmd) 2) {
 #        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
 #    } else {
@@ -87,7 +87,7 @@ edit:arg-completer[ssh] = [@cmd]{
 #    }
 #}
 
-edit:arg-completer[ffmpeg] = [@cmd]{
+edit:completion:arg-completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
         put -i -ss
     } elif (eq $cmd[-2] -i) {
@@ -110,8 +110,8 @@ pac_completer = [paccmd~ @cmd]{
         }
     }
 }
-edit:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
-edit:arg-completer[pacaur] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
+edit:completion:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
+edit:completion:arg-completer[pacaur] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
 
 # git
 git_completer = [gitcmd~ @cmd]{
@@ -132,6 +132,6 @@ git_completer = [gitcmd~ @cmd]{
         }
     }
 }
-edit:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
-edit:arg-completer[g] = $edit:arg-completer[git]
-edit:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }
+edit:completion:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
+edit:completion:arg-completer[g] = $edit:completion:arg-completer[git]
+edit:completion:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }

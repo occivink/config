@@ -23,4 +23,4 @@ fn match [seed]{
     put $@results
 }
 
-edit:-matcher[''] = $match~
+edit:completion:matcher[''] = $match~

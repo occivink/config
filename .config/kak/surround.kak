@@ -61,11 +61,11 @@ define-command -hidden surround-impl -params 1 %{
 }
 
 define-command -hidden surround-add -params 2 %{
-    exec -collapse-jumps -no-hooks "i%arg{1}<esc>Ha%arg{2}" <esc>
+    exec -no-hooks "i%arg{1}<esc>Ha%arg{2}" <esc>
 }
 define-command -hidden surround-del %{
-    exec -collapse-jumps -no-hooks i<del><esc>a<backspace><esc>
+    exec -no-hooks i<del><esc>a<backspace><esc>
 }
 define-command -hidden surround-move -params 2 %{
-    exec -collapse-jumps -no-hooks "<a-:>%arg{1}<a-;>%arg{2}<a-;>"
+    exec -no-hooks "<a-:>%arg{1}<a-;>%arg{2}<a-;>"
 }

@@ -11,7 +11,9 @@ local opts = {
 
     thumbnail_width = 192,
     thumbnail_height = 108,
-    take_thumbnail_at = 20,
+    dynamic_thumbnail_size = "",
+
+    take_thumbnail_at = "20%",
 
     resume_when_picking = true,
     start_gallery_on_file_end = false,
@@ -51,6 +53,18 @@ local opts = {
     REMOVE    = "DEL",
 }
 (require 'mp.options').read_options(opts)
+
+function split(input, char, tonum)
+    local ret = {}
+    for str in string.gmatch(input, "([^" .. char .. "]+)") do
+        ret[#ret + 1] = tonum and tonumber(str) or str
+    end
+    return ret
+end
+opts.dynamic_thumbnail_size = split(opts.dynamic_thumbnail_size, ";", false)
+for i = 1, #opts.dynamic_thumbnail_size do
+    opts.dynamic_thumbnail_size[i] = split(opts.dynamic_thumbnail_size[i], ",", true)
+end
 
 if on_windows then
     opts.thumbs_dir = string.gsub(opts.thumbs_dir, "^%%APPDATA%%", os.getenv("APPDATA") or "%APPDATA%")
@@ -101,7 +115,7 @@ selection = {
 }
 pending = {
     selection = 0,
-    window_size_chaned = false,
+    window_size_changed = false,
     deletion = false,
 }
 ass = {
@@ -144,6 +158,16 @@ function file_exists(path)
     else
         return false
     end
+end
+
+function thumbnail_size_from_presets(window_w, window_h)
+    local size = window_w * window_h
+    for _, preset in ipairs(opts.dynamic_thumbnail_size) do
+        if size <= preset[1] then
+            return { preset[2], preset[3] }
+        end
+    end
+    return nil
 end
 
 function select_under_cursor()
@@ -212,9 +236,21 @@ do
             increment_selection(pending.selection)
         end
         if pending.window_size_changed then
-            pending.window_size_chaned = false
+            pending.window_size_changed = false
+            local actually_changed = false
             local window_w, window_h = mp.get_osd_size()
+            local new_thumb_size = thumbnail_size_from_presets(window_w, window_h)
+            if new_thumb_size and (new_thumb_size[1] ~= opts.thumbnail_width or
+                new_thumb_size[2] ~= opts.thumbnail_height)
+            then
+                opts.thumbnail_width = new_thumb_size[1]
+                opts.thumbnail_height = new_thumb_size[2]
+                actually_changed = true
+            end
             if window_w ~= geometry.window_w or window_h ~= geometry.window_h then
+                actually_changed = true
+            end
+            if actually_changed then
                 resize_gallery(window_w, window_h)
             end
         end
@@ -355,7 +391,6 @@ function increment_selection(inc)
 end
 
 function resize_gallery(window_w, window_h)
-    ass_hide()
     local old_max_thumbs = geometry.rows * geometry.columns
     get_geometry(window_w, window_h)
     local max_thumbs = geometry.rows * geometry.columns
@@ -527,13 +562,13 @@ function show_overlays(from, to)
     for i = from, to do
         local filename = playlist[view.first + i - 1]
         local filename_hash = string.sub(sha256(filename), 1, 12)
-        local thumb_filename = filename_hash .. "_" .. geometry.size_x .. "_" .. geometry.size_y
+        local thumb_filename = string.format("%s_%d_%d", filename_hash, geometry.size_x, geometry.size_y)
         local thumb_path = utils.join_path(opts.thumbs_dir, thumb_filename)
         if file_exists(thumb_path) then
             show_overlay(i, thumb_path)
         else
             remove_overlay(i)
-            todo[#todo + 1] = { index = i, path = filename, hash = filename_hash }
+            todo[#todo + 1] = { index = i, input = filename, output = thumb_path }
         end
     end
     -- reverse iterate so that the first thumbnail is at the top of the stack
@@ -541,8 +576,16 @@ function show_overlays(from, to)
         for i = #todo, 1, -1 do
             local generator = generators[i % #generators + 1]
             local t = todo[i]
-            overlays.missing[t.hash] = t.index
-            mp.commandv("script-message-to", generator, "push-thumbnail-to-stack", t.path, t.hash)
+            overlays.missing[t.output] = t.index
+            mp.commandv("script-message-to", generator, "push-thumbnail-front",
+                mp.get_script_name(),
+                t.input,
+                tostring(opts.thumbnail_width),
+                tostring(opts.thumbnail_height),
+                opts.take_thumbnail_at,
+                t.output,
+                opts.generate_thumbnails_with_mpv and "true" or "false"
+            )
         end
     end
 end
@@ -579,8 +622,14 @@ end
 function start_gallery_view()
     init()
     if mp.get_property_number("playlist-count") == 0 then return end
+    local w, h = mp.get_osd_size()
+    local new_thumb_size = thumbnail_size_from_presets(w, h)
+    if new_thumb_size then
+        opts.thumbnail_width = new_thumb_size[1]
+        opts.thumbnail_height = new_thumb_size[2]
+    end
     local old_max_thumbs = geometry.rows * geometry.columns
-    get_geometry(mp.get_osd_size())
+    get_geometry(w, h)
     if geometry.rows <= 0 or geometry.columns <= 0 then return end
     save_properties()
     selection.old = mp.get_property_number("playlist-pos-1")
@@ -627,33 +676,23 @@ function toggle_gallery()
     end
 end
 
-mp.register_script_message("thumbnail-generated", function(hash)
+mp.register_script_message("thumbnail-generated", function(thumbnail_path)
     if not active then return end
-    local missing = overlays.missing[hash]
-    if missing == nil then return end
-    local thumb_filename = hash .. "_" .. geometry.size_x .. "_" .. geometry.size_y
-    local thumb_path = utils.join_path(opts.thumbs_dir, thumb_filename)
-    show_overlay(missing, thumb_path)
+    local index_missing = overlays.missing[thumbnail_path]
+    if index_missing == nil then return end
+    show_overlay(index_missing, thumbnail_path)
     if not opts.always_show_placeholders then
         ass_show(false, false, true)
     end
-    overlays.missing[hash] = nil
+    overlays.missing[thumbnail_path] = nil
 end)
 
-mp.register_script_message("gallery-thunbnails-generator-registered", function(generator_name)
+mp.register_script_message("thumbnails-generator-broadcast", function(generator_name)
     if #generators >= opts.max_generators then return end
     for _, g in ipairs(generators) do
         if generator_name == g then return end
     end
     generators[#generators + 1] = generator_name
-    mp.commandv("script-message-to", generator_name, "init-thumbnails-generator",
-        mp.get_script_name(),
-        opts.thumbs_dir,
-        tostring(opts.thumbnail_width),
-        tostring(opts.thumbnail_height),
-        tostring(opts.take_thumbnail_at),
-        tostring(opts.generate_thumbnails_with_mpv)
-    )
 end)
 
 if opts.start_gallery_on_file_end then

@@ -21,14 +21,18 @@ define-command -hidden -params 2 auto-percent-prompt %{
 # for commands that do not spawn a prompt
 define-command -hidden -params 2 auto-percent %{
     try %{
-        exec -draft 's.<ret><a-space>'
+        exec -draft '<a-space>'
     } catch %{
-        exec "%arg{2}"
+        try %{
+            exec -draft '<a-k>\A.\z<ret>'
+            exec "%arg{2}"
+        }
     }
     exec "%val{count}\"%val{register}%arg{1}"
 }
 
 #map global normal <a-s> ':auto-percent <lt>a-s> \%<ret>'
+#map global normal <a-S> ':auto-percent <lt>a-S> \%<ret>'
 #map global normal s ':auto-percent-prompt s \%<ret>'
 #map global normal S ':auto-percent-prompt S \%<ret>'
 #map global normal <a-k> ':auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'

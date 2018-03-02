@@ -4,7 +4,7 @@ Some of the stuff in this repo is just a read-only view of other repos, for conv
 
 For anything not mentioned, this repo is considered the source.
 
-## kakoune
+## [kakoune](https://github.com/mawww/kakoune)
 
 * [expand](https://github.com/occivink/kakoune-expand)
 * [phantom-selection](https://github.com/occivink/kakoune-phantom-selection)
@@ -14,7 +14,7 @@ For anything not mentioned, this repo is considered the source.
 * [filetree](https://github.com/occivink/kakoune-filetree)
 * [gdb](https://github.com/occivink/kakoune-gdb)
 
-## mpv (and mvi, mmp)
+## [mpv](https://github.com/mpv-player/mpv) (and mvi, mmp)
 
 * [crop, encode, blacklist-extensions, blur-edges, seek-to](https://github.com/occivink/mpv-scripts)
 * [gallery, gallery-thumbgen](https://github.com/occivink/mpv-gallery-view)
@@ -24,7 +24,7 @@ For anything not mentioned, this repo is considered the source.
 
 mvi and mmp are just aliases to different profiles of mpv. More specifically, I use mpv for videos, mvi for images and mmp for music.
 
-## elvish
+## [elvish](https://github.com/elves/elvish)
 
 * [smart-matcher](https://github.com/xiaq/edit.elv/blob/master/smart-matcher.elv)
 
@@ -34,6 +34,10 @@ Some useful C++ pretty printers that I've amassed.
 * [qt5](https://github.com/Lekensteyn/qt5printers)
 * [STL](https://sourceware.org/gdb/wiki/STLSupport)
 * [eigen](https://bitbucket.org/eigen/eigen/src/8b18ff2c70289b47928ae75fdb89a6ac3d018e08/debug/gdb)
+
+## misc
+
+* [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy)
 
 # License
 
