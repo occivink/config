@@ -47,8 +47,6 @@ function set_blur()
     local split = "[vid1] split=3 [a] [v] [b]"
     local crop_format = "crop=%s:%s:%s:%s"
 
-   	local sub = "[v] sub [vs]"
-
     local stack_direction, crop_1, crop_2, blur_size
     if  ww/wh > video_aspect then
         blur_size = math.min(math.floor(((ww/wh)*height/par-width)/2), width/2)
@@ -75,8 +73,8 @@ function set_blur()
        par_fix = ",setsar=ratio=" .. tostring(par) .. ":max=10000"
     end
 
-    stack = string.format("[a_fin] [vs] [b_fin] %sstack=3%s [vo]", stack_direction, par_fix)
-    filter = string.format("%s;%s;%s;%s;%s", split, sub, zone_1, zone_2, stack)
+    stack = string.format("[a_fin] [v] [b_fin] %sstack=3%s [vo]", stack_direction, par_fix)
+    filter = string.format("%s;%s;%s;%s", split, zone_1, zone_2, stack)
     set_lavfi_complex(filter)
     applied = true
 end

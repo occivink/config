@@ -1,48 +1,57 @@
-source "%val{runtime}/rc/core/c-family.kak"
-source "%val{runtime}/rc/core/comment.kak"
-source "%val{runtime}/rc/core/diff.kak"
-source "%val{runtime}/rc/core/doc.kak"
-source "%val{runtime}/rc/core/formatter.kak"
-source "%val{runtime}/rc/core/grep.kak"
-source "%val{runtime}/rc/core/kakrc.kak"
-source "%val{runtime}/rc/core/makefile.kak"
-source "%val{runtime}/rc/core/make.kak"
-source "%val{runtime}/rc/core/man.kak"
-source "%val{runtime}/rc/core/python.kak"
-source "%val{runtime}/rc/core/sh.kak"
+# to ease development of plugins
+# try to load from cwd, otherwise load from config
+# potentially dangerous
+# also not ideal since errors from sourcing are silenced
+define-command source-here-or-in   -params 2 %{
+    try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
+    #source "%arg{2}/%arg{1}"
+}
 
-source "%val{runtime}/rc/base/ctags.kak"
-source "%val{runtime}/rc/base/etc.kak"
-source "%val{runtime}/rc/base/file.kak"
-source "%val{runtime}/rc/base/git.kak"
-source "%val{runtime}/rc/base/go.kak"
-source "%val{runtime}/rc/base/javascript.kak"
-source "%val{runtime}/rc/base/json.kak"
-source "%val{runtime}/rc/base/lint.kak"
-source "%val{runtime}/rc/base/lua.kak"
-source "%val{runtime}/rc/base/markdown.kak"
-source "%val{runtime}/rc/base/rust.kak"
-source "%val{runtime}/rc/base/x11.kak"
+source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
+source-here-or-in   comment.kak     "%val{runtime}/rc/core"
+source-here-or-in   diff.kak        "%val{runtime}/rc/core"
+source-here-or-in   doc.kak         "%val{runtime}/rc/core"
+source-here-or-in   formatter.kak   "%val{runtime}/rc/core"
+source-here-or-in   grep.kak        "%val{runtime}/rc/core"
+source-here-or-in   kakrc.kak       "%val{runtime}/rc/core"
+source-here-or-in   makefile.kak    "%val{runtime}/rc/core"
+source-here-or-in   make.kak        "%val{runtime}/rc/core"
+source-here-or-in   man.kak         "%val{runtime}/rc/core"
+source-here-or-in   python.kak      "%val{runtime}/rc/core"
+source-here-or-in   sh.kak          "%val{runtime}/rc/core"
 
-source "%val{runtime}/rc/extra/autorestore.kak"
-source "%val{runtime}/rc/extra/clang.kak"
-source "%val{runtime}/rc/extra/git-tools.kak"
-source "%val{runtime}/rc/extra/x11-repl.kak"
+source-here-or-in   ctags.kak       "%val{runtime}/rc/base"
+source-here-or-in   etc.kak         "%val{runtime}/rc/base"
+source-here-or-in   file.kak        "%val{runtime}/rc/base"
+source-here-or-in   git.kak         "%val{runtime}/rc/base"
+source-here-or-in   go.kak          "%val{runtime}/rc/base"
+source-here-or-in   javascript.kak  "%val{runtime}/rc/base"
+source-here-or-in   json.kak        "%val{runtime}/rc/base"
+source-here-or-in   lint.kak        "%val{runtime}/rc/base"
+source-here-or-in   lua.kak         "%val{runtime}/rc/base"
+source-here-or-in   markdown.kak    "%val{runtime}/rc/base"
+source-here-or-in   rust.kak        "%val{runtime}/rc/base"
+source-here-or-in   x11.kak         "%val{runtime}/rc/base"
 
-source "%val{config}/auto-percent.kak"
-source "%val{config}/buffers-info.kak"
-source "%val{config}/expand.kak"
-source "%val{config}/filetree.kak"
-source "%val{config}/find.kak"
-source "%val{config}/friendly-session-names.kak"
-source "%val{config}/gdb-helper.kak"
-source "%val{config}/gdb.kak"
-source "%val{config}/multiples.kak"
-source "%val{config}/phantom-selection.kak"
-source "%val{config}/single-process-pipe.kak"
-source "%val{config}/sudo-write.kak"
-source "%val{config}/surround.kak"
-source "%val{config}/vertical-selection.kak"
+source-here-or-in   autorestore.kak "%val{runtime}/rc/extra"
+source-here-or-in   clang.kak       "%val{runtime}/rc/extra"
+source-here-or-in   git-tools.kak   "%val{runtime}/rc/extra"
+source-here-or-in   x11-repl.kak    "%val{runtime}/rc/extra"
+
+source-here-or-in   auto-percent.kak           "%val{config}"
+source-here-or-in   buffers-info.kak           "%val{config}"
+source-here-or-in   expand.kak                 "%val{config}"
+source-here-or-in   filetree.kak               "%val{config}"
+source-here-or-in   find.kak                   "%val{config}"
+source-here-or-in   friendly-session-names.kak "%val{config}"
+source-here-or-in   gdb-helper.kak             "%val{config}"
+source-here-or-in   gdb.kak                    "%val{config}"
+source-here-or-in   multiples.kak              "%val{config}"
+source-here-or-in   phantom-selection.kak      "%val{config}"
+source-here-or-in   single-process-pipe.kak    "%val{config}"
+source-here-or-in   sudo-write.kak             "%val{config}"
+source-here-or-in   surround.kak               "%val{config}"
+source-here-or-in   vertical-selection.kak     "%val{config}"
 
 set-option global tabstop 4
 set-option global indentwidth 4
@@ -65,7 +74,7 @@ set-option global termcmd 'termite -e'
 set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\'
 \' (find:find &dirs=\$false)"'
 
-set-option global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}%opt{gdb_autojump_indicator}{default,default}- %val{client}@[%val{session}]'
+set-option global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
 
 # stop c and d from yanking
 map global normal d \"_d
@@ -92,11 +101,20 @@ map global normal S ':auto-percent-prompt S \%<ret>'
 map global normal <a-k> ':auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
 map global normal <a-K> ':auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
-# use w to select current word
+# word-related mappings
 map global normal w <a-i>w
-map global normal W <a-i>W
-map global normal <a-w> ""
-map global normal <a-W> ""
+map global normal <a-w> <a-i>W
+map global normal W     "\"_s.<ret><a-i>w"
+map global normal <a-W> "\"_s.<ret><a-i>W"
+
+# replace select-onto with phantom-sel stuff; more useful
+map global normal f     ":phantom-sel-add-selection<ret>"
+map global normal F     ":phantom-sel-select-all<ret>:phantom-sel-clear<ret>"
+map global normal <a-f> ":phantom-sel-iterate-next<ret>"
+map global normal <a-F> ":phantom-sel-iterate-prev<ret>"
+
+#map global insert <a-f> "<a-;>:phantom-sel-iterate-next<ret>"
+#map global insert <a-F> "<a-;>:phantom-sel-iterate-prev<ret>"
 
 set-face SecondaryCursor black,rgb:babaa3
 set-face Whitespace rgb:363636,default
@@ -137,7 +155,7 @@ hook global BufCreate '^\*scratch\*$' %{
     hook -group delete-scratch global BufCreate '^((?!\*scratch\*).{,9}|.{10,})$' %{
         try %{
             # throw if the buffer has more than one character
-            execute-keys -buffer *scratch* '/.<ret><a-K>..<ret>'
+            execute-keys -buffer *scratch* 'L<a-K>..<ret>'
             delete-buffer *scratch*
         }
         remove-hooks global delete-scratch
@@ -151,11 +169,7 @@ map -docstring "expand (repeat)" global user E :expand-repeat<ret>
 map -docstring "select down" global user v :select-down<ret>
 map -docstring "select up" global user <a-v> :select-up<ret>
 map -docstring "select vertically" global user V :select-vertically<ret>
-map -docstring "phantom next" global user f :phantom-sel-iterate-next<ret>
-map -docstring "phantom prev" global user <a-f> :phantom-sel-iterate-prev<ret>
-map -docstring "phantom clear" global user F ":phantom-sel-select-all; phantom-sel-clear<ret>"
-map -docstring "unselect whitespace" global user w '"_1s\s*(.*[^\s])\s*<ret>'
-map -docstring "trim whitespaces" global user W :trim-whitespaces<ret>
+map -docstring "trim whitespaces" global user w :trim-whitespaces<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
 map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
@@ -163,7 +177,6 @@ map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
 
 map global normal <a-,> :bp<ret>
 map global normal <a-.> :bn<ret>
-map global normal <a-w> :w<ret>
 map global normal <a-r> :e!<ret>
 map global normal <a-d> :db<ret>
 map global normal <a-q> :db!<ret>
