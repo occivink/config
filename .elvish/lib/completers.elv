@@ -2,15 +2,26 @@ use re
 
 # useless as of yet since completer output is sorted
 #complete-filename-sorted = [prefix]{
-#    matches=[$prefix*[nomatch-ok]]
-#    if (== (count $matches) 0) { return }
-#    matches=[(ls -p -L -d $@matches)]
-#    put $@matches |
-#        each [i]{ if (re:match '/$' $i) { put $i } } |
-#        each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
-#    put $@matches |
-#        each [i]{ if (not (re:match '/$' $i)) { put $i } } |
-#        each [file]{ edit:complex-candidate $file }
+#    if (> (count $cmd) 2) { return }
+#
+#    # this looks more complex than it should be but there are lots of edge cases
+#    path = $cmd[1]
+#    dir base = (if (re:match '/' $path) {
+#        re:replace '/[^/]*$' '/' $path
+#        re:replace '.*/' '' $path
+#    } else {
+#        put './' $path
+#    })
+#    # show hidden directories if last path component starts with '.'
+#    # uses ls so that we get resolving of symlinks
+#    flags = [-p -L (if (has-prefix $base '.') { put -a })]
+#    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
+#        each [i]{ if (re:match '/$' $i) { 
+#               edit:complex-candidate (path-clean $dir$di)/ &style="blue;bold"
+#           } else { 
+#               edit:complex-candidate (path-clean $dir$di)
+#           } 
+#        }
 #}
 
 edit:completion:arg-completer[kak] = [@cmd]{
@@ -23,10 +34,9 @@ edit:completion:arg-completer[kak] = [@cmd]{
 edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
 
 edit:completion:arg-completer[cd] = [@cmd]{
-    if (> (count $cmd) 2) {
-        return
-    }
-    # uses ls so that we get resolving of symlinks
+    if (> (count $cmd) 2) { return }
+
+    # this looks more complex than it should be but there are lots of edge cases
     path = $cmd[1]
     dir base = (if (re:match '/' $path) {
         re:replace '/[^/]*$' '/' $path
@@ -35,32 +45,13 @@ edit:completion:arg-completer[cd] = [@cmd]{
         put './' $path
     })
     # show hidden directories if last path component starts with '.'
+    # uses ls so that we get resolving of symlinks
     flags = [-p -L (if (has-prefix $base '.') { put -a })]
-    e:ls $@flags $dir |
-        each [i]{ if (re:match '/$' $i) { put (path-clean $dir$i)/ } } |
-        each [dir]{ edit:complex-candidate $dir &style="blue;bold" }
+    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
+        each [i]{ if (re:match '/$' $i) {
+            edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
+        }}
 }
-
-# multi-path completer
-#edit:completion:arg-completer[cd] = [@cmd]{
-#    if (> (count $cmd) 2) {
-#        return
-#    }
-#    components = [(splits / $cmd[1])]
-#    parents = ['']
-#    if (and (> (count $components) 1) (eq $components[0] '')) { 
-#        _ @components = $@components
-#        parents = [/] 
-#    }
-#    put $@components | each [prefix]{
-#        parents=[(
-#            put $@parents | each [parent]{
-#                put $parent$prefix*[nomatch-ok]/
-#            }
-#        )]
-#    }
-#    put $@parents
-#}
 
 edit:completion:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{

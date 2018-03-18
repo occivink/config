@@ -2,10 +2,8 @@ use bindings
 use timer
 use completers
 use smart-matcher
-use re
 
 E:EDITOR=kak
-E:MESA_GL_VERSION_OVERRIDE=4.5COMPAT
 E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
 
 edit:max-height=15
@@ -14,18 +12,12 @@ fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --qu
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
 fn cp [@args]{ e:cp --no-clobber $@args }
 fn mv [@args]{ e:mv --no-clobber $@args }
-fn lf [@args]{
-    t = (mktemp --tmpdir lf_last_dir_XXX)
-    e:lf -last-dir-path $t $@args
-    # cd in disguise
-    (cat $t | slurp)
-    rm $t
-}
 fn k [@args]{ e:kak $@args }
 fn g [@args]{ e:git $@args }
 fn fzf [@args]{ e:fzf --height 40% $@args }
 
 edit:prompt = {
+    use re
     # abbreviate path by shortening the parent directories
     edit:styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" " "bg-blue;bold"
     edit:styled " λ " "bg-green;bold"
@@ -43,6 +35,8 @@ fn subedit [pre input_matroska post]{
     if (not (eq (kind-of $input_matroska) string)) { fail "Not a string" }
     if (not ?(test -f $input_matroska)) { fail "Not a file" }
     if (not (eq (kind-of $post) list)) { fail "Not an array" }
+
+    use re
 
     # extract subtitles
     tracks = ""

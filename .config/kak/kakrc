@@ -103,7 +103,7 @@ map global normal <a-K> ':auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
 # word-related mappings
 map global normal w <a-i>w
-map global normal <a-w> <a-i>W
+map global normal <a-w> <a-i><a-w>
 map global normal W     "\"_s.<ret><a-i>w"
 map global normal <a-W> "\"_s.<ret><a-i>W"
 

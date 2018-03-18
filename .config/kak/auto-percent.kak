@@ -10,7 +10,7 @@ define-command -hidden -params 2 auto-percent-prompt %{
         try %{
             exec -draft '<a-k>\A.\z<ret>'
             hook -group auto-percent window RawKey "<esc>" "select %val{selection_desc}; rmhooks window auto-percent"
-            hook -group auto-percent window RuntimeError "nothing selected" "select %val{selection_desc}; rmhooks window auto-percent"
+            hook -group auto-percent window RuntimeError "nothing selected|no selections remaining" "select %val{selection_desc}; rmhooks window auto-percent"
             hook -group auto-percent window RawKey "<ret>" "rmhooks window auto-percent"
             exec "%arg{2}"
         }

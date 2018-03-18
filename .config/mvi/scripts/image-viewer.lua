@@ -7,6 +7,7 @@ local opts = {
     do_not_move_if_all_visible = true,
 }
 (require 'mp.options').read_options(opts)
+local msg = require 'mp.msg'
 
 function register_idle(func)
     current_idle = func
@@ -14,7 +15,6 @@ function register_idle(func)
 end
 
 function cleanup()
-    mp.osd_message("", 0.01)
     mp.remove_key_binding("image-viewer-impl")
     if current_idle then mp.unregister_idle(current_idle) end
     needs_adjusting = false
@@ -118,7 +118,6 @@ function drag_to_pan_handler(table)
         video_pan_origin.x = mp.get_property("video-pan-x")
         video_pan_origin.y = mp.get_property("video-pan-y")
         register_idle(function()
-            mp.osd_message("drag-to-pan")
             if needs_adjusting then
                 local mX, mY = mp.get_mouse_pos()
                 local pX = video_pan_origin.x + (mX - mouse_pos_origin.x) / video_dimensions.size.w
@@ -140,7 +139,6 @@ function pan_follows_cursor_handler(table)
         if not video_dimensions then return end
         local window_w, window_h = mp.get_osd_size()
         register_idle(function()
-            mp.osd_message("pan-follow-cursor")
             if needs_adjusting then
                 local mX, mY = mp.get_mouse_pos()
                 local x = math.min(1, math.max(- 2 * mX / window_w + 1, -1))
@@ -184,7 +182,6 @@ function cursor_centric_zoom_handler(amt)
         local rx = (video_dimensions.top_left.x + video_dimensions.size.w / 2 - mouse_pos_origin.x) / (video_dimensions.size.w / 2)
         local ry = (video_dimensions.top_left.y + video_dimensions.size.h / 2 - mouse_pos_origin.y) / (video_dimensions.size.h / 2)
         register_idle(function()
-            mp.osd_message("cursor-centric-zoom")
             if needs_adjusting then
                 -- the size in pixels of the (in|de)crement
                 local diffHeight = (2 ^ zoom_increment - 1) * video_dimensions.size.h
@@ -205,7 +202,7 @@ function align_border(x, y)
     local video_dimensions = compute_video_dimensions()
     if not video_dimensions then return end
     local window_w, window_h = mp.get_osd_size()
-    local x,y = tonumber(x), tonumber(y)
+    local x, y = tonumber(x), tonumber(y)
     local command = ""
     if x then
         command = command .. "no-osd set video-pan-x " .. x * (video_dimensions.size.w - window_w) / (2 * video_dimensions.size.w) .. ";"
@@ -214,14 +211,60 @@ function align_border(x, y)
         command = command .. "no-osd set video-pan-y " .. y * (video_dimensions.size.h - window_h) / (2 * video_dimensions.size.h) .. ";"
     end
     if command ~= "" then
-        mp.osd_message("align-border")
         mp.command(command)
     end
 end
 
+--TODO remove
 function zoom_invariant_add(prop, amt)
+    msg.warn("Deprecated, use \"pan-image\" instead")
     amt = amt / 2 ^ mp.get_property_number("video-zoom")
     mp.set_property_number(prop, mp.get_property_number(prop) + amt)
+end
+
+function pan_image(axis, amount, zoom_invariant, image_constrained)
+    amount = tonumber(amount)
+    if not amount or amount == 0 or axis ~= "x" and axis ~= "y" then return end
+    if zoom_invariant == "yes" then
+        amount = amount / 2 ^ mp.get_property_number("video-zoom")
+    end
+    local prop = "video-pan-" .. axis
+    local old_pan = mp.get_property_number(prop)
+    if image_constrained == "yes" then
+        local video_dimensions = compute_video_dimensions()
+        if not video_dimensions then return end
+        local measure = axis == "x" and "w" or "h"
+        local window = {}
+        window.w, window.h = mp.get_osd_size()
+        local pixels_moved = amount * video_dimensions.size[measure]
+        -- should somehow refactor this
+        if pixels_moved > 0 then
+            if window[measure] > video_dimensions.size[measure] then
+                if video_dimensions.bottom_right[axis] >= window[measure] then return end
+                if video_dimensions.bottom_right[axis] + pixels_moved > window[measure] then
+                    amount = (window[measure] - video_dimensions.bottom_right[axis]) / video_dimensions.size[measure]
+                end
+            else
+                if video_dimensions.top_left[axis] >= 0 then return end
+                if video_dimensions.top_left[axis] + pixels_moved > 0 then
+                    amount = (0 - video_dimensions.top_left[axis]) / video_dimensions.size[measure]
+                end
+            end
+        else
+            if window[measure] > video_dimensions.size[measure] then
+                if video_dimensions.top_left[axis] <= 0 then return end
+                if video_dimensions.top_left[axis] + pixels_moved < 0 then
+                    amount = (0 - video_dimensions.top_left[axis]) / video_dimensions.size[measure]
+                end
+            else
+                if video_dimensions.bottom_right[axis] <= window[measure] then return end
+                if video_dimensions.bottom_right[axis] + pixels_moved < window[measure] then
+                    amount = (window[measure] - video_dimensions.bottom_right[axis]) / video_dimensions.size[measure]
+                end
+            end
+        end
+    end
+    mp.set_property_number(prop, old_pan + amount)
 end
 
 function rotate_video(amt)
@@ -236,20 +279,30 @@ function reset_pan_if_visible()
     local window_w, window_h = mp.get_osd_size()
     local command = ""
     if (window_w >= video_dimensions.size.w) then
-        command = command .. "no-osd set video-pan-x 0"
+        command = command .. "no-osd set video-pan-x 0" .. ";"
     end
     if (window_h >= video_dimensions.size.h) then
-        command = command .. "no-osd set video-pan-y 0"
+        command = command .. "no-osd set video-pan-y 0" .. ";"
     end
     if command ~= "" then
         mp.command(command)
     end
 end
 
+function force_print_filename()
+    mp.set_property("msg-level", "cplayer=info")
+    mp.commandv("print-text", mp.get_property("path"))
+    mp.set_property("msg-level", "all=no")
+end
+
 mp.add_key_binding(nil, "drag-to-pan", drag_to_pan_handler, {complex = true})
 mp.add_key_binding(nil, "pan-follows-cursor", pan_follows_cursor_handler, {complex = true})
 mp.add_key_binding(nil, "cursor-centric-zoom", cursor_centric_zoom_handler)
 mp.add_key_binding(nil, "align-border", align_border)
-mp.add_key_binding(nil, "zoom-invariant-add", zoom_invariant_add)
+mp.add_key_binding(nil, "pan-image", pan_image)
 mp.add_key_binding(nil, "rotate-video", rotate_video)
 mp.add_key_binding(nil, "reset-pan-if-visible", reset_pan_if_visible)
+mp.add_key_binding(nil, "force-print-filename", force_print_filename)
+
+-- deprecated, remove some time later
+mp.add_key_binding(nil, "zoom-invariant-add", zoom_invariant_add)
