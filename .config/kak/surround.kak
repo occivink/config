@@ -1,8 +1,8 @@
 # manually surround the current selection with known pairs
 # dumb but simple implementation
 
-define-command surround-repeat %{
-    surround-title " (repeat)"
+define-command surround-lock %{
+    surround-title " (lock)"
     on-key %{
         try %{
             surround-impl %val{key}

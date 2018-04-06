@@ -2,7 +2,7 @@
 # try to load from cwd, otherwise load from config
 # potentially dangerous
 # also not ideal since errors from sourcing are silenced
-define-command source-here-or-in   -params 2 %{
+define-command source-here-or-in -params 2 %{
     try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
     #source "%arg{2}/%arg{1}"
 }
@@ -64,17 +64,21 @@ set-option global gdb_location_symbol "->"
 
 set-option global autoinfo command|onkey
 
-set-option global ui_options ncurses_assistant=none
+set-option global ui_options ncurses_set_title=false
 
 set-option global scrolloff 2,5
 
 set-option global makecmd 'make --jobs=8'
 set-option global grepcmd 'ag --filename --column --ignore tags'
-set-option global termcmd 'termite -e'
-set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\'
-\' (find:find &dirs=\$false)"'
+set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\"\n\" (find:find &dirs=\$false)"'
+set-option global termcmd 'alacritty -e sh -c'
 
-set-option global modelinefmt '%val{bufname} %val{cursor_line}:%val{cursor_char_column} {{context_info}} {{mode_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+
+# TODO: revisit one day
+#hook global ModeChange ".*:prompt" %{ set-face StatusLine default,magenta }
+#hook global ModeChange ".*:insert" %{ set-face StatusLine black,yellow }
+#hook global ModeChange ".*:normal" %{ set-face StatusLine black,cyan }
 
 # stop c and d from yanking
 map global normal d \"_d
@@ -102,10 +106,10 @@ map global normal <a-k> ':auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
 map global normal <a-K> ':auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
 # word-related mappings
-map global normal w <a-i>w
+map global normal w     <a-i>w
 map global normal <a-w> <a-i><a-w>
 map global normal W     "\"_s.<ret><a-i>w"
-map global normal <a-W> "\"_s.<ret><a-i>W"
+map global normal <a-W> "\"_s.<ret><a-i><a-w>"
 
 # replace select-onto with phantom-sel stuff; more useful
 map global normal f     ":phantom-sel-add-selection<ret>"
@@ -116,9 +120,17 @@ map global normal <a-F> ":phantom-sel-iterate-prev<ret>"
 #map global insert <a-f> "<a-;>:phantom-sel-iterate-next<ret>"
 #map global insert <a-F> "<a-;>:phantom-sel-iterate-prev<ret>"
 
+# move line up/down
+# not very mnemonic but whatever
+map global normal t     ':execute-keys -itersel "<lt>a-x>d%arg{1}j<lt>a-P>"<ret>'
+map global normal T     ""
+map global normal <a-t> ':execute-keys -itersel "<lt>a-x>d%arg{1}k<lt>a-P>"<ret>'
+map global normal <a-T> ""
+
 set-face SecondaryCursor black,rgb:babaa3
 set-face Whitespace rgb:363636,default
 set-face LineNumbersWrapped rgb:606060,default+i
+#set-face MatchingChar default,default+r
 
 add-highlighter global number_lines -hlcursor -separator ' '
 add-highlighter global show_matching
@@ -128,6 +140,10 @@ add-highlighter global wrap -word
 
 define-command reload-all -docstring "Reload all open buffers" %{
     eval -buffer * edit!
+}
+
+define-command scratch -docstring "Open a scratch buffer" -params 1 %{
+	edit -scratch %arg{1}
 }
 
 define-command kakrc -docstring "Open kakrc" %{
@@ -162,17 +178,20 @@ hook global BufCreate '^\*scratch\*$' %{
     }
 }
 
+declare-user-mode expand
+map -docstring "expand" global expand <space> ':expand<ret>'
+
 map -docstring "surround" global user s :surround<ret>
-map -docstring "surround (repeat)" global user S :surround-repeat<ret>
+map -docstring "surround ↻" global user S :surround-lock<ret>
 map -docstring "expand" global user e :expand<ret>
-map -docstring "expand (repeat)" global user E :expand-repeat<ret>
-map -docstring "select down" global user v :select-down<ret>
-map -docstring "select up" global user <a-v> :select-up<ret>
-map -docstring "select vertically" global user V :select-vertically<ret>
+map -docstring "expand ↻" global user E ':expand; enter-user-mode -lock expand<ret>'
+map -docstring "select 🡓" global user v :select-down<ret>
+map -docstring "select 🡑" global user <a-v> :select-up<ret>
+map -docstring "select 🡓🡑" global user V :select-vertically<ret>
 map -docstring "trim whitespaces" global user w :trim-whitespaces<ret>
 map -docstring "clip-paste after" global user p '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" global user P '!xsel --output --clipboard<ret>'
-map -docstring "clip-paste replace" global user R '|xsel --output --clipboard<ret>'
+map -docstring "clip-replace" global user R '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank" global user y '<a-|>xsel --input --clipboard<ret>'
 
 map global normal <a-,> :bp<ret>

@@ -8,24 +8,13 @@ declare-option str expand_commands %{
     expand-impl 'exec <a-i>i'
     expand-impl 'exec \'<a-:><a-;>k<a-K>^$<ret><a-i>i\''
     expand-impl 'exec \'<a-:>j<a-K>^$<ret><a-i>i\''
-    expand-impl 'select-indented-paragraph'
 }
 
 declare-option -hidden str-list expand_results
 
-define-command expand-repeat %{
-    expand
-    info "Expanding"
-    on-key %{ %sh{
-        if [ $kak_key = "<space>" ]; then
-            echo expand-repeat
-        else
-            echo "exec <esc>"
-        fi
-    }}
-}
-
-define-command expand %{
+define-command expand -docstring "
+Expand the current selection til the next semantic block
+" %{
     eval -no-hooks -itersel %{
         exec <a-:>
         unset-option buffer expand_results
@@ -80,9 +69,4 @@ define-command expand-impl -hidden -params 1 %{
             set-option -add buffer expand_results "%reg{d}_%reg{#}"
         }
     }
-}
-
-define-command -hidden select-indented-paragraph %{
-    exec -draft -save-regs '' '<a-i>pZ'
-    exec '<a-i>i<a-z>i'
 }

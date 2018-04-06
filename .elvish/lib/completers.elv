@@ -47,7 +47,7 @@ edit:completion:arg-completer[cd] = [@cmd]{
     # show hidden directories if last path component starts with '.'
     # uses ls so that we get resolving of symlinks
     flags = [-p -L (if (has-prefix $base '.') { put -a })]
-    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
+    try { e:ls $@flags $dir 2> /dev/null } except _ { } |
         each [i]{ if (re:match '/$' $i) {
             edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
         }}

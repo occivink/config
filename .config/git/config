@@ -1,21 +1,25 @@
 [user]
-	email = Olivier.Perret@mailbox.org
-	name = Olivier Perret
+    email = Olivier.Perret@mailbox.org
+    name = Olivier Perret
 [core]
-	pager = diff-so-fancy | less --tabs=4 -RFX
+    pager = diff-so-fancy | less --tabs=4 -RFX
 [color]
-	ui = true
+    ui = true
 [color "diff-highlight"]
-	oldNormal = red bold
-	oldHighlight = red bold 52
-	newNormal = green bold
-	newHighlight = green bold 22
+    oldNormal = red bold
+    oldHighlight = red bold 52
+    newNormal = green bold
+    newHighlight = green bold 22
 [color "diff"]
-	meta = yellow
-	frag = magenta bold
-	commit = yellow bold
-	old = red bold
-	new = green bold
-	whitespace = red reverse
+    meta = yellow
+    frag = magenta bold
+    commit = yellow bold
+    old = red bold
+    new = green bold
+    whitespace = red reverse
+[format]
+    pretty = %C(green bold)%h%C(reset) %C(blue bold)%ad%C(reset) %s %C(red bold)%d%C(reset) %C(cyan)(%an)%C(reset)
+[log]
+    date = format:%y-%m-%d
 [include]
     path = dayjob

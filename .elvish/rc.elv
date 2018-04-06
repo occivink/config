@@ -39,8 +39,7 @@ fn subedit [pre input_matroska post]{
     use re
 
     # extract subtitles
-    tracks = ""
-    try { tracks = (mkvmerge -i $input_matroska | slurp) } except _ { fail "Not a matroska?" }
+    tracks = (try { mkvmerge -i $input_matroska | slurp } except _ { fail "Not a matroska?" })
     tracks_count = (count [(re:find 'Track ID \d+:' $tracks)])
     sub_tracks = [(re:find 'Track ID (\d+): subtitles' $tracks)]
     if (> (count $sub_tracks) 1) { fail "Too many subtitles tracks" }
