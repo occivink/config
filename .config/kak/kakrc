@@ -7,6 +7,15 @@ define-command source-here-or-in -params 2 %{
     #source "%arg{2}/%arg{1}"
 }
 
+hook global KakBegin .* %{
+    %sh{
+        dir=$(git rev-parse --show-toplevel)
+        if [ $? -eq 0 ]; then
+            printf "try 'source \'%s/init.kak\''\n" "$dir"
+        fi
+    }
+}
+
 source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
 source-here-or-in   comment.kak     "%val{runtime}/rc/core"
 source-here-or-in   diff.kak        "%val{runtime}/rc/core"
@@ -127,10 +136,10 @@ map global normal T     ""
 map global normal <a-t> ':execute-keys -itersel "<lt>a-x>d%arg{1}k<lt>a-P>"<ret>'
 map global normal <a-T> ""
 
-set-face SecondaryCursor black,rgb:babaa3
-set-face Whitespace rgb:363636,default
-set-face LineNumbersWrapped rgb:606060,default+i
-#set-face MatchingChar default,default+r
+set-face global SecondaryCursor black,rgb:babaa3
+set-face global Whitespace rgb:363636,default
+set-face global LineNumbersWrapped rgb:606060,default+i
+#set-face global MatchingChar default,default+r
 
 add-highlighter global number_lines -hlcursor -separator ' '
 add-highlighter global show_matching

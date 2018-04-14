@@ -20,7 +20,7 @@ edit:prompt = {
     use re
     # abbreviate path by shortening the parent directories
     edit:styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" " "bg-blue;bold"
-    edit:styled " λ " "bg-green;bold"
+    edit:styled " λ " "white;bg-green;bold"
     put " "
 }
 edit:rprompt = { }
