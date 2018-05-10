@@ -49,7 +49,7 @@ fn subedit [pre input_matroska post]{
 
     try {
         # call external command
-        $cmd $@pre $ass_file $@post
+        (external $cmd) $@pre $ass_file $@post
 
         # merge back
         trackorder = (joins "," [(for i [(seq 0 (- $tracks_count 1))] {

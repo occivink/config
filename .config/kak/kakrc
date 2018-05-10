@@ -98,12 +98,12 @@ map -docstring "jump to" global goto d "<esc>:ctags-search<ret>"
 
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
-    map window insert <backtab> <c-p>
+    map window insert <s-tab> <c-p>
     map window insert <tab> <c-n>
 }
 hook global InsertCompletionHide .* %{
     unmap window insert <tab> <c-n>
-    unmap window insert <backtab> <c-p>
+    unmap window insert <s-tab> <c-p>
 }
 
 # auto-percent mappings
