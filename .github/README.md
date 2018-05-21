@@ -1,6 +1,13 @@
+This repo uses a setup similar to what is described in [this article](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/) and should be setup like this:
+
+```
+git clone --bare $URL ~/.config/config
+git --git-dir ~/.config/config --work-tree ~ checkout
+```
+
 # Source
 
-Some of the stuff in this repo is just a read-only view of other repos, for convenience purpose. I've listed below their sources.
+Some of the stuff in this repo is just a read-only view of other repos, for (my own) convenience. I've listed below their sources.
 
 For anything not mentioned, this repo is considered the source.
 
@@ -13,14 +20,15 @@ For anything not mentioned, this repo is considered the source.
 * [vertical-selection](https://github.com/occivink/kakoune-vertical-selection)
 * [filetree](https://github.com/occivink/kakoune-filetree)
 * [gdb](https://github.com/occivink/kakoune-gdb)
+* [kak-lsp](https://github.com/ul/kak-lsp)
 
 ## [mpv](https://github.com/mpv-player/mpv) (and mvi, mmp)
 
 * [crop, encode, blacklist-extensions, blur-edges, seek-to](https://github.com/occivink/mpv-scripts)
 * [gallery, gallery-thumbgen](https://github.com/occivink/mpv-gallery-view)
 * [image-viewer](https://github.com/occivink/mpv-image-viewer)
-* [stats](https://github.com/Argon-/mpv-stats)
 * [auto-profiles](https://github.com/wm4/mpv-scripts)
+* [visualizer](https://github.com/mfcc64/mpv-scripts)
 
 mvi and mmp are just aliases to different profiles of mpv. More specifically, I use mpv for videos, mvi for images and mmp for music.
 

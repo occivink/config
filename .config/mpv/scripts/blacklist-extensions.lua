@@ -55,7 +55,7 @@ function should_remove(filename)
     return false
 end
 
-function process(playlist_count)
+function process(name, playlist_count)
     if playlist_count < 2 then return end
     if opts.oneshot then
         mp.unobserve_property(observe)

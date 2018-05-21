@@ -6,7 +6,7 @@ define-command surround-lock %{
     on-key %{
         try %{
             surround-impl %val{key}
-            surround-repeat
+            surround-lock
         }
     }
 }
@@ -14,9 +14,7 @@ define-command surround-lock %{
 define-command surround %{
     surround-title
     on-key %{
-        try %{
-            surround-impl %val{key}
-        }
+        try %{ surround-impl %val{key} }
     }
 }
 
@@ -67,5 +65,5 @@ define-command -hidden surround-del %{
     exec -no-hooks i<del><esc>a<backspace><esc>
 }
 define-command -hidden surround-move -params 2 %{
-    exec -no-hooks "<a-:>%arg{1}<a-;>%arg{2}<a-;>"
+    exec -no-hooks "%arg{1}<a-;>%arg{2}<a-;>"
 }

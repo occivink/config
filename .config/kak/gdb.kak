@@ -2,6 +2,11 @@
 # a long running shell process starts a gdb session (or connects to an existing one) and handles input/output
 # kakoune -> gdb communication is done by writing the gdb commands to a fifo
 # gdb -> kakoune communication is done by an awk process that translates gdb events into kakoune commands
+
+define-command g %{
+    gdb-session-new ~/test/proj
+    gdb-enable-autojump
+}
  
 # the gdb-handle-* commands act upon gdb notifications to update the kakoune state
 

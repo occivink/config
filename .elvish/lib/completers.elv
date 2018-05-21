@@ -17,9 +17,9 @@ use re
 #    flags = [-p -L (if (has-prefix $base '.') { put -a })]
 #    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
 #        each [i]{ if (re:match '/$' $i) { 
-#               edit:complex-candidate (path-clean $dir$di)/ &style="blue;bold"
+#               edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
 #           } else { 
-#               edit:complex-candidate (path-clean $dir$di)
+#               edit:complex-candidate (path-clean $dir$i)
 #           } 
 #        }
 #}
@@ -62,21 +62,28 @@ edit:completion:arg-completer[ssh] = [@cmd]{
     }
 }
 
-#edit:completion:arg-completer[systemctl] = [@cmd]{
-#    if (eq (count $cmd) 2) {
-#        put suspend poweroff reboot enable disable start stop restart daemon-reload edit
-#    } else {
-#        subcommand = $cmd[1]
-#        if (eq $subcommand "enabled") {
-#            systemctl list-unit-files --no-legend --state=disabled
-#        } elif (eq $subcommand "disabled") {
-#        } elif (eq $subcommand "disabled") {
-#        } elif (eq $subcommand "disabled") {
-#        } elif (eq $subcommand "disabled") {
-#        } elif (eq $subcommand "disabled") {
-#        # systemctl list-stuff
-#    }
-#}
+systemd_units = [state]{
+    use re
+    systemctl list-unit-files --no-legend --state=$state | each [l]{
+        a=(re:find '^(.*)\.(service|target|socket|path|timer) +'$state'$' $l)
+        edit:complex-candidate $a[groups][1][text] &display-suffix=" ("$a[groups][2][text]")"
+    }
+}
+edit:completion:arg-completer[systemctl] = [@cmd]{
+    if (eq (count $cmd) 2) {
+        put suspend poweroff reboot enable disable status start stop restart daemon-reload edit
+    } else {
+        subcommand = $cmd[1]
+        if (eq $subcommand "enable") {
+            $systemd_units disabled
+        } elif (eq $subcommand "disable") {
+            $systemd_units enabled
+        } elif (eq $subcommand "status") {
+        } elif (has-value [stop restart] $subcommand) {
+        } elif (eq $subcommand "start") {
+        }
+    }
+}
 
 edit:completion:arg-completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
@@ -108,18 +115,22 @@ edit:completion:arg-completer[pacaur] = [@cmd]{ $pac_completer (external pacaur)
 git_completer = [gitcmd~ @cmd]{
     # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
-        put add stage unstage show status mv rm commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
+        put add stage unstage show status commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
     } else {
         subcommand = $cmd[1]
-        if (re:match "^(add|stage)$" $subcommand) {
+        if (has-value [add stage] $subcommand) {
             gitcmd diff --name-only --relative .
             gitcmd ls-files --others --exclude-standard
         } elif (eq $subcommand discard) {
             gitcmd diff --name-only --relative .
+        } elif (eq $subcommand stash) {
+            put save list show apply pop drop
         } elif (eq $subcommand unstage) {
             gitcmd diff --name-only --cached --relative .
-        } elif (eq $subcommand checkout) {
+        } elif (has-value [checkout rebase] $subcommand) {
             gitcmd branch --list --all --no-contains HEAD --format '%(refname:short)'
+        } else {
+            edit:complete-filename $cmd[-1]
         }
     }
 }

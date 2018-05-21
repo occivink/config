@@ -1,4 +1,5 @@
 local utils = require "mp.utils"
+local msg = require "mp.msg"
 local options = require "mp.options"
 
 local start_timestamp = nil
@@ -25,7 +26,19 @@ function file_exists(name)
     end
 end
 
-function get_output_string(dir, format, input, title, from, to, profile)
+function get_extension(path)
+    local candidate = string.match(path, "%.([^.]+)$")
+    if candidate then
+        for _, ext in ipairs({ "mkv", "webm", "mp4", "avi" }) do
+            if candidate == ext then
+                return candidate
+            end
+        end
+    end
+    return "mkv"
+end
+
+function get_output_string(dir, format, input, extension, title, from, to, profile)
     local res = utils.readdir(dir)
     if not res then
         return nil
@@ -40,13 +53,10 @@ function get_output_string(dir, format, input, title, from, to, profile)
     output = string.gsub(output, "$s", seconds_to_time_string(from, true))
     output = string.gsub(output, "$e", seconds_to_time_string(to, true))
     output = string.gsub(output, "$d", seconds_to_time_string(to-from, true))
+    output = string.gsub(output, "$x", extension)
     output = string.gsub(output, "$p", profile)
     if not string.find(output, "$n") then
-        if not files[output] then
-            return output
-        else
-            return nil
-        end
+        return files[output] and nil or output
     end
     local i = 1
     while true do
@@ -114,12 +124,18 @@ function seconds_to_time_string(seconds, full)
     return ret
 end
 
-function start_encoding(input_path, from, to, settings)
+function start_encoding(from, to, settings)
+    local path = mp.get_property("path")
+    local is_stream = not file_exists(path)
+    if is_stream then
+        path = mp.get_property("stream-path")
+    end
+
     local args = {
-        "ffmpeg",
-        "-loglevel", "panic", "-hide_banner", --stfu ffmpeg
+        settings.ffmpeg_command,
+        "-loglevel", "panic", "-hide_banner",
         "-ss", seconds_to_time_string(from, false),
-        "-i", input_path,
+        "-i", path,
         "-to", tostring(to-from)
     }
 
@@ -154,14 +170,18 @@ function start_encoding(input_path, from, to, settings)
     -- path of the output
     local output_directory = settings.output_directory
     if output_directory == "" then
-        output_directory, _ = utils.split_path(input_path)
+        if is_stream then
+            output_directory = "."
+        else
+            output_directory, _ = utils.split_path(path)
+        end
     else
         output_directory = string.gsub(output_directory, "^~", os.getenv("HOME") or "~")
     end
-    local output_name = string.format("%s.%s", settings.output_format, settings.container)
     local input_name = mp.get_property("filename/no-ext") or "encode"
     local title = mp.get_property("media-title")
-    output_name = get_output_string(output_directory, output_name, input_name, title, from, to, settings.profile)
+    local extension = get_extension(path)
+    local output_name = get_output_string(output_directory, settings.output_format, input_name, extension, title, from, to, settings.profile)
     if not output_name then
         mp.osd_message("Invalid path " .. output_directory)
         return
@@ -208,8 +228,7 @@ function clear_timestamp()
 end
 
 function set_timestamp(profile)
-    local path = mp.get_property("path")
-    if not path then
+    if not mp.get_property("path") then
         mp.osd_message("No file currently playing")
         return
     end
@@ -250,25 +269,27 @@ function set_timestamp(profile)
         to = to + 1 / fps / 2
         local settings = {
             detached = true,
-            container = "webm",
+            container = "",
             only_active_tracks = false,
             preserve_filters = true,
             append_filter = "",
             codec = "-an -sn -c:v libvpx -crf 10 -b:v 1000k",
-            output_format = "$f_$n",
+            output_format = "$f_$n.webm",
             output_directory = "",
+            ffmpeg_command = "ffmpeg",
             print = true,
         }
         if profile then
             options.read_options(settings, profile)
+            if settings.container ~= "" then
+                msg.warn("The 'container' setting is deprecated, use 'output_format' now")
+                settings.output_format = settings.output_format .. "." .. settings.container
+            end
             settings.profile = profile
         else
             settings.profile = "default"
         end
-        if not file_exists(path) then
-            path = mp.get_property("stream-path")
-        end
-        start_encoding(path, from, to, settings)
+        start_encoding(from, to, settings)
     end
 end
 

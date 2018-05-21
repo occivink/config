@@ -29,15 +29,15 @@ define-command -hidden filetree-buflist-to-regex -params ..1 %{
     try %{
         # eval to avoid using a shell scope if *filetree* is not open
         eval -buffer *filetree* %{
-            set-option buffer filetree_open_files "%sh{
+            set-option buffer filetree_open_files %sh{
                 r=$(
-                    printf '%s\n' \"$kak_buflist\" | tr : '\n' | while read -r i; do
-                        [ \"$i\" != \"$1\" ] && printf \"%s%s%s\" \"\Q\" \"$i\" \"\E|\"
+                    printf '%s\n' "$kak_buflist" | tr : '\n' | while read -r i; do
+                        [ "$i" != "$1" ] && printf "%s%s%s" "\Q" "$i" "\E|"
                     done
                 )
                 # strip trailing |
-                printf \"^\./(%s)$\" \"${r%|}\"
-            }"
+                printf "^\./(%s)$" "${r%|}"
+            }
         }
     }
 }

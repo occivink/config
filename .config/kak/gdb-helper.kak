@@ -56,3 +56,18 @@ define-command -hidden -params 1 gdb-helper-impl %{
         echo "try %{ exec -with-maps \"$1\" }"
     }
 }
+
+hook global GlobalSetOption gdb_started=true %{
+    map global normal <f10>   ': gdb-next<ret>'
+    map global normal <f11>   ': gdb-step<ret>'
+    map global normal <s-f11> ': gdb-finish<ret>'
+    map global normal <f9>    ': gdb-toggle-breakpoint<ret>'
+    map global normal <f5>    ': gdb-continue<ret>'
+}
+hook global GlobalSetOption gdb_started=false %{
+    unmap global normal <f10>   ': gdb-next<ret>'
+    unmap global normal <f11>   ': gdb-step<ret>'
+    unmap global normal <s-f11> ': gdb-finish<ret>'
+    unmap global normal <f9>    ': gdb-toggle-breakpoint<ret>'
+    unmap global normal <f5>    ': gdb-continue<ret>'
+}

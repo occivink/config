@@ -3,7 +3,7 @@
 
 define-command -hidden sudo-write-impl %{
     eval -save-regs f %{
-        set-register f "%sh{ mktemp --tmpdir XXXXX }"
+        set-register f %sh{ mktemp --tmpdir XXXXX }
         write %reg{f}
         %sh{
             sudo -- dd if="$kak_reg_f" of="$kak_buffile" >/dev/null 2>&1

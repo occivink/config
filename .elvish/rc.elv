@@ -5,6 +5,7 @@ use smart-matcher
 
 E:EDITOR=kak
 E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
+E:MESA_GL_VERSION_OVERRIDE=4.5COMPAT
 
 edit:max-height=15
 

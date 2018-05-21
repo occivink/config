@@ -103,7 +103,7 @@ If -force is specified, changes will also be applied to files that do not have a
             }
         }
         echo -markup %sh{
-            printf "\"{Information}"
+            printf "{Information}"
             s=${#kak_reg_s}
             [ $s -ne 1 ] && p=s
             printf "%i change%s applied" "$s" "$p"
@@ -111,7 +111,6 @@ If -force is specified, changes will also be applied to files that do not have a
             [ $i -gt 0 ] && printf ", %i ignored" "$i"
             f=${#kak_reg_f}
             [ $f -gt 0 ] && printf ", %i failed" "$f"
-            printf "\""
         }
     }
 }
