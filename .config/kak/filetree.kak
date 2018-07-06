@@ -1,6 +1,7 @@
-declare-option -hidden str filetree_open_files
-
+declare-option -docstring "name of the client in which all source code jumps will be executed" str jumpclient
 declare-option str filetree_find_cmd 'find .  -not -type d -and -not -path "*/\.*"'
+
+declare-option -hidden str filetree_open_files
 
 set-face global FileTreeOpenFiles black,yellow
 set-face global FileTreeDirName rgb:606060,default
@@ -10,17 +11,17 @@ define-command filetree -docstring "
 Open a scratch buffer with all paths returned by the specified command.
 Buffers to the files can be opened using <ret>.
 " %{
-    eval %{
+    eval -save-regs '/|' %{
         try %{ delete-buffer *filetree* }
         set-register / "^\Q./%val{bufname}\E$"
         edit -scratch *filetree*
         set-register '|' %opt{filetree_find_cmd}
         exec '<a-!><ret>'
-        exec 'ged'
+        exec 'ggd'
         # center view on previous file
         try %{ exec '/<ret>vc' }
-        addhl buffer dynregex '%opt{filetree_open_files}' 0:FileTreeOpenFiles
-        addhl buffer regex '^([^\n]+/)([^/\n]+)$' 1:FileTreeDirName 2:FileTreeFileName
+        addhl buffer/ dynregex '%opt{filetree_open_files}' 0:FileTreeOpenFiles
+        addhl buffer/ regex '^([^\n]+/)([^/\n]+)$' 1:FileTreeDirName 2:FileTreeFileName
         map buffer normal <ret> :filetree-open-files<ret>
     }
 }
@@ -31,7 +32,8 @@ define-command -hidden filetree-buflist-to-regex -params ..1 %{
         eval -buffer *filetree* %{
             set-option buffer filetree_open_files %sh{
                 r=$(
-                    printf '%s\n' "$kak_buflist" | tr : '\n' | while read -r i; do
+                    eval set -- "$kak_buflist"
+                    for i in "$@"; do
                         [ "$i" != "$1" ] && printf "%s%s%s" "\Q" "$i" "\E|"
                     done
                 )
@@ -49,7 +51,7 @@ define-command -hidden filetree-open-files %{
     eval -draft -itersel %{
         exec ';<a-x>H'
         # don't -existing, so that this can be used to create files
-        eval -draft "edit \"%reg{.}\""
+        eval -draft %{ edit %reg{.} }
     }
     exec '<space>;<a-x>H'
     eval -try-client %opt{jumpclient} %{ buffer %reg{.} }

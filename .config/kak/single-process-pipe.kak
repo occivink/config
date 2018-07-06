@@ -1,9 +1,9 @@
 define-command -params 1 single-process-pipe %{
-    eval %{
-        eval -save-regs '' -draft %{
+    eval -save-regs '"' %{
+        eval -save-regs '|' -draft %{
             exec -save-regs '' y
             edit -scratch *single-process-pipe*
-            exec <a-p>i<ret><esc>ggd
+            exec <a-P>i<ret><esc>ggd
             set-register '|' %arg{1}
             exec '%|<ret>'
             exec -save-regs '' '%<a-s>Hy'
@@ -31,7 +31,7 @@ The selections are padded to the left using <char> (defaults to <space>)
 If <length> is not specified, the selections are padded to match the length of the longest selection
 " %{
     eval -save-regs 'pc' %{
-        %sh{
+        eval %sh{
             printf "set-register p '%s'\n" "${1- }"
             printf "set-register c '%s'\n" "${2-0}"
         }
@@ -46,7 +46,7 @@ If <length> is not specified, the selections are padded to match the length of t
         END {
             for(i = 0; i < lines; ++i) {
                 for (j = 0; j < L - length(l[i]); ++j) {
-                    printf(\"%reg{p}\")
+                    printf(""%reg{p}"")
                 }
                 print(l[i])
             }

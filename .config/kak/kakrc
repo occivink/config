@@ -3,15 +3,15 @@
 # potentially dangerous
 # also not ideal since errors from sourcing are silenced
 define-command source-here-or-in -params 2 %{
-    try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
-    #source "%arg{2}/%arg{1}"
+    #try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
+    source "%arg{2}/%arg{1}"
 }
 
 hook global KakBegin .* %{
-    %sh{
+    eval %sh{
         dir=$(git rev-parse --show-toplevel 2> /dev/null)
         if [ $? -eq 0 ]; then
-            printf "try 'source \'%s/init.kak\''\n" "$dir"
+            printf "try  'source ''%s/init.kak'''" "$dir"
         fi
     }
 }
@@ -52,8 +52,6 @@ source-here-or-in   expand.kak                 "%val{config}"
 source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
-source-here-or-in   gdb-helper.kak             "%val{config}"
-source-here-or-in   gdb.kak                    "%val{config}"
 source-here-or-in   multiples.kak              "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
@@ -65,11 +63,11 @@ set-option global tabstop 4
 set-option global indentwidth 4
 set-option global BOM none
 set-option global eolformat lf
-#set-option global disabled_hooks 
+#set-option global disabled_hooks
 
-set-option global gdb_breakpoint_active_symbol "x"
-set-option global gdb_breakpoint_inactive_symbol "o"
-set-option global gdb_location_symbol "->"
+#set-option global gdb_breakpoint_active_symbol "x"
+#set-option global gdb_breakpoint_inactive_symbol "o"
+#set-option global gdb_location_symbol "->"
 
 set-option global autoinfo command|onkey
 
@@ -82,7 +80,7 @@ set-option global grepcmd 'ag --filename --column --ignore tags'
 set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\"\n\" (find:find &dirs=\$false)"'
 set-option global termcmd 'alacritty -e sh -c'
 
-set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+#set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ set-face StatusLine default,magenta }
@@ -119,12 +117,12 @@ map global normal <a-K> ': auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 # word-related mappings
 map global normal w     <a-i>w
 map global normal <a-w> <a-i><a-w>
-map global normal W     "\"_s.<ret><a-i>w"
-map global normal <a-W> "\"_s.<ret><a-i><a-w>"
+map global normal W     '"_s.<ret><a-i>w'
+map global normal <a-W> '"_s.<ret><a-i><a-w>'
 
 # replace select-onto with phantom-sel stuff; more useful
 map global normal f     ': phantom-sel-add-selection<ret>'
-map global normal F     ': phantom-sel-select-all<ret>:phantom-sel-clear<ret>'
+map global normal F     ': phantom-sel-select-all; phantom-sel-clear<ret>'
 map global normal <a-f> ': phantom-sel-iterate-next<ret>'
 map global normal <a-F> ': phantom-sel-iterate-prev<ret>'
 
@@ -143,11 +141,11 @@ set-face global Whitespace rgb:363636,default
 set-face global LineNumbersWrapped rgb:606060,default+i
 #set-face global MatchingChar default,default+r
 
-add-highlighter global number_lines -hlcursor -separator ' '
-add-highlighter global show_matching
-add-highlighter global dynregex '%reg{/}' 0:default,+u
-add-highlighter global show_whitespaces
-add-highlighter global wrap -word -marker "↳ "
+addhl global/ number_lines -hlcursor -separator ' '
+addhl global/ show_matching
+addhl global/ dynregex '%reg{/}' 0:default,+u
+addhl global/ show_whitespaces
+addhl global/ wrap -word -marker "↳ "
 
 define-command reload-all -docstring "Reload all open buffers" %{
     eval -buffer * edit!
@@ -155,7 +153,7 @@ define-command reload-all -docstring "Reload all open buffers" %{
 
 define-command scratch -docstring "Open a scratch buffer" -params ..1 %{
     try %{
-        %sh{ [ -z "$1" ] && echo fail }
+        eval %sh{ [ -z "$1" ] && echo fail }
         edit -scratch %arg{1}
     } catch %{
         edit -scratch *scratch*

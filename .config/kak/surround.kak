@@ -38,32 +38,32 @@ l,<down>:            grow
 define-command -hidden surround-impl -params 1 %{
     # clear the infobox
     info
-    %sh{
+    eval %sh{
         case "$1" in
-            B|{|}) echo "surround-add { }" ;;
-            b|\(|\)) echo "surround-add ( )" ;;
-            r|[|]) echo "surround-add [ ]" ;;
-            a|\<lt\>|\<gt\>) echo "surround-add <lt> <gt>" ;;
-            Q|\") echo 'surround-add "\"" "\""' ;;
-            q|\') echo "surround-add '\'' '\''" ;;
-            g|\`) echo "surround-add \` \`" ;;
-            \<space\>) echo "surround-add ' ' ' '" ;;
-            \<backspace\>|\<del\>|d) echo "surround-del" ;;
-            h|\<left\>) echo "surround-move H L" ;;
-            l|\<right\>) echo "surround-move L H" ;;
-            k|\<up\>) echo "surround-move K J" ;;
-            j|\<down\>) echo "surround-move J K" ;;
-            *) echo "fail" ;;
+            B|{|})                   printf "surround-add { }" ;;
+            b|\(|\))                 printf "surround-add ( )" ;;
+            r|[|])                   printf "surround-add [ ]" ;;
+            a|\<lt\>|\<gt\>)         printf "surround-add <lt> <gt>" ;;
+            Q|\")                    printf 'surround-add \\" \\"' ;;
+            q|\')                    printf "surround-add \\\\' \\\\'" ;;
+            g|\`)                    printf "surround-add \` \`" ;;
+            \<space\>)               printf "surround-add ' ' ' '" ;;
+            \<backspace\>|\<del\>|d) printf "surround-del" ;;
+            h|\<left\>)              printf "surround-move H L" ;;
+            l|\<right\>)             printf "surround-move L H" ;;
+            k|\<up\>)                printf "surround-move K J" ;;
+            j|\<down\>)              printf "surround-move J K" ;;
+            *)                       printf "fail" ;;
         esac
     }
 }
 
 define-command -hidden surround-add -params 2 %{
-    exec -no-hooks "i%arg{1}<esc>Ha%arg{2}" <esc>
+    exec "i%arg{1}<esc>Ha%arg{2}" <esc>
 }
 define-command -hidden surround-del %{
-    exec -no-hooks i<del><esc>a<backspace><esc>
+    exec "i<del><esc>a<backspace><esc>"
 }
 define-command -hidden surround-move -params 2 %{
-    exec -no-hooks "%arg{1}<a-;>%arg{2}<a-;>"
+    exec "%arg{1}<a-;>%arg{2}<a-;>"
 }

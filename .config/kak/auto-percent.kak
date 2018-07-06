@@ -15,7 +15,7 @@ define-command -hidden -params 2 auto-percent-prompt %{
             exec "%arg{2}"
         }
     }
-    exec "%val{count}\"%val{register}%arg{1}"
+    exec "%val{count}""%val{register}%arg{1}"
 }
 
 # for commands that do not spawn a prompt
@@ -28,7 +28,7 @@ define-command -hidden -params 2 auto-percent %{
             exec "%arg{2}"
         }
     }
-    exec "%val{count}\"%val{register}%arg{1}"
+    exec "%val{count}""%val{register}%arg{1}"
 }
 
 #map global normal <a-s> ':auto-percent <lt>a-s> \%<ret>'

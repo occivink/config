@@ -5,17 +5,18 @@ hook global WinDisplay .* %{
     buffers-info
 }
 
+declare-option str-list bufinfo_tmp
+
 define-command buffers-info %{
-    eval -save-regs 'bc' %{ 
-        set-register b %val{bufname}
-        set-register c ''
-        eval -no-hooks -buffer * %{
-            set-register c "%reg{c}:%val{bufname}_%val{modified}"
+    eval -no-hooks -save-regs b %{ 
+        unset buffer bufinfo_tmp
+        reg b %val{bufname}
+        eval -buffer * %{
+            set -add "buffer=%reg{b}" bufinfo_tmp "%val{bufname}_%val{modified}"
         }
-        %sh{
-            printf "info -title Buffers -- %%:"
-            IFS=:
-            for bufinfo in ${kak_reg_c#:}; do
+        info -title Buffers -- %sh{
+            eval set -- $kak_opt_bufinfo_tmp
+            for bufinfo in "$@"; do
                 buf=${bufinfo%_*}
                 if [ "$buf" = "$kak_bufname" ]; then
                     printf "> %s" "$buf"
@@ -28,56 +29,55 @@ define-command buffers-info %{
                 fi
                 echo
             done
-            printf :\\n
         }
     }
 }
 
-define-command buffers-info-filtered %{
-    %sh{
-        case "$kak_client" in
-            tools) printf "exec "
-            ;;
-            main) printf ""
-            ;;
-            *) printf ""
-            ;;
-        esac
-    }
-}
-
-# hella fast
-define-command buffers-info-native -params ..1 %{
-    eval -no-hooks -save-regs '"/bi' %{
-
-        # debug so that it doesn't get iterated over
-        eval -no-hooks -draft %{ edit -debug -scratch *buffers-info-native* }
-        # create one line per buffer, in the format "  bufname (true|false)"
-        eval -no-hooks -buffer * %{
-            reg '"' "  %val{bufname} %val{modified}
-"
-            exec -no-hooks -buffer *buffers-info-native* "gep"
-        }
-        # put the line corresponding to the current buffer as search pattern
-        reg '/' "^  \Q%val{bufname}\E( \[\+\])?$"
-        eval -save-regs '/' -no-hooks -buffer *buffers-info-native* %{
-            exec -no-hooks 'd'
-            # remove "false" suffix
-            try %{ exec -no-hooks '%s false$<ret>d' }
-            # replace "true" suffix with "[+]"
-            try %{ exec -no-hooks '%strue$<ret>c[+]<esc>' }
-            # prepend '>' to current buffer
-            try %{ exec -no-hooks '/<ret>ghr>' }
-            # arbitrary hook: do everything you want here
-            eval %arg{1}
-            # put into register 'i' the whole bufinfo
-            exec -draft -no-hooks '%"iy'
-            # put into register 'b' the buffer we want to select
-            exec -no-hooks '<space>;<a-x>s^[ >] (.*?)(?: \[\+\])?$<ret>'
-            reg b %reg{1}
-        }
-        buffer %reg{b}
-        delete-buffer *buffers-info-native*
-        info -title Buffers %reg{i}
-    }
-}
+#define-command buffers-info-filtered %{
+#    %sh{
+#        case "$kak_client" in
+#            tools) printf "exec "
+#            ;;
+#            main) printf ""
+#            ;;
+#            *) printf ""
+#            ;;
+#        esac
+#    }
+#}
+#
+## hella fast
+#define-command buffers-info-native -params ..1 %{
+#    eval -no-hooks -save-regs '"/bi' %{
+#
+#        # debug so that it doesn't get iterated over
+#        eval -no-hooks -draft %{ edit -debug -scratch *buffers-info-native* }
+#        # create one line per buffer, in the format "  bufname (true|false)"
+#        eval -no-hooks -buffer * %{
+#            reg '"' "  %val{bufname} %val{modified}
+#"
+#            exec -no-hooks -buffer *buffers-info-native* "gep"
+#        }
+#        # put the line corresponding to the current buffer as search pattern
+#        reg '/' "^  \Q%val{bufname}\E( \[\+\])?$"
+#        eval -save-regs '/' -no-hooks -buffer *buffers-info-native* %{
+#            exec -no-hooks 'd'
+#            # remove "false" suffix
+#            try %{ exec -no-hooks '%s false$<ret>d' }
+#            # replace "true" suffix with "[+]"
+#            try %{ exec -no-hooks '%strue$<ret>c[+]<esc>' }
+#            # prepend '>' to current buffer
+#            try %{ exec -no-hooks '/<ret>ghr>' }
+#            # arbitrary hook: do everything you want here
+#            eval %arg{1}
+#            # put into register 'i' the whole bufinfo
+#            exec -draft -no-hooks '%"iy'
+#            # put into register 'b' the buffer we want to select
+#            exec -no-hooks '<space>;<a-x>s^[ >] (.*?)(?: \[\+\])?$<ret>'
+#            reg b %reg{1}
+#        }
+#        buffer %reg{b}
+#        delete-buffer *buffers-info-native*
+#        info -title Buffers %reg{i}
+#    }
+#}
