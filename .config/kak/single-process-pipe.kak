@@ -1,14 +1,12 @@
-define-command -params 1 single-process-pipe %{
-    eval -save-regs '"' %{
-        eval -save-regs '|' -draft %{
-            exec -save-regs '' y
-            edit -scratch *single-process-pipe*
-            exec <a-P>i<ret><esc>ggd
-            set-register '|' %arg{1}
-            exec '%|<ret>'
-            exec -save-regs '' '%<a-s>Hy'
-            delete-buffer *single-process-pipe*
-        }
+define-command -hidden -params 1 single-process-pipe %{
+    eval -no-hooks -save-regs '|"' %{
+        exec -save-regs '' y
+        edit -scratch *single-process-pipe*
+        exec <a-P>i<ret><esc>ggd
+        set-register '|' %arg{1}
+        exec '%|<ret>'
+        exec -save-regs '' '%<a-s>Hy'
+        delete-buffer
         exec R
     }
 }
@@ -16,24 +14,24 @@ define-command -params 1 single-process-pipe %{
 define-command math -docstring "
 math: performs integer arithmetic on selections individually
 " %{
-    # strip leading zeros because shell interprets them as octal (whyyyyyyyy)
-    try %{ exec -draft 's\b0+<ret>d' }
-    # not sure why the '$' need escaping
-    single-process-pipe 'sh -c "while read val; do echo \$(( \$val )); done"'
+    # strip leading zeros because the shell interprets them as octal (whyyyyyyyy)
+    try %{ exec -draft '1s\b(0+)[.1-9]<ret>d' }
+    single-process-pipe "while read val; do echo $(( $val )); done"
 }
 
-# pad each selection
-# $1: character to pad with (default <space>)
-# $2: resulting length (default length of the biggest input)
 define-command -params ..2 pad -docstring "
-pad [<char>] [<length>]: pad selections
+pad [<char>] [<length>]: pads selections
 The selections are padded to the left using <char> (defaults to <space>)
 If <length> is not specified, the selections are padded to match the length of the longest selection
 " %{
     eval -save-regs 'pc' %{
         eval %sh{
-            printf "set-register p '%s'\n" "${1- }"
-            printf "set-register c '%s'\n" "${2-0}"
+            char="${1- }"
+            [ "${#char}" -eq 1 ] || { printf "fail 'Expected a character'"; exit; }
+            length="${2-0}"
+            [ "$length" -ge 0 ] || { printf "fail 'Expected a number'"; exit; }
+            printf "reg p '%s'\n" "$char"
+            printf "reg c '%s'\n" "$length"
         }
         single-process-pipe "awk '
         BEGIN {
@@ -53,4 +51,3 @@ If <length> is not specified, the selections are padded to match the length of t
         }'"
     }
 }
-

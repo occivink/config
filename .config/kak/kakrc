@@ -4,16 +4,20 @@
 # also not ideal since errors from sourcing are silenced
 define-command source-here-or-in -params 2 %{
     #try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
-    source "%arg{2}/%arg{1}"
+     source "%arg{2}/%arg{1}"
 }
 
 hook global KakBegin .* %{
-    eval %sh{
-        dir=$(git rev-parse --show-toplevel 2> /dev/null)
-        if [ $? -eq 0 ]; then
-            printf "try  'source ''%s/init.kak'''" "$dir"
-        fi
-    }
+    try %{ source %sh{
+        while :; do
+            if test -f init.kak; then
+                printf "%s/init.kak" "$PWD"
+                exit
+            fi
+            if [ "$PWD" = / ]; then exit; fi
+            cd ..
+        done
+    }}
 }
 
 source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
@@ -43,6 +47,7 @@ source-here-or-in   rust.kak        "%val{runtime}/rc/base"
 source-here-or-in   x11.kak         "%val{runtime}/rc/base"
 
 source-here-or-in   autorestore.kak "%val{runtime}/rc/extra"
+source-here-or-in   cmake.kak       "%val{runtime}/rc/extra"
 source-here-or-in   git-tools.kak   "%val{runtime}/rc/extra"
 source-here-or-in   x11-repl.kak    "%val{runtime}/rc/extra"
 
@@ -52,6 +57,8 @@ source-here-or-in   expand.kak                 "%val{config}"
 source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
+source-here-or-in   gdb.kak                    "%val{config}"
+#source-here-or-in   kak-lsp.kak                "%val{config}"
 source-here-or-in   multiples.kak              "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
@@ -65,27 +72,27 @@ set-option global BOM none
 set-option global eolformat lf
 #set-option global disabled_hooks
 
-#set-option global gdb_breakpoint_active_symbol "x"
-#set-option global gdb_breakpoint_inactive_symbol "o"
-#set-option global gdb_location_symbol "->"
+set-option global gdb_breakpoint_active_symbol "x"
+set-option global gdb_breakpoint_inactive_symbol "o"
+set-option global gdb_location_symbol "->"
 
 set-option global autoinfo command|onkey
 
-set-option global ui_options ncurses_set_title=false
+#set-option global ui_options ncurses_set_title=false
 
 set-option global scrolloff 2,5
 
 set-option global makecmd 'make --jobs=8'
-set-option global grepcmd 'ag --filename --column --ignore tags'
+set-option global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug'
 set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\"\n\" (find:find &dirs=\$false)"'
 set-option global termcmd 'alacritty -e sh -c'
 
-#set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
 
 # TODO: revisit one day
-#hook global ModeChange ".*:prompt" %{ set-face StatusLine default,magenta }
-#hook global ModeChange ".*:insert" %{ set-face StatusLine black,yellow }
-#hook global ModeChange ".*:normal" %{ set-face StatusLine black,cyan }
+#hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
+#hook global ModeChange ".*:insert" %{ face global StatusLine black,yellow }
+#hook global ModeChange ".*:normal" %{ face global StatusLine black,cyan }
 
 # stop c and d from yanking
 map global normal d \"_d
@@ -96,7 +103,7 @@ map -docstring "find" global goto p "<esc>: find<ret>"
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
     try %{
-        exec -draft ';<a-K>^<ret>hGh<a-K>\A\h+\z<ret>'
+        exec -draft ';<a-K>^.<ret>hGh<a-K>\A\h+\z<ret>'
         map window insert <s-tab> <c-p>
         map window insert <tab> <c-n>
     }
@@ -136,15 +143,18 @@ map global normal T     ''
 map global normal <a-t> ': exec -itersel "<lt>a-x>d%arg{1}k<lt>a-P>"<ret>'
 map global normal <a-T> ''
 
+map global normal <c-b> ': make<ret>'
+map global normal <c-f> ''
+
 set-face global SecondaryCursor black,rgb:babaa3
 set-face global Whitespace rgb:363636,default
 set-face global LineNumbersWrapped rgb:606060,default+i
 #set-face global MatchingChar default,default+r
 
-addhl global/ number_lines -hlcursor -separator ' '
-addhl global/ show_matching
+addhl global/ number-lines -hlcursor -separator ' '
+addhl global/ show-matching
 addhl global/ dynregex '%reg{/}' 0:default,+u
-addhl global/ show_whitespaces
+addhl global/ show-whitespaces
 addhl global/ wrap -word -marker "↳ "
 
 define-command reload-all -docstring "Reload all open buffers" %{
@@ -153,7 +163,7 @@ define-command reload-all -docstring "Reload all open buffers" %{
 
 define-command scratch -docstring "Open a scratch buffer" -params ..1 %{
     try %{
-        eval %sh{ [ -z "$1" ] && echo fail }
+        eval %sh{ [ -z "$1" ] && printf fail }
         edit -scratch %arg{1}
     } catch %{
         edit -scratch *scratch*
@@ -192,26 +202,45 @@ hook global BufCreate '^\*scratch\*$' %{
     }
 }
 
+hook global GlobalSetOption gdb_started=true %{
+    map global normal <f10>   ': gdb-next<ret>'
+    map global normal <f11>   ': gdb-step<ret>'
+    map global normal <s-f11> ': gdb-finish<ret>'
+    map global normal <f12>   ': gdb-print<ret>'
+    map global normal <f9>    ': gdb-toggle-breakpoint<ret>'
+    map global normal <f5>    ': gdb-continue<ret>'
+}
+hook global GlobalSetOption gdb_started=false %{
+    unmap global normal <f10>   ': gdb-next<ret>'
+    unmap global normal <f11>   ': gdb-step<ret>'
+    unmap global normal <s-f11> ': gdb-finish<ret>'
+    unmap global normal <f12>   ': gdb-print<ret>'
+    unmap global normal <f9>    ': gdb-toggle-breakpoint<ret>'
+    unmap global normal <f5>    ': gdb-continue<ret>'
+}
+
 declare-user-mode expand
-map -docstring "expand" global expand <space> ':expand<ret>'
+map -docstring "expand" global expand <space> ': expand<ret>'
 
-map -docstring "surround"          global user s     ': surround<ret>'
-map -docstring "surround ↻"        global user S     ': surround-lock<ret>'
-map -docstring "expand"            global user e     ': expand<ret>'
-map -docstring "expand ↻"          global user E     ': expand; enter-user-mode -lock expand<ret>'
-map -docstring "select 🡓"          global user v     ': select-down<ret>'
-map -docstring "select 🡑"          global user <a-v> ': select-up<ret>'
-map -docstring "select 🡓🡑"         global user V     ': select-vertically<ret>'
-map -docstring "trim whitespaces"  global user w     ': trim-whitespaces<ret>'
-map -docstring "clip-paste after"  global user p     '<a-!>xsel --output --clipboard<ret>'
-map -docstring "clip-paste before" global user P     '!xsel --output --clipboard<ret>'
-map -docstring "clip-replace"      global user R     '|xsel --output --clipboard<ret>'
-map -docstring "clip-yank"         global user y     '<a-|>xsel --input --clipboard<ret>'
+map -docstring "surround"           global user s     ': surround<ret>'
+map -docstring "surround ↻"         global user S     ': surround-lock<ret>'
+map -docstring "expand"             global user e     ': expand<ret>'
+map -docstring "expand ↻"           global user E     ': expand; enter-user-mode -lock expand<ret>'
+map -docstring "select 🡓"           global user v     ': select-down<ret>'
+map -docstring "select 🡑"           global user <a-v> ': select-up<ret>'
+map -docstring "select 🡓🡑"          global user V     ': select-vertically<ret>'
+map -docstring "trim whitespaces"   global user w     ': trim-whitespaces<ret>'
+map -docstring "clip-paste after"   global user p     '<a-!>xsel --output --clipboard<ret>'
+map -docstring "clip-paste before"  global user P     '!xsel --output --clipboard<ret>'
+map -docstring "clip-replace"       global user R     '|xsel --output --clipboard<ret>'
+map -docstring "clip-yank"          global user y     '<a-|>xsel --input --clipboard<ret>'
+map -docstring "record macro"       global user b     Q
+map -docstring "replay macro"       global user q     q
 
-map global normal <a-,> :bp<ret>
-map global normal <a-.> :bn<ret>
-map global normal <a-r> :e!<ret>
-map global normal <a-d> :db<ret>
-map global normal <a-q> :db!<ret>
+map global normal <a-,> ': bp<ret>'
+map global normal <a-.> ': bn<ret>'
+map global normal <a-r> ': e!<ret>'
+map global normal <a-d> ': db<ret>'
+map global normal <a-q> ': db!<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }

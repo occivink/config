@@ -2,12 +2,6 @@
 # a long running shell process starts a gdb session (or connects to an existing one) and handles input/output
 # kakoune -> gdb communication is done by writing the gdb commands to a fifo
 # gdb -> kakoune communication is done by an awk process that translates gdb events into kakoune commands
-
-define-command g %{
-    gdb-session-new ~/test/proj
-    gdb-enable-autojump
-}
- 
 # the gdb-handle-* commands act upon gdb notifications to update the kakoune state
 
 declare-option str gdb_breakpoint_active_symbol "●"
@@ -38,7 +32,7 @@ declare-option str gdb_location_info
 # note that these variables may reference locations that are not in currently opened buffers
 
 # list of pending commands that will be executed the next time the process is stopped
-declare-option -hidden str-list gdb_pending_commands
+declare-option -hidden str gdb_pending_commands
 
 # a visual indicator showing the current state of the script
 declare-option str gdb_indicator
@@ -51,13 +45,13 @@ declare-option -hidden str gdb_dir
 declare-option -hidden line-specs gdb_breakpoints_flags
 declare-option -hidden line-specs gdb_location_flag
 
-add-highlighter shared/ group -passes move gdb
-add-highlighter shared/gdb flag_lines GdbLocation gdb_location_flag
-add-highlighter shared/gdb flag_lines GdbBreakpoint gdb_breakpoints_flags
+addhl shared/gdb group -passes move
+addhl shared/gdb/ flag-lines GdbLocation gdb_location_flag
+addhl shared/gdb/ flag-lines GdbBreakpoint gdb_breakpoints_flags
 
 define-command -params .. -file-completion gdb-session-new %{
     gdb-session-connect-internal
-    %sh{
+    nop %sh{
         # can't connect until socat has created the pty thing
         while [ ! -e "${kak_opt_gdb_dir}/pty" ]; do
             sleep 0.1
@@ -74,7 +68,7 @@ define-command -params .. -file-completion gdb-session-new %{
 
 define-command rr-session-new %{
     gdb-session-connect-internal
-    %sh{
+    nop %sh{
         # can't connect until socat has created the pty thing
         while [ ! -e "${kak_opt_gdb_dir}/pty" ]; do
             sleep 0.1
@@ -96,7 +90,7 @@ define-command gdb-session-connect %{
 
 define-command -hidden gdb-session-connect-internal %{
     gdb-session-stop
-    %sh{
+    eval %sh{
         tmpdir=$(mktemp --tmpdir -d gdb_kak_XXX)
         mkfifo "${tmpdir}/input_pipe"
         {
@@ -223,8 +217,8 @@ define-command -hidden gdb-session-connect-internal %{
         printf "$!" > "${tmpdir}/pid"
         printf "set-option global gdb_dir %s\n" "$tmpdir"
         # put a dummy flag to prevent the columns from jiggling
-        printf "set-option global gdb_location_flag '0:0|%${#kak_opt_gdb_location_symbol}s'\n"
-        printf "set-option global gdb_breakpoints_flags '0:0|%${#kak_opt_gdb_breakpoint_active_symbol}s'\n"
+        printf "set-option global gdb_location_flag 0 '0|%${#kak_opt_gdb_location_symbol}s'\n"
+        printf "set-option global gdb_breakpoints_flags 0 '0|%${#kak_opt_gdb_breakpoint_active_symbol}s'\n"
     }
     set-option global gdb_started true
     set-option global gdb_print_client %val{client}
@@ -236,16 +230,14 @@ define-command -hidden gdb-session-connect-internal %{
     hook -group gdb global KakEnd .* %{
         gdb-session-stop
     }
-    add-highlighter global ref -passes move gdb
+    addhl global/gdb-ref ref -passes move gdb
 }
 
 define-command gdb-session-stop %{
     try %{
-        %sh{
-            if [ "$kak_opt_gdb_started" = false ]; then echo fail; fi
-        }
+        eval %sh{ [ "$kak_opt_gdb_started" = false ] && printf fail }
         gdb-cmd quit
-        %sh{
+        nop %sh{
             #TODO: this might not be posix-compliant
             kill $(ps -o pid= --ppid $(cat "${kak_opt_gdb_dir}/pid"))
             rm -f "${kak_opt_gdb_dir}/pid" "${kak_opt_gdb_dir}/input_pipe"
@@ -261,21 +253,20 @@ define-command gdb-session-stop %{
         set-option global gdb_indicator ""
         set-option global gdb_dir ""
 
-        set-option global gdb_breakpoints_info ""
+        set-option global gdb_breakpoints_info
         set-option global gdb_location_info ""
         eval -buffer * %{
             unset-option buffer gdb_location_flag
             unset-option buffer gdb_breakpoint_flags
         }
-
-        remove-highlighter global/gdb
+        rmhl global/gdb-ref
         remove-hooks global gdb
     }
 }
 
 define-command gdb-jump-to-location %{
-    %sh{
-        if [ "$kak_opt_gdb_stopped" = false ]; then exit; fi
+    eval %sh{
+        [ "$kak_opt_gdb_stopped" = false ] && exit
         line="${kak_opt_gdb_location_info%%|*}"
         buffer="${kak_opt_gdb_location_info#*|}"
         printf "edit -existing \"%s\" %s\n" "$buffer" "$line"
@@ -283,8 +274,8 @@ define-command gdb-jump-to-location %{
 }
 
 define-command -params 1.. gdb-cmd %{
-    %sh{
-        if [ "$kak_opt_gdb_started" = false ]; then exit; fi
+    nop %sh{
+        [ "$kak_opt_gdb_started" = false ] && exit
         IFS=' '
         printf %s\\n "$*"  > "$kak_opt_gdb_dir"/input_pipe
     }
@@ -302,7 +293,7 @@ define-command gdb-toggle-breakpoint %{ gdb-breakpoint-impl true true }
 
 define-command gdb-print -params ..1 %{
     try %{
-        %sh{ [ -z "$1" ] && echo fail }
+        eval %sh{ [ -z "$1" ] && printf fail }
         gdb-cmd "print %arg{1}"
     } catch %{
         gdb-cmd "print %val{selection}"
@@ -311,9 +302,7 @@ define-command gdb-print -params ..1 %{
 
 define-command gdb-enable-autojump %{
     try %{
-        %sh{
-            if [ "$kak_opt_gdb_started" = false ]; then echo fail; fi
-        }
+        eval %sh{ [ "$kak_opt_gdb_started" = false ] && printf fail }
         set-option global gdb_autojump_client %val{client}
         gdb-set-indicator-from-current-state
     }
@@ -323,12 +312,11 @@ define-command gdb-disable-autojump %{
     gdb-set-indicator-from-current-state
 }
 define-command gdb-toggle-autojump %{
-    %sh{
-        if [ -n "$kak_opt_gdb_autojump_client" ]; then
-            echo gdb-disable-autojump
-        else
-            echo gdb-enable-autojump
-        fi
+    try %{
+        eval %sh{ [ -z "$kak_opt_gdb_autojump_client" ] && printf fail }
+        gdb-disable-autojump
+    } catch %{
+        gdb-enable-autojump
     }
 }
 
@@ -336,34 +324,24 @@ declare-option -hidden int backtrace_current_line
 
 define-command gdb-backtrace %{
     try %{
-        %sh{
-            if [ "$kak_opt_gdb_stopped" = false ]; then echo fail; fi
+        eval %sh{
+            [ "$kak_opt_gdb_stopped" = false ] && printf fail
             mkfifo "$kak_opt_gdb_dir"/backtrace
         }
         gdb-cmd -stack-list-frames
         eval -try-client %opt{toolsclient} %{
             edit! -fifo "%opt{gdb_dir}/backtrace" *gdb-backtrace*
-            set buffer filetype backtrace
             set buffer backtrace_current_line 0
+            addhl buffer/ regex "^([^\n]*?):(\d+)" 1:cyan 2:green
+            addhl buffer/ line '%opt{backtrace_current_line}' default+b
+            map buffer normal <ret> ': gdb-backtrace-jump<ret>'
             hook -group fifo buffer BufCloseFifo .* %{
                 nop %sh{ rm -f "$kak_opt_gdb_dir"/backtrace }
-                exec ged
+                #exec ged
                 remove-hooks buffer fifo
             }
         }
     }
-}
-
-hook -group backtrace-highlight global BufSetOption filetype=backtrace %{
-    add-highlighter buffer group backtrace
-    add-highlighter buffer/backtrace regex "^([^\n]*?):(\d+)" 1:cyan 2:green
-    add-highlighter buffer/backtrace line '%opt{backtrace_current_line}' default+b
-    map buffer normal <ret> :gdb-backtrace-jump<ret>
-}
-
-hook global BufSetOption filetype=(?!backtrace).* %{
-    remove-highlighter buffer/backtrace
-    unmap buffer normal <ret> :gdb-backtrace-jump<ret>
 }
 
 define-command -hidden gdb-backtrace-jump %{
@@ -398,16 +376,16 @@ define-command gdb-backtrace-down %{
 # implementation details
 
 define-command -hidden gdb-set-indicator-from-current-state %{
-    set-option global gdb_indicator "%sh{
-        if [ \"$kak_opt_gdb_started\" = false ]; then exit; fi
+    set-option global gdb_indicator %sh{
+        [ "$kak_opt_gdb_started" = false ] && exit
         printf 'gdb '
         a=$(
-            [ \"$kak_opt_gdb_program_running\" = true ] && printf '[running]'
-            [ \"$kak_opt_gdb_program_stopped\" = true ] && printf '[stopped]'
-            [ -n \"$kak_opt_gdb_autojump_client\" ] && printf '[autojump]'
+            [ "$kak_opt_gdb_program_running" = true ] && printf '[running]'
+            [ "$kak_opt_gdb_program_stopped" = true ] && printf '[stopped]'
+            [ -n "$kak_opt_gdb_autojump_client" ] && printf '[autojump]'
         )
-        [ -n \"$a\" ] && printf \"$a \"
-    }"
+        [ -n "$a" ] && printf "$a "
+    }
 }
 
 # the two params are bool that indicate the following
@@ -417,15 +395,17 @@ define-command gdb-breakpoint-impl -hidden -params 2 %{
     eval -draft %{
         # reduce to cursors so that we can just extract the line out of selections_desc without any hassle
         exec 'gh'
-        %sh{
+        eval %sh{
             if [ "$kak_opt_gdb_started" = false ]; then exit; fi
+            delete="$1"
+            create="$2"
             commands=$(
                 # setting IFS is safe here because it's not arbitrary input
-                IFS=:
+                eval set -- "$kak_opt_gdb_breakpoints_info"
                 for selection in $kak_selections_desc; do
                     match=
                     cursor_line=${selection%%.*}
-                    for current_bp in $kak_opt_gdb_breakpoints_info; do
+                    for current_bp in "$@"; do
                         buffer="${current_bp#*|*|*|}"
                         if [ "$buffer" = "$kak_buffile" ]; then
                             line_file="${current_bp#*|*|}"
@@ -438,10 +418,10 @@ define-command gdb-breakpoint-impl -hidden -params 2 %{
                     done
                     if [ -n "$match" ]; then
                         id="${match%%|*}"
-                        [ "$1" = false ] && continue
+                        [ "$delete" = false ] && continue
                         printf "delete %s\n" "$id"
                     else
-                        [ "$2" = false ] && continue
+                        [ "$create" = false ] && continue
                         printf "break %s:%s\n" "$kak_buffile" "$cursor_line"
                     fi
                 done
@@ -493,14 +473,14 @@ define-command -hidden gdb-handle-exited %{
 }
 
 define-command -hidden gdb-process-pending-commands %{
-    %sh{
+    eval %sh{
         if [ ! -n "$kak_opt_gdb_pending_commands" ]; then
-            echo fail
+            printf fail
             exit
         fi
         printf "%s\n" "$kak_opt_gdb_pending_commands" > "$kak_opt_gdb_dir"/input_pipe
     }
-    set-option global gdb_pending_commands 	""
+    set-option global gdb_pending_commands ""
 }
 
 define-command -hidden gdb-handle-running %{
@@ -511,8 +491,8 @@ define-command -hidden gdb-handle-running %{
 }
 
 define-command -hidden gdb-clear-location %{
-    %sh{
-        if [ ! -n "$kak_opt_gdb_location_info" ]; then exit; fi
+    eval %sh{
+        [ ! -n "$kak_opt_gdb_location_info" ] && exit
         buffer="${kak_opt_gdb_location_info#*|}"
         printf "unset-option \"buffer=%s\" gdb_location_flag\n" "$buffer"
     }
@@ -524,8 +504,8 @@ define-command -hidden -params 1 gdb-refresh-location-flag %{
     # buffer may not exist, only try
     try %{
         eval -buffer %arg{1} %{
-            %sh{
-                if [ ! -n "$kak_opt_gdb_location_info" ]; then exit; fi
+            eval %sh{
+                [ ! -n "$kak_opt_gdb_location_info" ] && exit
                 buffer="${kak_opt_gdb_location_info#*|}"
                 if [ "$1" = "$buffer" ]; then
                     line="${kak_opt_gdb_location_info%%|*}"
@@ -537,36 +517,41 @@ define-command -hidden -params 1 gdb-refresh-location-flag %{
 }
 
 define-command -hidden -params 4 gdb-handle-breakpoint-created %{
-    set-option -add global gdb_breakpoints_info "%arg{1}|%arg{2}|%arg{3}|%arg{4}"
+    set -add global gdb_breakpoints_info "%arg{1}|%arg{2}|%arg{3}|%arg{4}"
     gdb-refresh-breakpoints-flags %arg{4}
 }
 
 define-command -hidden -params 1 gdb-handle-breakpoint-deleted %{
-    %sh{
-        echo "set-option global gdb_breakpoints_info ''"
-        IFS=:
-        for current in $kak_opt_gdb_breakpoints_info; do
+    eval %sh{
+        to_delete="$1"
+        echo "set global gdb_breakpoints_info"
+        eval set -- "$kak_opt_gdb_breakpoints_info"
+        for current in "$@"; do
             id="${current%%|*}"
-            if [ "$id" != "$1" ]; then
-                printf "set-option -add global gdb_breakpoints_info \"%s\"\n" "$current"
+            if [ "$id" != "$to_delete" ]; then
+                printf "set -add global gdb_breakpoints_info '%s'\n" "$current"
             else
                 buffer="${current#*|*|*|}"
             fi
         done
-        printf "gdb-refresh-breakpoints-flags \"%s\"\n" "$buffer"
+        printf "gdb-refresh-breakpoints-flags '%s'\n" "$buffer"
     }
 }
 
 define-command -hidden -params 4 gdb-handle-breakpoint-modified %{
-    %sh{
-        echo "set-option global gdb_breakpoints_info ''"
-        IFS=:
-        for current in $kak_opt_gdb_breakpoints_info; do
-            id="${current%%|*}"
-            if [ "$id" != "$1" ]; then
-                printf "set-option -add global gdb_breakpoints_info \"%s\"\n" "$current"
+    eval %sh{
+        id="$1"
+        active="$2"
+        line="$3"
+        file="$4"
+        echo "set global gdb_breakpoints_info"
+        eval set -- "$kak_opt_gdb_breakpoints_info"
+        for current in "$@"; do
+            cur_id="${current%%|*}"
+            if [ "$cur_id" != "$id" ]; then
+                printf "set -add global gdb_breakpoints_info '%s'\n" "$current"
             else
-                printf "set-option -add global gdb_breakpoints_info \"%s|%s|%s|%s\"\n" "$1" "$2" "$3" "$4"
+                printf "set -add global gdb_breakpoints_info '%s|%s|%s|%s'\n" "$id" "$active" "$line" "$file"
             fi
         done
     }
@@ -579,11 +564,12 @@ define-command -hidden -params 1 gdb-refresh-breakpoints-flags %{
     try %{
         eval -buffer %arg{1} %{
             unset-option buffer gdb_breakpoints_flags
-            %sh{
-                IFS=:
-                for current in $kak_opt_gdb_breakpoints_info; do
+            eval %sh{
+                to_refresh="$1"
+                eval set -- "$kak_opt_gdb_breakpoints_info"
+                for current in "$@"; do
                     buffer="${current#*|*|*|}"
-                    if [ "$buffer" = "$1" ]; then
+                    if [ "$buffer" = "$to_refresh" ]; then
                         current="${current#*|}"
                         enabled="${current%%|*}"
                         current="${current#*|}"
@@ -593,7 +579,7 @@ define-command -hidden -params 1 gdb-refresh-breakpoints-flags %{
                         else
                             flag="$kak_opt_gdb_breakpoint_inactive_symbol"
                         fi
-                        printf "set-option -add buffer gdb_breakpoints_flags %s|%s\n" "$line" "$flag"
+                        printf "set -add buffer gdb_breakpoints_flags '%s|%s'\n" "$line" "$flag"
                     fi
                 done
             }
@@ -615,5 +601,5 @@ define-command -hidden gdb-handle-print -params 1 %{
 # clear all breakpoint information internal to kakoune
 define-command -hidden gdb-clear-breakpoints %{
     eval -buffer * %{ unset-option buffer gdb_breakpoints_flags }
-    set-option global gdb_breakpoints_info ""
+    set-option global gdb_breakpoints_info
 }

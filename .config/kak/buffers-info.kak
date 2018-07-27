@@ -8,7 +8,7 @@ hook global WinDisplay .* %{
 declare-option str-list bufinfo_tmp
 
 define-command buffers-info %{
-    eval -no-hooks -save-regs b %{ 
+    eval -no-hooks -save-regs b %{
         unset buffer bufinfo_tmp
         reg b %val{bufname}
         eval -buffer * %{
@@ -33,51 +33,68 @@ define-command buffers-info %{
     }
 }
 
-#define-command buffers-info-filtered %{
-#    %sh{
-#        case "$kak_client" in
-#            tools) printf "exec "
-#            ;;
-#            main) printf ""
-#            ;;
-#            *) printf ""
-#            ;;
-#        esac
-#    }
-#}
-#
-## hella fast
-#define-command buffers-info-native -params ..1 %{
-#    eval -no-hooks -save-regs '"/bi' %{
-#
-#        # debug so that it doesn't get iterated over
-#        eval -no-hooks -draft %{ edit -debug -scratch *buffers-info-native* }
-#        # create one line per buffer, in the format "  bufname (true|false)"
-#        eval -no-hooks -buffer * %{
-#            reg '"' "  %val{bufname} %val{modified}
-#"
-#            exec -no-hooks -buffer *buffers-info-native* "gep"
-#        }
-#        # put the line corresponding to the current buffer as search pattern
-#        reg '/' "^  \Q%val{bufname}\E( \[\+\])?$"
-#        eval -save-regs '/' -no-hooks -buffer *buffers-info-native* %{
-#            exec -no-hooks 'd'
-#            # remove "false" suffix
-#            try %{ exec -no-hooks '%s false$<ret>d' }
-#            # replace "true" suffix with "[+]"
-#            try %{ exec -no-hooks '%strue$<ret>c[+]<esc>' }
-#            # prepend '>' to current buffer
-#            try %{ exec -no-hooks '/<ret>ghr>' }
-#            # arbitrary hook: do everything you want here
-#            eval %arg{1}
-#            # put into register 'i' the whole bufinfo
-#            exec -draft -no-hooks '%"iy'
-#            # put into register 'b' the buffer we want to select
-#            exec -no-hooks '<space>;<a-x>s^[ >] (.*?)(?: \[\+\])?$<ret>'
-#            reg b %reg{1}
-#        }
-#        buffer %reg{b}
-#        delete-buffer *buffers-info-native*
-#        info -title Buffers %reg{i}
-#    }
-#}
+declare-option str client 'all'
+declare-option bool lock false
+define-command lock %{ set buffer lock true }
+define-command unlock %{ unset buffer lock }
+define-command toggle-lock %{
+    try %{
+        eval %sh{ [ "$kak_opt_lock" = true ] && printf fail }
+        lock
+    } catch %{
+        unlock
+    }
+}
+define-command bind %{ set buffer client %val{client} }
+define-command release %{ unset buffer client }
+define-command release-all %{ eval -buffer * release }
+
+define-command buffers-info-native %{
+    eval -no-hooks -save-regs '"/' %{
+        # debug so that it doesn't get iterated over
+        eval -draft %{ edit -debug -scratch *tmp* }
+        eval -buffer * %{
+            reg '"' "  %val{bufname} %opt{client} %opt{lock} %val{modified}"
+            exec -buffer *tmp* "gep"
+        }
+        # put the line corresponding to the current buffer as search pattern
+        reg '/' "^  \Q%val{bufname}\E"
+        reg "c" "%val{client}|all"
+        eval -buffer *tmp* %{
+            exec 'd'
+            try %{ exec '/<ret>ghr>' } catch %{ exec '%<a-s>ghdd' }
+            exec '%<a-s>1s^[^\n]+? (\w+) \w+ \w+$<ret>'
+            try %{ exec -draft '"c<a-K><ret><a-x>d' }
+            exec 'dd<a-e>'
+            try %{ exec -draft '<a-k>true<ret>i=<esc>' }
+            exec 'dd<a-e>'
+            try %{ exec -draft '<a-k>true<ret>i+<esc>' }
+            exec 'd'
+            exec '%<a-s>h'
+            try %{ exec -draft '<a-i><a-w>i[<esc>a]<esc>' }
+            try %{ exec -draft '<a-i><space>d' }
+            exec -save-regs '' '%y'
+        }
+        delete-buffer *tmp*
+        info -title Buffers %reg{"}
+    }
+}
+
+define-command delete-unlocked-buffers %{
+    eval -no-hooks -save-regs '"/' %{
+        eval -draft %{ edit -debug -scratch *tmp* }
+        eval -buffer * %{
+            reg '"' "%val{bufname} %opt{lock}"
+            exec -buffer *tmp* "gep"
+        }
+        eval  -no-hooks -buffer *tmp* %{
+            exec 'd'
+            exec '%<a-s>gl<a-B>'
+            exec '<a-k>false<ret>'
+            exec 'hhGh'
+            eval -itersel %{ delete-buffer %reg{.} }
+        }
+        delete-buffer *tmp*
+    }
+}
+

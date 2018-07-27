@@ -31,7 +31,7 @@ define-command drop-every-nth %{
             i=$(( $i + 1 ))
             if [ $i -eq $kak_count ]; then
                 i=0
-            else 
+            else
                 new_sel="${new_sel} ${current}"
             fi
         done
