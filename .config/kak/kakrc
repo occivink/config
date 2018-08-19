@@ -7,14 +7,15 @@ define-command source-here-or-in -params 2 %{
      source "%arg{2}/%arg{1}"
 }
 
+# equally dangerous, but practical
 hook global KakBegin .* %{
     try %{ source %sh{
         while :; do
-            if test -f init.kak; then
+            if [ -f init.kak ]; then
                 printf "%s/init.kak" "$PWD"
                 exit
             fi
-            if [ "$PWD" = / ]; then exit; fi
+            [ "$PWD" = / ] && exit
             cd ..
         done
     }}
@@ -133,8 +134,8 @@ map global normal F     ': phantom-sel-select-all; phantom-sel-clear<ret>'
 map global normal <a-f> ': phantom-sel-iterate-next<ret>'
 map global normal <a-F> ': phantom-sel-iterate-prev<ret>'
 
-map global insert <a-f> '<a-;>: phantom-sel-iterate-next<ret>i'
-map global insert <a-F> '<a-;>: phantom-sel-iterate-prev<ret>i'
+map global insert <a-f> '<esc>: phantom-sel-iterate-next<ret>i'
+map global insert <a-F> '<esc>: phantom-sel-iterate-prev<ret>i'
 
 # move line up/down
 # not very mnemonic but whatever

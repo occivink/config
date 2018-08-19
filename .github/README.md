@@ -1,8 +1,11 @@
 This repo uses a setup similar to what is described in [this article](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/) and should be setup like this:
 
 ```
-git clone --bare $URL ~/.config/config
-git --git-dir ~/.config/config --work-tree ~ checkout
+# don't use a bare repository, they're not meant to be manipulated locally
+git clone --no-checkout $URL ~/.config/
+git --git-dir ~/.config/.git --work-tree ~ checkout
+# `conf` is a simple wrapper that does 'git --git-dir ~/.config/.git --work-tree ~ $@'
+conf config status.showUntrackedFiles no
 ```
 
 # Source
