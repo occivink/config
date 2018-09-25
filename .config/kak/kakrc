@@ -9,16 +9,19 @@ define-command source-here-or-in -params 2 %{
 
 # equally dangerous, but practical
 hook global KakBegin .* %{
-    try %{ source %sh{
-        while :; do
-            if [ -f init.kak ]; then
-                printf "%s/init.kak" "$PWD"
-                exit
-            fi
-            [ "$PWD" = / ] && exit
-            cd ..
-        done
-    }}
+    eval -save-regs 'p' %{
+        reg p %sh{
+            while :; do
+                if [ -f init.kak ]; then
+                    printf "%s" "$PWD"
+                    exit
+                fi
+                [ "$PWD" = / ] && exit
+                cd ..
+            done
+        }
+        try %{ source "%reg{p}/init.kak" "%reg{p}" }
+    }
 }
 
 source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
@@ -50,7 +53,6 @@ source-here-or-in   x11.kak         "%val{runtime}/rc/base"
 source-here-or-in   autorestore.kak "%val{runtime}/rc/extra"
 source-here-or-in   cmake.kak       "%val{runtime}/rc/extra"
 source-here-or-in   git-tools.kak   "%val{runtime}/rc/extra"
-source-here-or-in   x11-repl.kak    "%val{runtime}/rc/extra"
 
 source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
@@ -79,7 +81,7 @@ set-option global gdb_location_symbol "->"
 
 set-option global autoinfo command|onkey
 
-#set-option global ui_options ncurses_set_title=false
+set-option global ui_options ncurses_set_title=false
 
 set-option global scrolloff 2,5
 
@@ -114,13 +116,13 @@ hook global InsertCompletionHide .* %{
     unmap window insert <s-tab> <c-p>
 }
 
-# auto-percent mappings
-map global normal <a-s> ': auto-percent <lt>a-s> \%<ret>'
-map global normal <a-S> ': auto-percent <lt>a-S> \%<ret>'
-map global normal s     ': auto-percent-prompt s \%<ret>'
-map global normal S     ': auto-percent-prompt S \%<ret>'
-map global normal <a-k> ': auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
-map global normal <a-K> ': auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
+# auto-percent mappings (kinda annoying, so disabled)
+#map global normal <a-s> ': auto-percent <lt>a-s> \%<ret>'
+#map global normal <a-S> ': auto-percent <lt>a-S> \%<ret>'
+#map global normal s     ': auto-percent-prompt s \%<ret>'
+#map global normal S     ': auto-percent-prompt S \%<ret>'
+#map global normal <a-k> ': auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
+#map global normal <a-K> ': auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
 # word-related mappings
 map global normal w     <a-i>w
@@ -133,7 +135,6 @@ map global normal f     ': phantom-sel-add-selection<ret>'
 map global normal F     ': phantom-sel-select-all; phantom-sel-clear<ret>'
 map global normal <a-f> ': phantom-sel-iterate-next<ret>'
 map global normal <a-F> ': phantom-sel-iterate-prev<ret>'
-
 map global insert <a-f> '<esc>: phantom-sel-iterate-next<ret>i'
 map global insert <a-F> '<esc>: phantom-sel-iterate-prev<ret>i'
 
@@ -147,14 +148,26 @@ map global normal <a-T> ''
 map global normal <c-b> ': make<ret>'
 map global normal <c-f> ''
 
-set-face global SecondaryCursor black,rgb:babaa3
-set-face global Whitespace rgb:363636,default
-set-face global LineNumbersWrapped rgb:606060,default+i
-#set-face global MatchingChar default,default+r
+face global SecondaryCursor black,rgb:babaa3+fg
+face global Whitespace rgb:363636,default+f
+face global LineNumbersWrapped rgb:606060,default+i
+#face global MatchingChar default,default+r
+
+# highlight current word
+decl -hidden regex curword
+hook global NormalIdle .* %{
+    eval -save-regs / -draft %{ try %{
+        exec -save-regs '' <space><a-i>w*
+        set buffer curword "%reg{/}"
+    } catch %{
+        set buffer curword ''
+    }}
+}
 
 addhl global/ number-lines -hlcursor -separator ' '
 addhl global/ show-matching
 addhl global/ dynregex '%reg{/}' 0:default,+u
+addhl global/ dynregex '%opt{curword}' 0:default,rgb:3b3b3b
 addhl global/ show-whitespaces
 addhl global/ wrap -word -marker "↳ "
 
