@@ -260,7 +260,7 @@ define-command gdb-session-stop %{
             unset-option buffer gdb_breakpoint_flags
         }
         rmhl global/gdb-ref
-        remove-hooks global gdb
+        remove-hooks global gdb-ref
     }
 }
 

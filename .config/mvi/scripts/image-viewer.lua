@@ -3,11 +3,19 @@ local current_idle = nil
 local zoom_increment = 0
 
 local opts = {
-    margin = 50,
-    do_not_move_if_all_visible = true,
+    pan_follows_cursor_margin = 50,
+    pan_follows_cursor_move_if_full_view = true,
+    status_line_enabled = true,
+    status_line_position = "bottom_left",
+    status_line_size = 36,
+    status_line = "${filename} [${playlist-pos-1}/${playlist-count}]",
+    command_on_first_image_loaded="",
+    command_on_image_loaded="",
+    command_on_non_image_loaded="",
 }
 (require 'mp.options').read_options(opts)
 local msg = require 'mp.msg'
+local assdraw = require 'mp.assdraw'
 
 function register_idle(func)
     current_idle = func
@@ -40,7 +48,7 @@ function compute_video_dimensions()
         dw, dh = dh, dw
     end
     local window_w, window_h = mp.get_osd_size()
-    
+
     if keep_aspect then
         local unscaled = mp.get_property_native("video-unscaled")
         local panscan = mp.get_property_number("panscan")
@@ -144,13 +152,14 @@ function pan_follows_cursor_handler(table)
                 local x = math.min(1, math.max(- 2 * mX / window_w + 1, -1))
                 local y = math.min(1, math.max(- 2 * mY / window_h + 1, -1))
                 local command = ""
-                if (opts.do_not_move_if_all_visible and window_w < video_dimensions.size.w) then
-                    command = command .. "no-osd set video-pan-x " .. x * (video_dimensions.size.w - window_w + 2 * opts.margin) / (2 * video_dimensions.size.w) .. ";"
+                local margin, move_full = opts.pan_follows_cursor_margin, opts.pan_follows_cursor_move_if_full_view
+                if (not move_full and window_w < video_dimensions.size.w) then
+                    command = command .. "no-osd set video-pan-x " .. x * (video_dimensions.size.w - window_w + 2 * margin) / (2 * video_dimensions.size.w) .. ";"
                 elseif mp.get_property_number("video-pan-x") ~= 0 then
                     command = command .. "no-osd set video-pan-x " .. "0;"
                 end
-                if (opts.do_not_move_if_all_visible and window_h < video_dimensions.size.h) then
-                    command = command .. "no-osd set video-pan-y " .. y * (video_dimensions.size.h - window_h + 2 * opts.margin) / (2 * video_dimensions.size.h) .. ";"
+                if (not move_full and window_h < video_dimensions.size.h) then
+                    command = command .. "no-osd set video-pan-y " .. y * (video_dimensions.size.h - window_h + 2 * margin) / (2 * video_dimensions.size.h) .. ";"
                 elseif mp.get_property_number("video-pan-y") ~= 0 then
                     command = command .. "no-osd set video-pan-y " .. "0;"
                 end
@@ -160,6 +169,7 @@ function pan_follows_cursor_handler(table)
                 needs_adjusting = false
             end
         end)
+        needs_adjusting = true
         mp.add_forced_key_binding("mouse_move", "image-viewer-impl", function()
             needs_adjusting = true
         end)
@@ -213,13 +223,6 @@ function align_border(x, y)
     if command ~= "" then
         mp.command(command)
     end
-end
-
---TODO remove
-function zoom_invariant_add(prop, amt)
-    msg.warn("Deprecated, use \"pan-image\" instead")
-    amt = amt / 2 ^ mp.get_property_number("video-zoom")
-    mp.set_property_number(prop, mp.get_property_number(prop) + amt)
 end
 
 function pan_image(axis, amount, zoom_invariant, image_constrained)
@@ -295,6 +298,139 @@ function force_print_filename()
     mp.set_property("msg-level", "all=no")
 end
 
+local status_line_enabled = false;
+
+function refresh_status_line()
+    local path = mp.get_property("path")
+    if path == nil or path == "" then
+        mp.set_osd_ass(0, 0, "")
+        return
+    end
+    local expanded = mp.command_native({ "expand-text", opts.status_line })
+    if not expanded then
+        msg.warn("Error expanding status line")
+        mp.set_osd_ass(0, 0, "")
+        return
+    end
+    local w,h = mp.get_osd_size()
+    local an, x, y
+    local margin = 10
+    if opts.status_line_position == "top_left" then
+        x = margin
+        y = margin
+        an = 7
+    elseif opts.status_line_position == "top_right" then
+        x = w-margin
+        y = margin
+        an = 9
+    elseif opts.status_line_position == "bottom_right" then
+        x = w-margin
+        y = h-margin
+        an = 3
+    else
+        x = margin
+        y = h-margin
+        an = 1
+    end
+    local ass = assdraw:ass_new()
+    ass:new_event()
+    ass:an(an)
+    ass:pos(x,y)
+    ass:append("{\\fs".. opts.status_line_size.. "}{\\bord1.0}")
+    ass:append(expanded)
+    mp.set_osd_ass(w, h, ass.text)
+end
+
+function enable_status_line()
+    if status_line_enabled then return end
+    status_line_enabled = true
+    local start = 0
+    while true do
+        local s, e, cap = string.find(opts.status_line, "%${[?!]?([%l%d-/]*)", start)
+        if not s then break end
+        mp.observe_property(cap, nil, refresh_status_line)
+        start = e
+    end
+    mp.observe_property("path", nil, refresh_status_line)
+    mp.observe_property("osd-width", nil, refresh_status_line)
+    mp.observe_property("osd-height", nil, refresh_status_line)
+    refresh_status_line()
+end
+
+function disable_status_line()
+    if not status_line_enabled then return end
+    status_line_enabled = false
+    mp.unobserve_property(refresh_status_line)
+    mp.set_osd_ass(0, 0, "")
+end
+
+if opts.status_line_enabled then
+    enable_status_line()
+end
+
+if opts.command_on_image_loaded ~= "" or opts.command_on_non_image_loaded ~= "" then
+    local was_image = false
+    local frame_count = nil
+    local audio_tracks = nil
+    local out_params_ready = nil
+    local path = nil
+
+    function state_changed()
+        function set_image(is_image)
+            if is_image and not was_image and opts.command_on_first_image_loaded ~= "" then
+                mp.command(opts.command_on_first_image_loaded)
+            end
+            if is_image and opts.command_on_image_loaded ~= "" then
+                mp.command(opts.command_on_image_loaded)
+            end
+            if not is_image and was_image and opts.command_on_non_image_loaded ~= "" then
+                mp.command(opts.command_on_non_image_loaded)
+            end
+            was_image = is_image
+        end
+        -- only do things when state is consistent
+        if path ~= nil and audio_tracks ~= nil then
+            if frame_count == nil and audio_tracks > 0 then
+                set_image(false)
+            elseif out_params_ready and frame_count ~= nil then
+                -- png have 0 frames, jpg 1 ¯\_(ツ)_/¯
+                set_image((frame_count == 0 or frame_count == 1) and audio_tracks == 0)
+            end
+        end
+    end
+
+    mp.observe_property("video-out-params/par", "number", function(_, val)
+        out_params_ready = (val ~= nil and val > 0)
+        state_changed()
+    end)
+    mp.observe_property("estimated-frame-count", "number", function(_, val)
+        frame_count = val
+        state_changed()
+    end)
+    mp.observe_property("path", "string", function(_, val)
+        if not val or val == "" then
+            path = nil
+        else
+            path = val
+        end
+        state_changed()
+    end)
+    mp.register_event("tracks-changed", function()
+        audio_tracks = 0
+        local tracks = 0
+        for _, track in ipairs(mp.get_property_native("track-list")) do
+            tracks = tracks + 1
+             if track.type == "audio" then
+                 audio_tracks = audio_tracks + 1
+             end
+        end
+        if tracks == 0 then
+            audio_tracks = nil
+        end
+        state_changed()
+    end)
+end
+
 mp.add_key_binding(nil, "drag-to-pan", drag_to_pan_handler, {complex = true})
 mp.add_key_binding(nil, "pan-follows-cursor", pan_follows_cursor_handler, {complex = true})
 mp.add_key_binding(nil, "cursor-centric-zoom", cursor_centric_zoom_handler)
@@ -304,5 +440,6 @@ mp.add_key_binding(nil, "rotate-video", rotate_video)
 mp.add_key_binding(nil, "reset-pan-if-visible", reset_pan_if_visible)
 mp.add_key_binding(nil, "force-print-filename", force_print_filename)
 
--- deprecated, remove some time later
-mp.add_key_binding(nil, "zoom-invariant-add", zoom_invariant_add)
+mp.add_key_binding(nil, "enable-status-line", enable_status_line)
+mp.add_key_binding(nil, "disable-status-line", disable_status_line)
+mp.add_key_binding(nil, "toggle-status-line", function() if status_line_enabled then disable_status_line() else enable_status_line() end end)

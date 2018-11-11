@@ -3,8 +3,8 @@
 # potentially dangerous
 # also not ideal since errors from sourcing are silenced
 define-command source-here-or-in -params 2 %{
-    #try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
-     source "%arg{2}/%arg{1}"
+     try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
+    #source "%arg{2}/%arg{1}"
 }
 
 # equally dangerous, but practical
@@ -23,6 +23,38 @@ hook global KakBegin .* %{
         try %{ source "%reg{p}/init.kak" "%reg{p}" }
     }
 }
+
+def do-or-die -params 2 %{
+    try %{
+        eval %arg{1}
+        write-all-quit
+    } catch %{
+        buffer *debug*
+        write %arg{2}
+        quit! 1
+    }
+}
+
+def smart-star -params 1 %{
+    try %{
+        eval -save-regs t -draft %{
+            exec <a-space>
+            reg / ''
+            eval -itersel %{
+                exec """t%arg{1}"
+                reg / "%reg{t}|%reg{/}"
+            }
+        }
+        eval -save-regs t -draft %{
+            exec "<space>""t%arg{1}"
+            reg / "%reg{/}%reg{t}"
+        }
+    } catch %{
+        exec -save-regs '' %arg{1}
+    }
+}
+map global normal * ': smart-star *<ret>'
+map global normal <a-*> ': smart-star <a-*><ret>'
 
 source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
 source-here-or-in   comment.kak     "%val{runtime}/rc/core"
@@ -87,10 +119,32 @@ set-option global scrolloff 2,5
 
 set-option global makecmd 'make --jobs=8'
 set-option global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug'
-set-option global filetree_find_cmd 'elvish -c "use find; echo &sep=\"\n\" (find:find &dirs=\$false)"'
+set-option global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"'
 set-option global termcmd 'alacritty -e sh -c'
 
 set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+
+define-command -hidden text-object-indented-paragraph %{
+    eval -save-regs '^' %{
+        exec -draft -save-regs '' '<a-i>pZ'
+        exec '<a-i>i<a-z>i'
+    }
+}
+
+declare-option str expand_commands %{
+    expand-impl %{ exec <a-i>b }
+    expand-impl %{ exec <a-a>b }
+    expand-impl %{ exec <a-i>B }
+    expand-impl %{ exec <a-a>B }
+    expand-impl %{ exec <a-i>r }
+    expand-impl %{ exec <a-a>r }
+    expand-impl %{ exec <a-i>i }
+    expand-impl %{ exec <a-i>i_ }
+    expand-impl %{ text-object-indented-paragraph }
+    expand-impl %{ text-object-indented-paragraph; exec _ }
+    expand-impl %{ exec <a-x> }
+    expand-impl %{ exec <a-x>_ }
+}
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -100,6 +154,9 @@ set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %va
 # stop c and d from yanking
 map global normal d \"_d
 map global normal c \"_c
+
+map global normal ';' ':'
+map global normal ':' ';'
 
 map -docstring "find" global goto p "<esc>: find<ret>"
 
@@ -115,6 +172,11 @@ hook global InsertCompletionHide .* %{
     unmap window insert <tab> <c-n>
     unmap window insert <s-tab> <c-p>
 }
+
+map global normal q     ':surround<ret>'
+map global normal Q     ':surround-lock<ret>'
+map global normal <a-q> ':expand<ret>'
+map global normal <a-Q> ''
 
 # auto-percent mappings (kinda annoying, so disabled)
 #map global normal <a-s> ': auto-percent <lt>a-s> \%<ret>'
@@ -248,13 +310,10 @@ map -docstring "clip-paste after"   global user p     '<a-!>xsel --output --clip
 map -docstring "clip-paste before"  global user P     '!xsel --output --clipboard<ret>'
 map -docstring "clip-replace"       global user R     '|xsel --output --clipboard<ret>'
 map -docstring "clip-yank"          global user y     '<a-|>xsel --input --clipboard<ret>'
-map -docstring "record macro"       global user b     Q
-map -docstring "replay macro"       global user q     q
 
 map global normal <a-,> ': bp<ret>'
 map global normal <a-.> ': bn<ret>'
 map global normal <a-r> ': e!<ret>'
 map global normal <a-d> ': db<ret>'
-map global normal <a-q> ': db!<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }

@@ -1,12 +1,14 @@
 define-command -hidden -params 1 single-process-pipe %{
     eval -no-hooks -save-regs '|"' %{
-        exec -save-regs '' y
-        edit -scratch *single-process-pipe*
-        exec <a-P>i<ret><esc>ggd
-        set-register '|' %arg{1}
-        exec '%|<ret>'
-        exec -save-regs '' '%<a-s>Hy'
-        delete-buffer
+        eval -draft %{
+            exec -save-regs '' y
+            edit -scratch *single-process-pipe*
+            exec <a-P>i<ret><esc>ggd
+            set-register '|' %arg{1}
+            exec '%|<ret>'
+            exec -save-regs '' '%<a-s>Hy'
+        }
+        delete-buffer *single-process-pipe*
         exec R
     }
 }
