@@ -24,67 +24,103 @@ hook global KakBegin .* %{
     }
 }
 
-def do-or-die -params 2 %{
-    try %{
-        eval %arg{1}
-        write-all-quit
-    } catch %{
-        buffer *debug*
-        write %arg{2}
-        quit! 1
-    }
-}
+#source-here-or-in asciidoc.kak          "%val{runtime}/rc/core"
+source-here-or-in c-family.kak          "%val{runtime}/rc/core"
+source-here-or-in comment.kak           "%val{runtime}/rc/core"
+source-here-or-in diff.kak              "%val{runtime}/rc/core"
+source-here-or-in doc.kak               "%val{runtime}/rc/core"
+source-here-or-in formatter.kak         "%val{runtime}/rc/core"
+source-here-or-in grep.kak              "%val{runtime}/rc/core"
+source-here-or-in kakrc.kak             "%val{runtime}/rc/core"
+source-here-or-in make.kak              "%val{runtime}/rc/core"
+source-here-or-in makefile.kak          "%val{runtime}/rc/core"
+source-here-or-in man.kak               "%val{runtime}/rc/core"
+source-here-or-in python.kak            "%val{runtime}/rc/core"
+source-here-or-in sh.kak                "%val{runtime}/rc/core"
 
-def smart-star -params 1 %{
-    try %{
-        eval -save-regs t -draft %{
-            exec <a-space>
-            reg / ''
-            eval -itersel %{
-                exec """t%arg{1}"
-                reg / "%reg{t}|%reg{/}"
-            }
-        }
-        eval -save-regs t -draft %{
-            exec "<space>""t%arg{1}"
-            reg / "%reg{/}%reg{t}"
-        }
-    } catch %{
-        exec -save-regs '' %arg{1}
-    }
-}
-map global normal * ': smart-star *<ret>'
-map global normal <a-*> ': smart-star <a-*><ret>'
+#source-here-or-in autowrap.kak          "%val{runtime}/rc/base"
+#source-here-or-in clojure.kak           "%val{runtime}/rc/base"
+#source-here-or-in css.kak               "%val{runtime}/rc/base"
+source-here-or-in ctags.kak             "%val{runtime}/rc/base"
+#source-here-or-in d.kak                 "%val{runtime}/rc/base"
+source-here-or-in etc.kak               "%val{runtime}/rc/base"
+source-here-or-in file.kak              "%val{runtime}/rc/base"
+#source-here-or-in fish.kak              "%val{runtime}/rc/base"
+#source-here-or-in gas.kak               "%val{runtime}/rc/base"
+source-here-or-in git.kak               "%val{runtime}/rc/base"
+source-here-or-in go.kak                "%val{runtime}/rc/base"
+#source-here-or-in haskell.kak           "%val{runtime}/rc/base"
+#source-here-or-in html.kak              "%val{runtime}/rc/base"
+#source-here-or-in ini.kak               "%val{runtime}/rc/base"
+#source-here-or-in java.kak              "%val{runtime}/rc/base"
+#source-here-or-in javascript.kak        "%val{runtime}/rc/base"
+source-here-or-in json.kak              "%val{runtime}/rc/base"
+#source-here-or-in julia.kak             "%val{runtime}/rc/base"
+source-here-or-in lint.kak              "%val{runtime}/rc/base"
+#source-here-or-in lisp.kak              "%val{runtime}/rc/base"
+source-here-or-in lua.kak               "%val{runtime}/rc/base"
+#source-here-or-in mail.kak              "%val{runtime}/rc/base"
+source-here-or-in markdown.kak          "%val{runtime}/rc/base"
+#source-here-or-in mercurial.kak         "%val{runtime}/rc/base"
+#source-here-or-in ocaml.kak             "%val{runtime}/rc/base"
+source-here-or-in perl.kak              "%val{runtime}/rc/base"
+#source-here-or-in restructuredtext.kak  "%val{runtime}/rc/base"
+#source-here-or-in ruby.kak              "%val{runtime}/rc/base"
+source-here-or-in rust.kak              "%val{runtime}/rc/base"
+#source-here-or-in scala.kak             "%val{runtime}/rc/base"
+#source-here-or-in screen.kak            "%val{runtime}/rc/base"
+#source-here-or-in spell.kak             "%val{runtime}/rc/base"
+#source-here-or-in sql.kak               "%val{runtime}/rc/base"
+#source-here-or-in swift.kak             "%val{runtime}/rc/base"
+#source-here-or-in tmux.kak              "%val{runtime}/rc/base"
+source-here-or-in x11.kak               "%val{runtime}/rc/base"
+#source-here-or-in yaml.kak              "%val{runtime}/rc/base"
 
-source-here-or-in   c-family.kak    "%val{runtime}/rc/core"
-source-here-or-in   comment.kak     "%val{runtime}/rc/core"
-source-here-or-in   diff.kak        "%val{runtime}/rc/core"
-source-here-or-in   doc.kak         "%val{runtime}/rc/core"
-source-here-or-in   formatter.kak   "%val{runtime}/rc/core"
-source-here-or-in   grep.kak        "%val{runtime}/rc/core"
-source-here-or-in   kakrc.kak       "%val{runtime}/rc/core"
-source-here-or-in   makefile.kak    "%val{runtime}/rc/core"
-source-here-or-in   make.kak        "%val{runtime}/rc/core"
-source-here-or-in   man.kak         "%val{runtime}/rc/core"
-source-here-or-in   python.kak      "%val{runtime}/rc/core"
-source-here-or-in   sh.kak          "%val{runtime}/rc/core"
-
-source-here-or-in   ctags.kak       "%val{runtime}/rc/base"
-source-here-or-in   etc.kak         "%val{runtime}/rc/base"
-source-here-or-in   file.kak        "%val{runtime}/rc/base"
-source-here-or-in   git.kak         "%val{runtime}/rc/base"
-source-here-or-in   go.kak          "%val{runtime}/rc/base"
-source-here-or-in   javascript.kak  "%val{runtime}/rc/base"
-source-here-or-in   json.kak        "%val{runtime}/rc/base"
-source-here-or-in   lint.kak        "%val{runtime}/rc/base"
-source-here-or-in   lua.kak         "%val{runtime}/rc/base"
-source-here-or-in   markdown.kak    "%val{runtime}/rc/base"
-source-here-or-in   rust.kak        "%val{runtime}/rc/base"
-source-here-or-in   x11.kak         "%val{runtime}/rc/base"
-
-source-here-or-in   autorestore.kak "%val{runtime}/rc/extra"
-source-here-or-in   cmake.kak       "%val{runtime}/rc/extra"
-source-here-or-in   git-tools.kak   "%val{runtime}/rc/extra"
+#source-here-or-in arch-linux.kak        "%val{runtime}/rc/extra"
+source-here-or-in autorestore.kak       "%val{runtime}/rc/extra"
+#source-here-or-in cabal.kak             "%val{runtime}/rc/extra"
+#source-here-or-in clang.kak             "%val{runtime}/rc/extra"
+source-here-or-in cmake.kak             "%val{runtime}/rc/extra"
+#source-here-or-in coffee.kak            "%val{runtime}/rc/extra"
+#source-here-or-in cucumber.kak          "%val{runtime}/rc/extra"
+#source-here-or-in dart.kak              "%val{runtime}/rc/extra"
+#source-here-or-in dockerfile.kak        "%val{runtime}/rc/extra"
+#source-here-or-in editorconfig.kak      "%val{runtime}/rc/extra"
+#source-here-or-in elixir.kak            "%val{runtime}/rc/extra"
+#source-here-or-in elm.kak               "%val{runtime}/rc/extra"
+#source-here-or-in exherbo.kak           "%val{runtime}/rc/extra"
+source-here-or-in git-tools.kak         "%val{runtime}/rc/extra"
+#source-here-or-in go-tools.kak          "%val{runtime}/rc/extra"
+#source-here-or-in haml.kak              "%val{runtime}/rc/extra"
+#source-here-or-in hbs.kak               "%val{runtime}/rc/extra"
+#source-here-or-in i3.kak                "%val{runtime}/rc/extra"
+#source-here-or-in iterm.kak             "%val{runtime}/rc/extra"
+#source-here-or-in jedi.kak              "%val{runtime}/rc/extra"
+#source-here-or-in just.kak              "%val{runtime}/rc/extra"
+#source-here-or-in kickstart.kak         "%val{runtime}/rc/extra"
+#source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
+#source-here-or-in latex.kak             "%val{runtime}/rc/extra"
+#source-here-or-in modeline.kak          "%val{runtime}/rc/extra"
+#source-here-or-in moon.kak              "%val{runtime}/rc/extra"
+#source-here-or-in nim.kak               "%val{runtime}/rc/extra"
+#source-here-or-in php.kak               "%val{runtime}/rc/extra"
+#source-here-or-in pony.kak              "%val{runtime}/rc/extra"
+#source-here-or-in protobuf.kak          "%val{runtime}/rc/extra"
+#source-here-or-in pug.kak               "%val{runtime}/rc/extra"
+#source-here-or-in racer.kak             "%val{runtime}/rc/extra"
+#source-here-or-in ragel.kak             "%val{runtime}/rc/extra"
+#source-here-or-in ranger.kak            "%val{runtime}/rc/extra"
+#source-here-or-in sass.kak              "%val{runtime}/rc/extra"
+#source-here-or-in scheme.kak            "%val{runtime}/rc/extra"
+#source-here-or-in scss.kak              "%val{runtime}/rc/extra"
+source-here-or-in systemd.kak           "%val{runtime}/rc/extra"
+#source-here-or-in taskpaper.kak         "%val{runtime}/rc/extra"
+#source-here-or-in tmux-repl.kak         "%val{runtime}/rc/extra"
+#source-here-or-in toml.kak              "%val{runtime}/rc/extra"
+#source-here-or-in troff.kak             "%val{runtime}/rc/extra"
+#source-here-or-in tupfile.kak           "%val{runtime}/rc/extra"
+#source-here-or-in void-linux.kak        "%val{runtime}/rc/extra"
+#source-here-or-in x11-repl.kak          "%val{runtime}/rc/extra"
 
 source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
@@ -101,28 +137,39 @@ source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
+def do-or-die -params 2 %{
+    try %{
+        eval %arg{1}
+        write-all-quit
+    } catch %{
+        buffer *debug*
+        write %arg{2}
+        quit! 1
+    }
+}
+
 set-option global tabstop 4
 set-option global indentwidth 4
 set-option global BOM none
 set-option global eolformat lf
 #set-option global disabled_hooks
 
-set-option global gdb_breakpoint_active_symbol "x"
-set-option global gdb_breakpoint_inactive_symbol "o"
-set-option global gdb_location_symbol "->"
-
 set-option global autoinfo command|onkey
-
 set-option global ui_options ncurses_set_title=false
-
 set-option global scrolloff 2,5
 
-set-option global makecmd 'make --jobs=8'
-set-option global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug'
-set-option global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"'
-set-option global termcmd 'alacritty -e sh -c'
-
-set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+try %{
+    set-option global gdb_breakpoint_active_symbol "x"
+    set-option global gdb_breakpoint_inactive_symbol "o"
+    set-option global gdb_location_symbol "->"
+    set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+} catch %{
+    set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {default,default}- %val{client}@[%val{session}]'
+}
+try %{ set-option global makecmd 'make --jobs=8' }
+try %{ set-option global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
+try %{ set-option global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
+try %{ set-option global termcmd 'alacritty -e sh -c' }
 
 define-command -hidden text-object-indented-paragraph %{
     eval -save-regs '^' %{
@@ -130,8 +177,7 @@ define-command -hidden text-object-indented-paragraph %{
         exec '<a-i>i<a-z>i'
     }
 }
-
-declare-option str expand_commands %{
+try %{ set-option global expand_commands %{
     expand-impl %{ exec <a-i>b }
     expand-impl %{ exec <a-a>b }
     expand-impl %{ exec <a-i>B }
@@ -142,9 +188,25 @@ declare-option str expand_commands %{
     expand-impl %{ exec <a-i>i_ }
     expand-impl %{ text-object-indented-paragraph }
     expand-impl %{ text-object-indented-paragraph; exec _ }
-    expand-impl %{ exec <a-x> }
     expand-impl %{ exec <a-x>_ }
+}}
+
+def -hidden smart-star -params 1 %{
+    try %{
+        exec -draft <a-space>
+        eval -no-hooks -draft -save-regs '"' %{
+            exec -save-regs '' "%arg{1}""""*"
+            edit -scratch *smart-star-temp*
+            exec '<a-P>)<a-space>i|<esc>'
+        }
+        try %{ exec -buffer *smart-star-temp* -save-regs '' "%%H""%val{register}/<c-r>.<ret>" }
+        db *smart-star-temp*
+    } catch %{
+        exec -save-regs '' """%val{register}%arg{1}"
+    }
 }
+map global normal * ': smart-star *<ret>'
+map global normal <a-*> ': smart-star <lt>a-*><ret>'
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -173,9 +235,9 @@ hook global InsertCompletionHide .* %{
     unmap window insert <s-tab> <c-p>
 }
 
-map global normal q     ':surround<ret>'
-map global normal Q     ':surround-lock<ret>'
-map global normal <a-q> ':expand<ret>'
+map global normal q     ': surround<ret>'
+map global normal Q     ': surround-lock<ret>'
+map global normal <a-q> ': expand<ret>'
 map global normal <a-Q> ''
 
 # auto-percent mappings (kinda annoying, so disabled)
@@ -210,10 +272,12 @@ map global normal <a-T> ''
 map global normal <c-b> ': make<ret>'
 map global normal <c-f> ''
 
+face global PrimaryCursorEol black,white+fg
+face global SecondaryCursorEol black,white+fg
 face global SecondaryCursor black,rgb:babaa3+fg
 face global Whitespace rgb:363636,default+f
 face global LineNumbersWrapped rgb:606060,default+i
-#face global MatchingChar default,default+r
+face global MatchingChar black,yellow+F
 
 # highlight current word
 decl -hidden regex curword
@@ -268,13 +332,12 @@ define-command ide %{
 
 # delete the *scratch* buffer as soon as another is created, but only if it's empty
 hook global BufCreate '^\*scratch\*$' %{
-    hook -group delete-scratch global BufCreate '^((?!\*scratch\*).{,9}|.{10,})$' %{
+    hook -once global BufCreate '^(?!\*scratch\*)^.*$' %{
         try %{
             # throw if the buffer has more than one character
             execute-keys -buffer *scratch* 'L<a-K>..<ret>'
             delete-buffer *scratch*
         }
-        remove-hooks global delete-scratch
     }
 }
 
@@ -295,13 +358,6 @@ hook global GlobalSetOption gdb_started=false %{
     unmap global normal <f5>    ': gdb-continue<ret>'
 }
 
-declare-user-mode expand
-map -docstring "expand" global expand <space> ': expand<ret>'
-
-map -docstring "surround"           global user s     ': surround<ret>'
-map -docstring "surround ↻"         global user S     ': surround-lock<ret>'
-map -docstring "expand"             global user e     ': expand<ret>'
-map -docstring "expand ↻"           global user E     ': expand; enter-user-mode -lock expand<ret>'
 map -docstring "select 🡓"           global user v     ': select-down<ret>'
 map -docstring "select 🡑"           global user <a-v> ': select-up<ret>'
 map -docstring "select 🡓🡑"          global user V     ': select-vertically<ret>'

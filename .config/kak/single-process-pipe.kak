@@ -1,4 +1,9 @@
 define-command -hidden -params 1 single-process-pipe %{
+    try %{
+        exec -itersel -draft '<a-K>\n<ret>'
+    } catch %{
+        fail 'One or more selections contain newlines'
+    }
     eval -no-hooks -save-regs '|"' %{
         eval -draft %{
             exec -save-regs '' y
