@@ -2,11 +2,12 @@
 # try to load from cwd, otherwise load from config
 # potentially dangerous
 # also not ideal since errors from sourcing are silenced
-define-command source-here-or-in -params 2 %{
+def source-here-or-in -params 2 %{
      try %{ source "%arg{1}" } catch %{ source "%arg{2}/%arg{1}" }
     #source "%arg{2}/%arg{1}"
 }
 
+# load first 'init.kak' file found when going up directories
 # equally dangerous, but practical
 hook global KakBegin .* %{
     eval -save-regs 'p' %{
@@ -24,7 +25,7 @@ hook global KakBegin .* %{
     }
 }
 
-#source-here-or-in asciidoc.kak          "%val{runtime}/rc/core"
+source-here-or-in asciidoc.kak          "%val{runtime}/rc/core"
 source-here-or-in c-family.kak          "%val{runtime}/rc/core"
 source-here-or-in comment.kak           "%val{runtime}/rc/core"
 source-here-or-in diff.kak              "%val{runtime}/rc/core"
@@ -38,89 +39,90 @@ source-here-or-in man.kak               "%val{runtime}/rc/core"
 source-here-or-in python.kak            "%val{runtime}/rc/core"
 source-here-or-in sh.kak                "%val{runtime}/rc/core"
 
-#source-here-or-in autowrap.kak          "%val{runtime}/rc/base"
-#source-here-or-in clojure.kak           "%val{runtime}/rc/base"
-#source-here-or-in css.kak               "%val{runtime}/rc/base"
+source-here-or-in autowrap.kak          "%val{runtime}/rc/base"
+source-here-or-in clojure.kak           "%val{runtime}/rc/base"
+source-here-or-in css.kak               "%val{runtime}/rc/base"
 source-here-or-in ctags.kak             "%val{runtime}/rc/base"
-#source-here-or-in d.kak                 "%val{runtime}/rc/base"
+source-here-or-in d.kak                 "%val{runtime}/rc/base"
 source-here-or-in etc.kak               "%val{runtime}/rc/base"
 source-here-or-in file.kak              "%val{runtime}/rc/base"
-#source-here-or-in fish.kak              "%val{runtime}/rc/base"
-#source-here-or-in gas.kak               "%val{runtime}/rc/base"
+source-here-or-in fish.kak              "%val{runtime}/rc/base"
+source-here-or-in gas.kak               "%val{runtime}/rc/base"
 source-here-or-in git.kak               "%val{runtime}/rc/base"
 source-here-or-in go.kak                "%val{runtime}/rc/base"
-#source-here-or-in haskell.kak           "%val{runtime}/rc/base"
-#source-here-or-in html.kak              "%val{runtime}/rc/base"
-#source-here-or-in ini.kak               "%val{runtime}/rc/base"
-#source-here-or-in java.kak              "%val{runtime}/rc/base"
-#source-here-or-in javascript.kak        "%val{runtime}/rc/base"
+source-here-or-in haskell.kak           "%val{runtime}/rc/base"
+source-here-or-in html.kak              "%val{runtime}/rc/base"
+source-here-or-in ini.kak               "%val{runtime}/rc/base"
+source-here-or-in java.kak              "%val{runtime}/rc/base"
+source-here-or-in javascript.kak        "%val{runtime}/rc/base"
 source-here-or-in json.kak              "%val{runtime}/rc/base"
-#source-here-or-in julia.kak             "%val{runtime}/rc/base"
+source-here-or-in julia.kak             "%val{runtime}/rc/base"
 source-here-or-in lint.kak              "%val{runtime}/rc/base"
-#source-here-or-in lisp.kak              "%val{runtime}/rc/base"
+source-here-or-in lisp.kak              "%val{runtime}/rc/base"
 source-here-or-in lua.kak               "%val{runtime}/rc/base"
-#source-here-or-in mail.kak              "%val{runtime}/rc/base"
+source-here-or-in mail.kak              "%val{runtime}/rc/base"
 source-here-or-in markdown.kak          "%val{runtime}/rc/base"
-#source-here-or-in mercurial.kak         "%val{runtime}/rc/base"
-#source-here-or-in ocaml.kak             "%val{runtime}/rc/base"
+source-here-or-in mercurial.kak         "%val{runtime}/rc/base"
+source-here-or-in ocaml.kak             "%val{runtime}/rc/base"
 source-here-or-in perl.kak              "%val{runtime}/rc/base"
-#source-here-or-in restructuredtext.kak  "%val{runtime}/rc/base"
-#source-here-or-in ruby.kak              "%val{runtime}/rc/base"
+source-here-or-in restructuredtext.kak  "%val{runtime}/rc/base"
+source-here-or-in ruby.kak              "%val{runtime}/rc/base"
 source-here-or-in rust.kak              "%val{runtime}/rc/base"
-#source-here-or-in scala.kak             "%val{runtime}/rc/base"
-#source-here-or-in screen.kak            "%val{runtime}/rc/base"
-#source-here-or-in spell.kak             "%val{runtime}/rc/base"
-#source-here-or-in sql.kak               "%val{runtime}/rc/base"
-#source-here-or-in swift.kak             "%val{runtime}/rc/base"
-#source-here-or-in tmux.kak              "%val{runtime}/rc/base"
+source-here-or-in scala.kak             "%val{runtime}/rc/base"
+source-here-or-in screen.kak            "%val{runtime}/rc/base"
+source-here-or-in spell.kak             "%val{runtime}/rc/base"
+source-here-or-in sql.kak               "%val{runtime}/rc/base"
+source-here-or-in swift.kak             "%val{runtime}/rc/base"
+source-here-or-in tmux.kak              "%val{runtime}/rc/base"
 source-here-or-in x11.kak               "%val{runtime}/rc/base"
-#source-here-or-in yaml.kak              "%val{runtime}/rc/base"
+source-here-or-in yaml.kak              "%val{runtime}/rc/base"
 
-#source-here-or-in arch-linux.kak        "%val{runtime}/rc/extra"
+source-here-or-in arch-linux.kak        "%val{runtime}/rc/extra"
 source-here-or-in autorestore.kak       "%val{runtime}/rc/extra"
-#source-here-or-in cabal.kak             "%val{runtime}/rc/extra"
-#source-here-or-in clang.kak             "%val{runtime}/rc/extra"
+source-here-or-in cabal.kak             "%val{runtime}/rc/extra"
+source-here-or-in clang.kak             "%val{runtime}/rc/extra"
 source-here-or-in cmake.kak             "%val{runtime}/rc/extra"
-#source-here-or-in coffee.kak            "%val{runtime}/rc/extra"
-#source-here-or-in cucumber.kak          "%val{runtime}/rc/extra"
-#source-here-or-in dart.kak              "%val{runtime}/rc/extra"
-#source-here-or-in dockerfile.kak        "%val{runtime}/rc/extra"
-#source-here-or-in editorconfig.kak      "%val{runtime}/rc/extra"
-#source-here-or-in elixir.kak            "%val{runtime}/rc/extra"
-#source-here-or-in elm.kak               "%val{runtime}/rc/extra"
-#source-here-or-in exherbo.kak           "%val{runtime}/rc/extra"
+source-here-or-in coffee.kak            "%val{runtime}/rc/extra"
+source-here-or-in cucumber.kak          "%val{runtime}/rc/extra"
+source-here-or-in dart.kak              "%val{runtime}/rc/extra"
+source-here-or-in dockerfile.kak        "%val{runtime}/rc/extra"
+source-here-or-in editorconfig.kak      "%val{runtime}/rc/extra"
+source-here-or-in elixir.kak            "%val{runtime}/rc/extra"
+source-here-or-in elm.kak               "%val{runtime}/rc/extra"
+source-here-or-in exherbo.kak           "%val{runtime}/rc/extra"
 source-here-or-in git-tools.kak         "%val{runtime}/rc/extra"
-#source-here-or-in go-tools.kak          "%val{runtime}/rc/extra"
-#source-here-or-in haml.kak              "%val{runtime}/rc/extra"
-#source-here-or-in hbs.kak               "%val{runtime}/rc/extra"
-#source-here-or-in i3.kak                "%val{runtime}/rc/extra"
-#source-here-or-in iterm.kak             "%val{runtime}/rc/extra"
-#source-here-or-in jedi.kak              "%val{runtime}/rc/extra"
-#source-here-or-in just.kak              "%val{runtime}/rc/extra"
-#source-here-or-in kickstart.kak         "%val{runtime}/rc/extra"
-#source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
-#source-here-or-in latex.kak             "%val{runtime}/rc/extra"
-#source-here-or-in modeline.kak          "%val{runtime}/rc/extra"
-#source-here-or-in moon.kak              "%val{runtime}/rc/extra"
-#source-here-or-in nim.kak               "%val{runtime}/rc/extra"
-#source-here-or-in php.kak               "%val{runtime}/rc/extra"
-#source-here-or-in pony.kak              "%val{runtime}/rc/extra"
-#source-here-or-in protobuf.kak          "%val{runtime}/rc/extra"
-#source-here-or-in pug.kak               "%val{runtime}/rc/extra"
-#source-here-or-in racer.kak             "%val{runtime}/rc/extra"
-#source-here-or-in ragel.kak             "%val{runtime}/rc/extra"
-#source-here-or-in ranger.kak            "%val{runtime}/rc/extra"
-#source-here-or-in sass.kak              "%val{runtime}/rc/extra"
-#source-here-or-in scheme.kak            "%val{runtime}/rc/extra"
-#source-here-or-in scss.kak              "%val{runtime}/rc/extra"
+source-here-or-in go-tools.kak          "%val{runtime}/rc/extra"
+source-here-or-in haml.kak              "%val{runtime}/rc/extra"
+source-here-or-in hbs.kak               "%val{runtime}/rc/extra"
+source-here-or-in i3.kak                "%val{runtime}/rc/extra"
+source-here-or-in iterm.kak             "%val{runtime}/rc/extra"
+source-here-or-in jedi.kak              "%val{runtime}/rc/extra"
+source-here-or-in just.kak              "%val{runtime}/rc/extra"
+source-here-or-in kickstart.kak         "%val{runtime}/rc/extra"
+source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
+#source-here-or-in new-client.kak             "%val{runtime}/rc/base"
+source-here-or-in latex.kak             "%val{runtime}/rc/extra"
+source-here-or-in modeline.kak          "%val{runtime}/rc/extra"
+source-here-or-in moon.kak              "%val{runtime}/rc/extra"
+source-here-or-in nim.kak               "%val{runtime}/rc/extra"
+source-here-or-in php.kak               "%val{runtime}/rc/extra"
+source-here-or-in pony.kak              "%val{runtime}/rc/extra"
+source-here-or-in protobuf.kak          "%val{runtime}/rc/extra"
+source-here-or-in pug.kak               "%val{runtime}/rc/extra"
+source-here-or-in racer.kak             "%val{runtime}/rc/extra"
+source-here-or-in ragel.kak             "%val{runtime}/rc/extra"
+source-here-or-in ranger.kak            "%val{runtime}/rc/extra"
+source-here-or-in sass.kak              "%val{runtime}/rc/extra"
+source-here-or-in scheme.kak            "%val{runtime}/rc/extra"
+source-here-or-in scss.kak              "%val{runtime}/rc/extra"
 source-here-or-in systemd.kak           "%val{runtime}/rc/extra"
-#source-here-or-in taskpaper.kak         "%val{runtime}/rc/extra"
-#source-here-or-in tmux-repl.kak         "%val{runtime}/rc/extra"
-#source-here-or-in toml.kak              "%val{runtime}/rc/extra"
-#source-here-or-in troff.kak             "%val{runtime}/rc/extra"
-#source-here-or-in tupfile.kak           "%val{runtime}/rc/extra"
-#source-here-or-in void-linux.kak        "%val{runtime}/rc/extra"
-#source-here-or-in x11-repl.kak          "%val{runtime}/rc/extra"
+source-here-or-in taskpaper.kak         "%val{runtime}/rc/extra"
+source-here-or-in tmux-repl.kak         "%val{runtime}/rc/extra"
+source-here-or-in toml.kak              "%val{runtime}/rc/extra"
+source-here-or-in troff.kak             "%val{runtime}/rc/extra"
+source-here-or-in tupfile.kak           "%val{runtime}/rc/extra"
+source-here-or-in void-linux.kak        "%val{runtime}/rc/extra"
+source-here-or-in x11-repl.kak          "%val{runtime}/rc/extra"
 
 source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
@@ -148,36 +150,34 @@ def do-or-die -params 2 %{
     }
 }
 
-set-option global tabstop 4
-set-option global indentwidth 4
-set-option global BOM none
-set-option global eolformat lf
-#set-option global disabled_hooks
+set global tabstop 4
+set global indentwidth 4
+set global BOM none
+set global eolformat lf
+#set global disabled_hooks
 
-set-option global autoinfo command|onkey
-set-option global ui_options ncurses_set_title=false
-set-option global scrolloff 2,5
+set global autoinfo command|onkey
+set global ui_options ncurses_set_title=false
+set global scrolloff 2,5
 
 try %{
-    set-option global gdb_breakpoint_active_symbol "x"
-    set-option global gdb_breakpoint_inactive_symbol "o"
-    set-option global gdb_location_symbol "->"
-    set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+    nop %opt{gdb_indicator}
+    set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
 } catch %{
-    set-option global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {default,default}- %val{client}@[%val{session}]'
+    set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {default,default}- %val{client}@[%val{session}]'
 }
-try %{ set-option global makecmd 'make --jobs=8' }
-try %{ set-option global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
-try %{ set-option global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
-try %{ set-option global termcmd 'alacritty -e sh -c' }
+try %{ set global makecmd 'make --jobs=8' }
+try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
+try %{ set global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
+try %{ set global termcmd 'alacritty -e sh -c' }
 
-define-command -hidden text-object-indented-paragraph %{
+def -hidden text-object-indented-paragraph %{
     eval -save-regs '^' %{
         exec -draft -save-regs '' '<a-i>pZ'
         exec '<a-i>i<a-z>i'
     }
 }
-try %{ set-option global expand_commands %{
+try %{ set global expand_commands %{
     expand-impl %{ exec <a-i>b }
     expand-impl %{ exec <a-a>b }
     expand-impl %{ exec <a-i>B }
@@ -277,7 +277,7 @@ face global SecondaryCursorEol black,white+fg
 face global SecondaryCursor black,rgb:babaa3+fg
 face global Whitespace rgb:363636,default+f
 face global LineNumbersWrapped rgb:606060,default+i
-face global MatchingChar black,yellow+F
+face global MatchigChar black,yellow+F
 
 # highlight current word
 decl -hidden regex curword
@@ -297,11 +297,11 @@ addhl global/ dynregex '%opt{curword}' 0:default,rgb:3b3b3b
 addhl global/ show-whitespaces
 addhl global/ wrap -word -marker "↳ "
 
-define-command reload-all -docstring "Reload all open buffers" %{
+def reload-all -docstring "Reload all open buffers" %{
     eval -buffer * edit!
 }
 
-define-command scratch -docstring "Open a scratch buffer" -params ..1 %{
+def scratch -docstring "Open a scratch buffer" -params ..1 %{
     try %{
         eval %sh{ [ -z "$1" ] && printf fail }
         edit -scratch %arg{1}
@@ -310,11 +310,11 @@ define-command scratch -docstring "Open a scratch buffer" -params ..1 %{
     }
 }
 
-define-command kakrc -docstring "Open kakrc" %{
+def kakrc -docstring "Open kakrc" %{
     edit ~/.config/kak/kakrc
 }
 
-define-command trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
+def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{
         exec -draft '%s\h+$<ret>d'
         echo -markup "{Information}trimmed"
@@ -323,20 +323,13 @@ define-command trim-whitespaces -docstring "Remove trailing whitespace from ever
     }
 }
 
-define-command ide %{
-    rename-client main
-    new rename-client tools
-    set global toolsclient tools
-    set global jumpclient main
-}
-
 # delete the *scratch* buffer as soon as another is created, but only if it's empty
 hook global BufCreate '^\*scratch\*$' %{
-    hook -once global BufCreate '^(?!\*scratch\*)^.*$' %{
+    hook -always -once global BufCreate '^(?!\*scratch\*)^.*$' %{
         try %{
             # throw if the buffer has more than one character
-            execute-keys -buffer *scratch* 'L<a-K>..<ret>'
-            delete-buffer *scratch*
+            exec -buffer *scratch* 'L<a-K>..<ret>'
+            db *scratch*
         }
     }
 }

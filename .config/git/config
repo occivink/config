@@ -21,5 +21,7 @@
     pretty = %C(green bold)%h%C(reset) %C(blue bold)%ad%C(reset) %s %C(red bold)%d%C(reset) %C(cyan)(%an)%C(reset)
 [log]
     date = format:%y-%m-%d
+[commit]
+    verbose = true
 [include]
     path = dayjob
