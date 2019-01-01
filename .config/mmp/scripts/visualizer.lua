@@ -10,10 +10,12 @@ local opts = {
     name = "showcqt",
     -- off
     -- showcqt
+    -- avectorscope
     -- showspectrum
     -- showcqtbar
+    -- showwaves
 
-    quality = "high",
+    quality = "medium",
     -- verylow
     -- low
     -- medium
@@ -253,7 +255,7 @@ local function get_visualizer(name, quality)
                 "mode           = p2p," ..
             "format             = rgb0 [vo]"
     elseif name == "off" then
-        return "[aid1] afifo [ao]; [vid1] fifo [vo]"
+        return "[aid1] afifo [ao]"
     end
 
     msg.log("error", "invalid visualizer name")
@@ -303,7 +305,9 @@ local function visualizer_hook()
         end
     end
 
-    mp.set_property("options/lavfi-complex", select_visualizer(atrack, vtrack, albumart))
+    local vis = select_visualizer(atrack, vtrack, albumart)
+    print(vis)
+    mp.set_property("options/lavfi-complex", vis)
 end
 
 mp.add_hook("on_preloaded", 50, visualizer_hook)

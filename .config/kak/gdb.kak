@@ -1,3 +1,7 @@
+# override to allow starting wrapper scripts
+# they must be compatible with gdb arguments
+decl str gdb_program "gdb"
+
 # script summary:
 # a long running shell process starts a gdb session (or connects to an existing one) and handles input/output
 # kakoune -> gdb communication is done by writing the gdb commands to a fifo
@@ -56,31 +60,18 @@ def -params .. -file-completion gdb-session-new %{
         while [ ! -e "${kak_opt_gdb_dir}/pty" ]; do
             sleep 0.1
         done
-        if [ -n "$TMUX" ]; then
-            tmux split-window -h " \
-                gdb $@ --init-eval-command=\"new-ui mi3 ${kak_opt_gdb_dir}/pty\""
-        elif [ -n "$WINDOWID" ]; then
-            setsid -w $kak_opt_termcmd " \
-                gdb $@ --init-eval-command=\"new-ui mi3 ${kak_opt_gdb_dir}/pty\"" 2>/dev/null >/dev/null &
-        fi
     }
+    terminal %opt{gdb_program} %arg{@} --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
 }
 
 def rr-session-new %{
     gdb-session-connect-internal
     nop %sh{
-        # can't connect until socat has created the pty thing
         while [ ! -e "${kak_opt_gdb_dir}/pty" ]; do
             sleep 0.1
         done
-        if [ -n "$TMUX" ]; then
-            tmux split-window -h " \
-                rr replay -o --init-eval-command=\"new-ui mi3 ${kak_opt_gdb_dir}/pty\""
-        elif [ -n "$WINDOWID" ]; then
-            setsid -w $kak_opt_termcmd " \
-                rr replay -o --init-eval-command=\"new-ui mi3 ${kak_opt_gdb_dir}/pty\"" 2>/dev/null >/dev/null &
-        fi
     }
+    terminal rr replay -o --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
 }
 
 def gdb-session-connect %{
@@ -116,7 +107,9 @@ def -hidden gdb-session-connect-internal %§
         mkfifo "${tmpdir}/input_pipe"
         {
             # too bad gdb only exposes its new-ui via a pty, instead of simply a socket
-            tail -n +1 -f "${tmpdir}/input_pipe" | socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
+            # the 'wait-slave' argument makes socat exit when the other end of the pty (gdb) exits, which is exactly what we want
+            # 'setsid socat' allows us to ignore any ctrl+c sent from kakoune
+            tail -n +1 -f "${tmpdir}/input_pipe" | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
 use strict;
 use warnings;
 my $session = $ENV{"kak_session"};
@@ -373,7 +366,7 @@ while (my $input = <STDIN>) {
     } elsif ($input =~ /\^done,stack=(.*)$/) {
         my @array;
         ($err, @array) = parse_array($err, $1);
-        open(my $fifo, '\''>'\'', "${tmpdir}/backtrace") or next;
+        open(my $fifo, ">>", "${tmpdir}/backtrace") or next;
         for my $val (@array) {
             $val =~ s/^frame=//;
             my $line = "???";
@@ -437,11 +430,14 @@ while (my $input = <STDIN>) {
             rm -f "${tmpdir}/input_pipe"
             rmdir "$tmpdir"
             printf "gdb-handle-perl-exited '%s'" "${tmpdir}" | kak -p $kak_session
-        } 2>/dev/null >/dev/null &
+        } > /dev/null 2>&1 < /dev/null &
         printf "set global gdb_dir '%s'\n" "$tmpdir"
         # put an empty flag of the same width to prevent the columns from jiggling
-        printf "set global gdb_location_flag 0 '0|%${#kak_opt_gdb_location_symbol}s'\n"
-        printf "set global gdb_breakpoints_flags 0 '0|%${#kak_opt_gdb_breakpoint_active_symbol}s'\n"
+        # TODO: support double-width characters (?)
+        location_len=$(printf %s "$kak_opt_gdb_location_symbol" | wc -m)
+        break_len=$(printf %s "$kak_opt_gdb_breakpoint_active_symbol" | wc -m)
+        printf "set global gdb_location_flag 0 '0|%${location_len}s'\n"
+        printf "set global gdb_breakpoints_flags 0 '0|%${break_len}s'\n"
     §§
     set global gdb_started true
     set global gdb_print_client %val{client}
@@ -466,24 +462,25 @@ def gdb-jump-to-location %{
     }}
 }
 
-def -params 1.. gdb-cmd %{
+def -params 1 gdb-cmd %{
     eval %sh{
         if [ "$kak_opt_gdb_started" = false ] || [ ! -p "$kak_opt_gdb_dir"/input_pipe ]; then
             printf "fail 'This command must be executed in a gdb session'"
             exit
         fi
-        IFS=' '
-        printf %s\\n "$*"  > "$kak_opt_gdb_dir"/input_pipe
+        printf %s\\n "$1"  > "$kak_opt_gdb_dir"/input_pipe
     }
 }
 
-def gdb-session-stop      %{ gdb-cmd -gdb-exit }
-def gdb-run -params ..    %{ gdb-cmd -exec-run %arg{@} }
-def gdb-start -params ..  %{ gdb-cmd -exec-run --start %arg{@} }
-def gdb-step              %{ gdb-cmd -exec-step }
-def gdb-next              %{ gdb-cmd -exec-next }
-def gdb-finish            %{ gdb-cmd -exec-finish }
-def gdb-continue          %{ gdb-cmd -exec-continue }
+def gdb-session-stop      %{ gdb-cmd "-gdb-exit" }
+def gdb-run -params ..    %{ gdb-cmd "-exec-arguments %arg{@}
+-exec-run" }
+def gdb-start -params ..  %{ gdb-cmd "-exec-arguments %arg{@}
+-exec-run --start" }
+def gdb-step              %{ gdb-cmd "-exec-step" }
+def gdb-next              %{ gdb-cmd "-exec-next" }
+def gdb-finish            %{ gdb-cmd "-exec-finish" }
+def gdb-continue          %{ gdb-cmd "-exec-continue" }
 def gdb-set-breakpoint    %{ gdb-breakpoint-impl false true }
 def gdb-clear-breakpoint  %{ gdb-breakpoint-impl true false }
 def gdb-toggle-breakpoint %{ gdb-breakpoint-impl true true }
@@ -498,7 +495,7 @@ def gdb-print -params ..1 %{
     } catch %{
         set global gdb_expression_demanded %val{selection}
     }
-    gdb-cmd "-data-evaluate-expression ""%opt{gdb_expression_demanded}"""
+    gdb-cmd "-data-evaluate-expression '%opt{gdb_expression_demanded}'"
 }
 
 def gdb-enable-autojump %{
@@ -525,11 +522,12 @@ decl -hidden int backtrace_current_line
 
 def gdb-backtrace %{
     try %{
+        try %{ db *gdb-backtrace* }
         eval %sh{
             [ "$kak_opt_gdb_stopped" = false ] && printf fail
             mkfifo "$kak_opt_gdb_dir"/backtrace
         }
-        gdb-cmd -stack-list-frames
+        gdb-cmd '-stack-list-frames'
         eval -try-client %opt{toolsclient} %{
             edit! -fifo "%opt{gdb_dir}/backtrace" *gdb-backtrace*
             set buffer backtrace_current_line 0
@@ -538,7 +536,6 @@ def gdb-backtrace %{
             map buffer normal <ret> ': gdb-backtrace-jump<ret>'
             hook -always -once buffer BufCloseFifo .* %{
                 nop %sh{ rm -f "$kak_opt_gdb_dir"/backtrace }
-                exec ged
             }
         }
     }

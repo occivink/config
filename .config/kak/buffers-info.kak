@@ -30,22 +30,32 @@ define-command buffers-info %{
             exec -buffer *tmp* "gep"
         }
         # put the line corresponding to the current buffer as search pattern
-        reg '/' "^  \Q%val{bufname}\E( \w+){3}$"
+        reg '/' "\A\Q%val{bufname}\E\z"
         reg "c" "%val{client}|all"
         eval -buffer *tmp* %{
             # remove stray newline at the top
             exec 'd'
 
-            # put '>' in front of the current buffer
-            try %{ exec '/<ret>ghr>' }
+            # select the buffers names
+            exec '%<a-s>1s^  ([^\n]+) \w+ \w+ \w+$<ret>'
 
-            # select the first option, to start iterating over all the flags
-            exec '%<a-s>1s^[^\n]+? +(\w+) \w+ \w+$<ret>'
+            # put > in front of the current buffer
+            try %{ exec -draft <a-k><ret>ghr> }
+
+            # trim directory names
+            try %{ exec -draft 1s\.?[^/]([^/]*)/<ret>d }
+
+            # select the first flag
+            exec 'll<a-e>'
             # align the flags, it looks cooler
-            exec '&'
+            exec '<a-;>&'
 
             # remove lines whose client is neither '$current_client' nor 'all', and not the current buffer
-            try %{ exec -draft '"c<a-K><ret>gh<a-K>><ret><a-x>d' }
+            try %{
+                exec '"c<a-K><ret>gh<a-K>><ret><a-x>d'
+                # re-select the flags, deleting lines + draft messes with the selections
+                exec '%<a-s>1s^.*? (\w+) \w+ \w+$<ret>'
+            }
             exec 'dd<a-e>'
 
             # replace 'pinned' bool with a '=' flag (or nothing)
@@ -74,40 +84,66 @@ define-command buffers-info %{
 # (use empty strings if you don't want to filter)
 # %arg{3} is the command to eval, the name of the buffer is available as %val{selection}
 define-command eval-on-buffers -params 3 %{
-    eval -draft -no-hooks -save-regs '"/' %{
-        eval -draft %{ edit -debug -scratch *tmp* }
+    eval -draft -no-hooks -save-regs '"/^' %{
+        eval -draft %{ edit -debug -scratch *eval-buffers* }
         eval -buffer * %{
             reg '"' "%val{bufname} %opt{client} %opt{pinned}"
-            exec -buffer *tmp* "gep"
+            exec -buffer *eval-buffers* "gep"
         }
-        buffer *tmp*
-        eval -buffer *tmp* %{
+        reg '/' "\A\Q%val{bufname}\E\z"
+        eval -buffer *eval-buffers* %{
             exec 'd'
             try %{
                 # select 'pinned' bool
-                exec '%<a-s>gl<a-B>'
+                exec '%<a-s>gl<a-b>'
                 # filter according to first arg
-                reg / %arg{1}
-                exec "<a-k><ret>"
+                eval -save-regs '/' %{
+                    reg / %arg{1}
+                    exec "<a-k><ret>"
+                }
 
                 # select 'client' str
-                exec 'hh<a-B>'
+                exec 'h<a-b>'
                 # filter according to second arg
-                reg / %arg{2}
-                exec "<a-k><ret>"
+                eval -save-regs '/' %{
+                    reg / %arg{2}
+                    exec "<a-k><ret>"
+                }
 
-                # select buffer name
-                exec 'hhGh'
+                # select buffer names
+                exec hhGh
+                # make sure that the current buffer is the main sel
+                try %{ exec 'Z<a-k><ret><a-z>a' }
                 eval %arg{3}
             }
         }
-        delete-buffer *tmp*
+        delete-buffer *eval-buffers*
     }
 }
 
 define-command delete-unpinned %{
     eval-on-buffers 'false' '' %{
         # try in order to not abort on failure
-        eval -itersel %{ try %{ delete-buffer %val{selection} } }
+        eval -itersel %{ try %{ db %val{selection} } }
+    }
+    buffers-info
+}
+
+define-command next %{
+    eval -save-regs 'b' %{
+        eval-on-buffers '' "\A%val{client}|all\z" %{
+            exec ')<space>'
+            reg b %val{selection}
+        }
+        buffer %reg{b}
+    }
+}
+define-command prev %{
+    eval -save-regs 'b' %{
+        eval-on-buffers '' "\A%val{client}|all\z" %{
+            exec '(<space>'
+            reg b %val{selection}
+        }
+        buffer %reg{b}
     }
 }
