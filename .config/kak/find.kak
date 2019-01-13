@@ -40,8 +40,8 @@ If <pattern> is not specified, the content of the main selection is used
         exec R
         set buffer find_current_line 0
         addhl buffer/ regex "%reg{/}" 0:black,yellow
-        # should expose this, hardcoding black is not nice
-        addhl buffer/ regex "^([^\n]+):(\d+):(\d+):" 1:cyan,black 2:green,black 3:green,black
+        # final so that %reg{/} doesn't get highlighted in the header
+        addhl buffer/ regex "^([^\n]+):(\d+):(\d+):" 1:cyan,default+F 2:green,default+F 3:green,default+F
         addhl buffer/ line '%opt{find_current_line}' default+b
         map buffer normal <ret> :find-jump<ret>
     }
@@ -95,6 +95,7 @@ If -force is specified, changes will also be applied to files that do not curren
             eval -itersel %{
                 try %{
                     exec -save-regs '' <a-*>
+                    echo -debug %reg{1} %reg{2} %reg{/}
                     %reg{c} %reg{1} %reg{2} %reg{/} %reg{3}
                 } catch %{
                     reg f "%reg{f}o"

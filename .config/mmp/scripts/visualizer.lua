@@ -305,9 +305,7 @@ local function visualizer_hook()
         end
     end
 
-    local vis = select_visualizer(atrack, vtrack, albumart)
-    print(vis)
-    mp.set_property("options/lavfi-complex", vis)
+    mp.set_property("options/lavfi-complex", select_visualizer(atrack, vtrack, albumart))
 end
 
 mp.add_hook("on_preloaded", 50, visualizer_hook)
