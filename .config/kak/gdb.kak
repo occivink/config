@@ -109,7 +109,7 @@ def -hidden gdb-session-connect-internal %§
             # too bad gdb only exposes its new-ui via a pty, instead of simply a socket
             # the 'wait-slave' argument makes socat exit when the other end of the pty (gdb) exits, which is exactly what we want
             # 'setsid socat' allows us to ignore any ctrl+c sent from kakoune
-            tail -n +1 -f "${tmpdir}/input_pipe" | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
+            tail -n +1 -f "${tmpdir}/input_pipe" | tee /tmp/gdb_output | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
 use strict;
 use warnings;
 my $session = $ENV{"kak_session"};
@@ -322,9 +322,11 @@ sub get_line_file {
     return 1;
 }
 my $connected = 0;
+open(my $outputfh, ">", "/tmp/gdb_perl_input");
 while (my $input = <STDIN>) {
     $input =~ s/\s+\z//;
     my $err = 0;
+    print $outputfh "$input\n";
     if (!$connected) {
         $connected = 1;
         open(my $fh, '\''>'\'', "${tmpdir}/input_pipe") or die;

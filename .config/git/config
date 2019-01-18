@@ -25,3 +25,5 @@
     verbose = true
 [include]
     path = dayjob
+[commit]
+    verbose = true

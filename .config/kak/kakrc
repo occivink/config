@@ -69,11 +69,11 @@ source-here-or-in perl.kak              "%val{runtime}/rc/base"
 #source-here-or-in ruby.kak              "%val{runtime}/rc/base"
 #source-here-or-in rust.kak              "%val{runtime}/rc/base"
 #source-here-or-in scala.kak             "%val{runtime}/rc/base"
-source-here-or-in screen.kak            "%val{runtime}/rc/base"
+#source-here-or-in screen.kak            "%val{runtime}/rc/base"
 source-here-or-in spell.kak             "%val{runtime}/rc/base"
 source-here-or-in sql.kak               "%val{runtime}/rc/base"
 #source-here-or-in swift.kak             "%val{runtime}/rc/base"
-source-here-or-in tmux.kak              "%val{runtime}/rc/base"
+#source-here-or-in tmux.kak              "%val{runtime}/rc/base"
 source-here-or-in x11.kak               "%val{runtime}/rc/base"
 source-here-or-in yaml.kak              "%val{runtime}/rc/base"
 #source-here-or-in new-client.kak        "%val{runtime}/rc/base"
@@ -100,7 +100,7 @@ source-here-or-in git-tools.kak         "%val{runtime}/rc/extra"
 #source-here-or-in jedi.kak              "%val{runtime}/rc/extra"
 #source-here-or-in just.kak              "%val{runtime}/rc/extra"
 #source-here-or-in kickstart.kak         "%val{runtime}/rc/extra"
-source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
+#source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
 #source-here-or-in latex.kak             "%val{runtime}/rc/extra"
 #source-here-or-in modeline.kak          "%val{runtime}/rc/extra"
 #source-here-or-in moon.kak              "%val{runtime}/rc/extra"
@@ -139,6 +139,28 @@ source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
+#try %{
+#    addhl global/ scrollbar
+#    addhl global/scrollbar/ scrollbar-indicator blue,default gdb_location_flag
+#    addhl global/scrollbar/ scrollbar-indicator red,default gdb_breakpoints_flags
+#}
+
+def do-or-die -params 2 %{
+    try %{
+        eval %arg{1}
+        write-all-quit
+    } catch %{
+        buffer *debug*
+        write %arg{2}
+        quit! 1
+    }
+}
+
+def -hidden open-selected-files %{
+    eval -itersel %{ try %{ exec -with-hooks -draft gf } }
+    exec -with-hooks gf
+}
+
 set global tabstop 4
 set global indentwidth 4
 set global BOM none
@@ -149,13 +171,6 @@ set global autoinfo command|onkey
 set global ui_options ncurses_set_title=false
 set global scrolloff 2,5
 
-map global goto f '<esc>: open-buffers<ret>'
-
-def open-buffers %{
-    eval -itersel %{ try %{ exec -with-hooks -draft gf }}
-    exec -with-hooks gf
-}
-
 try %{
     nop %opt{gdb_indicator}
     set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
@@ -165,7 +180,7 @@ try %{
 try %{ set global makecmd 'make --jobs=8' }
 try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
 try %{ set global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
-try %{ set global termcmd 'alacritty -e sh -c' }
+try %{ set global termcmd 'kitty sh -c' }
 
 def -hidden text-object-indented-paragraph %{
     eval -save-regs '^' %{
@@ -219,6 +234,7 @@ map global normal <a-c> ''
 map global normal ';' ':'
 map global normal ':' ';'
 
+map -docstring "file" global goto f "<esc>: open-selected-files<ret>"
 map -docstring "find" global goto p "<esc>: find<ret>"
 
 # tab/backtab to cycle through completions
@@ -280,7 +296,7 @@ face global MatchigChar black,yellow+F
 
 # highlight current word
 decl -hidden regex curword
-hook global NormalIdle .* %{
+def -hidden update-curword %{
     eval -save-regs / -draft %{ try %{
         exec -save-regs '' <space><a-i>w*
         set buffer curword "%reg{/}"
@@ -288,6 +304,8 @@ hook global NormalIdle .* %{
         set buffer curword ''
     }}
 }
+hook global NormalIdle '' update-curword
+hook global InsertIdle '' update-curword
 
 addhl global/ number-lines -hlcursor -separator ' '
 addhl global/ show-matching
@@ -324,7 +342,7 @@ def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
 
 # delete the *scratch* buffer as soon as another is created, but only if it's empty
 hook global BufCreate '^\*scratch\*$' %{
-    hook -always -once global BufCreate '^(?!\*scratch\*)^.*$' %{
+    hook -once -always global BufCreate '^(?!\*scratch\*).*$' %{
         try %{
             # throw if the buffer has more than one character
             exec -buffer *scratch* 'L<a-K>..<ret>'

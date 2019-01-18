@@ -74,7 +74,7 @@ define-command buffers-info %{
 
             exec -save-regs '' '%y'
         }
-        delete-buffer *tmp*
+        db *tmp*
         info -title Buffers %reg{"}
     }
 }
