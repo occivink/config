@@ -119,6 +119,7 @@ view = { -- 1-based indices into the "playlist" array
     first = 0, -- must be equal to N*columns
     last = 0, -- must be > first and <= first + rows*columns
 }
+hash_cache = {}
 overlays = {
     active = {}, -- array of 64 strings indicating the file associated to the current thumbnail (empty if no file)
     missing = {}, -- maps hashes of missing thumbnails to the index they should be shown at
@@ -138,14 +139,13 @@ ass = {
     placeholders = "",
 }
 flags = {}
-resume = {} -- maps filename to the time-pos it was at when starting the gallery
+resume = {} -- maps filenames to a {time=,vid=,aid=,sid=} tuple
 misc = {
-    old_idle = "",
     old_force_window = "",
     old_geometry = "",
     old_osd_level = "",
     old_background = "",
-    old_vid = "",
+    old_idle = "",
 }
 generators = {} -- list of generator scripts that have registered themselves
 
@@ -159,9 +159,6 @@ do
                 if not res or not res.is_dir then
                     msg.error(string.format("Thumbnail directory \"%s\" does not exist", opts.thumbs_dir))
                 end
-            end
-            if opts.auto_generate_thumbnails and #generators == 0 then
-                msg.error("Auto-generation on, but no generators registered")
             end
         end
     end
@@ -264,14 +261,24 @@ do
 
     local function idle_handler()
         if pending.selection ~= -1 then
-            increment_selection(pending.selection)
+            selection.now = pending.selection
             pending.selection = -1
+            ensure_view_valid()
+            refresh_overlays(false)
+            ass_show(true, true, true)
         end
         if pending.window_size_changed then
             pending.window_size_changed = false
             local window_w, window_h = mp.get_osd_size()
             if window_w ~= geometry.window_w or window_h ~= geometry.window_h then
-                resize_gallery(window_w, window_h)
+                compute_geometry(window_w, window_h)
+                if geometry.rows <= 0 or geometry.columns <= 0 then
+                    quit_gallery_view(selection.old)
+                    return
+                end
+                ensure_view_valid()
+                refresh_overlays(true)
+                ass_show(true, true, true)
             end
         end
         if pending.deletion then
@@ -306,46 +313,67 @@ do
     end
 end
 
-function restore_playlist_and_select(select)
-    mp.set_property_number("playlist-pos-1", select)
-    if opts.resume_when_picking then
-        local time = resume[playlist[select].filename]
-        if time then
-            local tmp
-            local func = function()
-                mp.commandv("seek", time, "absolute")
-                mp.unregister_event(tmp)
+function resume_playback(select)
+    -- what a mess
+    local s = resume[playlist[select].filename]
+    local pos = mp.get_property_number("playlist-pos-1")
+    if pos == select then
+        if s and opts.resume_when_picking then
+            mp.commandv("seek", s.time, "absolute")
+        end
+        mp.set_property("vid", s and s.vid or "1")
+        mp.set_property("aid", s and s.aid or "1")
+        mp.set_property("sid", s and s.sid or "1")
+        mp.set_property_bool("pause", false)
+    else
+        if s then
+            local func
+            func = function()
+                local change_maybe = function(prop, val)
+                    if val ~= mp.get_property(prop) then
+                        mp.set_property(prop,val)
+                    end
+                end
+                change_maybe("vid", s.vid)
+                change_maybe("aid", s.aid)
+                change_maybe("sid", s.sid)
+                if opts.resume_when_picking then
+                    mp.commandv("seek", s.time, "absolute")
+                end
+                mp.unregister_event(func)
             end
-            tmp = func
             mp.register_event("file-loaded", func)
         end
+        mp.set_property("playlist-pos-1", select)
+        mp.set_property("vid", "1")
+        mp.set_property("aid", "1")
+        mp.set_property("sid", "1")
+        mp.set_property_bool("pause", false)
     end
 end
 
 function restore_properties()
-    mp.set_property("idle", misc.old_idle)
     mp.set_property("force-window", misc.old_force_window)
+    mp.set_property("track-auto-selection", misc.old_track_auto_selection)
     mp.set_property("geometry", misc.old_geometry)
     mp.set_property("osd-level", misc.old_osd_level)
     mp.set_property("background", misc.old_background)
-    mp.set_property("vid", misc.old_vid)
-    mp.set_property_bool("pause", false)
+    mp.set_property("idle", misc.old_idle)
     mp.commandv("script-message", "osc-visibility", "auto", "true")
 end
 
 function save_properties()
-    misc.old_idle = mp.get_property("idle")
     misc.old_force_window = mp.get_property("force-window")
+    misc.old_track_auto_selection = mp.get_property("track-auto-selection")
     misc.old_geometry = mp.get_property("geometry")
     misc.old_osd_level = mp.get_property("osd-level")
     misc.old_background = mp.get_property("background")
-    misc.old_vid = mp.get_property("vid")
-    mp.set_property_bool("pause", true)
-    mp.set_property_bool("idle", true)
+    misc.old_idle = mp.get_property("idle")
     mp.set_property_bool("force-window", true)
+    mp.set_property_bool("track-auto-selection", false)
     mp.set_property_number("osd-level", 0)
     mp.set_property("background", opts.background)
-    mp.set_property("vid", "no")
+    mp.set_property_bool("idle", true)
     mp.commandv("no-osd", "script-message", "osc-visibility", "never", "true")
     mp.set_property("geometry", geometry.window_w .. "x" .. geometry.window_h)
 end
@@ -372,24 +400,6 @@ function compute_geometry(ww, wh)
     end
     geometry.margin_x = (ww - geometry.columns * geometry.size_x) / (geometry.columns + 1)
     geometry.margin_y = (wh - geometry.rows * geometry.size_y) / (geometry.rows + 1)
-end
-
-function increment_selection(inc)
-    selection.now = inc
-    ensure_view_valid()
-    refresh_overlays(false)
-    ass_show(true, true, true)
-end
-
-function resize_gallery(window_w, window_h)
-    compute_geometry(window_w, window_h)
-    if geometry.rows <= 0 or geometry.columns <= 0 then
-        quit_gallery_view(selection.old)
-        return
-    end
-    ensure_view_valid()
-    refresh_overlays(true)
-    ass_show(true, true, true)
 end
 
 -- makes sure that view.first and view.last are valid with regards to the playlist
@@ -605,15 +615,19 @@ function refresh_overlays(force)
         if index <= view.last then
             local filename = playlist[index].filename
             if force or overlays.active[i] ~= filename then
-                local filename_hash = string.sub(sha256(normalize_path(filename)), 1, 12)
+                local filename_hash = hash_cache[filename]
+                if filename_hash == nil then
+                    filename_hash = string.sub(sha256(normalize_path(filename)), 1, 12)
+                    hash_cache[filename] = filename_hash
+                end
                 local thumb_filename = string.format("%s_%d_%d", filename_hash, geometry.size_x, geometry.size_y)
                 local thumb_path = utils.join_path(opts.thumbs_dir, thumb_filename)
                 if file_exists(thumb_path) then
                     show_overlay(i, thumb_path)
                     overlays.active[i] = filename
                 else
-                    remove_overlay(i)
                     overlays.missing[thumb_path] = { index = i, input = filename }
+                    remove_overlay(i)
                     todo[#todo + 1] = { input = filename, output = thumb_path }
                 end
             end
@@ -642,13 +656,16 @@ end
 function show_overlay(index_1, thumb_path)
     local g = geometry
     local index_0 = index_1 - 1
-    mp.command(string.format("overlay-add %i %i %i %s 0 bgra %i %i %i;",
-        index_0,
-        g.margin_x + (g.margin_x + g.size_x) * (index_0 % g.columns),
-        g.margin_y + (g.margin_y + g.size_y) * math.floor(index_0 / g.columns),
+    mp.commandv("overlay-add",
+        tostring(index_0),
+        tostring(math.floor(0.5 + g.margin_x + (g.margin_x + g.size_x) * (index_0 % g.columns))),
+        tostring(math.floor(0.5 + g.margin_y + (g.margin_y + g.size_y) * math.floor(index_0 / g.columns))),
         thumb_path,
-        g.size_x, g.size_y, 4*g.size_x
-    ))
+        "0",
+        "bgra",
+        tostring(g.size_x),
+        tostring(g.size_y),
+        tostring(4*g.size_x))
     mp.osd_message("", 0.01)
 end
 
@@ -697,21 +714,44 @@ function playlist_changed(key, value)
     ass_show(true, true, true)
 end
 
-function start_gallery_view()
+function start_gallery_view(record_time)
+    if active then return end
     init()
     playlist = mp.get_property_native("playlist")
     if #playlist == 0 then return end
-    mp.observe_property("playlist", "native", playlist_changed)
 
     local ww, wh = mp.get_osd_size()
     compute_geometry(ww, wh)
     if geometry.rows <= 0 or geometry.columns <= 0 then return end
 
+    mp.observe_property("playlist", "native", playlist_changed)
     save_properties()
 
     local pos = mp.get_property_number("playlist-pos-1")
-    if opts.resume_when_picking and pos then
-        resume[playlist[pos].filename] = mp.get_property_number("time-pos") or 0
+    if pos then
+        local s = {}
+        mp.set_property_bool("pause", true)
+        if opts.resume_when_picking then
+            s.time = record_time and mp.get_property_number("time-pos") or 0
+        end
+        s.vid = mp.get_property_number("vid") or "1"
+        s.aid = mp.get_property_number("aid") or "1"
+        s.sid = mp.get_property_number("sid") or "1"
+        resume[playlist[pos].filename] = s
+        mp.set_property("vid", "no")
+        mp.set_property("aid", "no")
+        mp.set_property("sid", "no")
+    else
+        -- this may happen if we enter the gallery too fast
+        local func
+        func = function()
+            mp.set_property_bool("pause", true)
+            mp.set_property("vid", "no")
+            mp.set_property("aid", "no")
+            mp.set_property("sid", "no")
+            mp.unregister_event(func)
+        end
+        mp.register_event("file-loaded", func)
     end
     selection.old = pos or 1
     selection.now = selection.old
@@ -723,12 +763,13 @@ function start_gallery_view()
 end
 
 function quit_gallery_view(select)
+    if not active then return end
     teardown_ui_handlers()
     remove_overlays()
     mp.unobserve_property(playlist_changed)
     ass_hide()
     if select then
-        restore_playlist_and_select(select)
+        resume_playback(select)
     end
     restore_properties()
     active = false
@@ -736,7 +777,7 @@ end
 
 function toggle_gallery()
     if not active then
-        start_gallery_view()
+        start_gallery_view(true)
     else
         quit_gallery_view(opts.toggle_behaves_as_accept and selection.now or selection.old)
     end
@@ -774,20 +815,23 @@ end
 mp.register_event("shutdown", write_flag_file)
 
 if opts.start_gallery_on_file_end then
-    mp.register_event("end-file", function()
-        if not active and mp.get_property_number("playlist-count") > 1 then
-            start_gallery_view()
+    mp.observe_property("eof-reached", "bool", function(_, val)
+        if val and mp.get_property_number("playlist-count") > 1 then
+            start_gallery_view(false)
+
         end
     end)
 end
 if opts.start_gallery_on_startup then
     local autostart
-    autostart = function(_, v)
-        if v == 0 then return end
+    autostart = function()
+        if mp.get_property_number("playlist-count") == 0 then return end
+        if mp.get_property_number("osd-width") <= 0 then return end
+        start_gallery_view(false)
         mp.unobserve_property(autostart)
-        start_gallery_view()
     end
     mp.observe_property("playlist-count", "number", autostart)
+    mp.observe_property("osd-width", "number", autostart)
 end
 
 mp.add_key_binding("g", "gallery-view", toggle_gallery)
