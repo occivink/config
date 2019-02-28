@@ -25,6 +25,7 @@ hook global KakBegin .* %{
     }
 }
 
+
 #source-here-or-in asciidoc.kak          "%val{runtime}/rc/core"
 source-here-or-in c-family.kak          "%val{runtime}/rc/core"
 source-here-or-in comment.kak           "%val{runtime}/rc/core"
