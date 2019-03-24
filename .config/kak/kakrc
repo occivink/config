@@ -25,106 +25,108 @@ hook global KakBegin .* %{
     }
 }
 
+ source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
+#source-here-or-in autowrap.kak         "%val{runtime}/rc/tools"
+#source-here-or-in clang.kak            "%val{runtime}/rc/tools"
+ source-here-or-in comment.kak          "%val{runtime}/rc/tools"
+ source-here-or-in ctags.kak            "%val{runtime}/rc/tools"
+ source-here-or-in doc.kak              "%val{runtime}/rc/tools"
+ source-here-or-in formatter.kak        "%val{runtime}/rc/tools"
+ source-here-or-in git.kak              "%val{runtime}/rc/tools"
+ source-here-or-in grep.kak             "%val{runtime}/rc/tools"
+#source-here-or-in lint.kak             "%val{runtime}/rc/tools"
+ source-here-or-in make.kak             "%val{runtime}/rc/tools"
+ source-here-or-in man.kak              "%val{runtime}/rc/tools"
+#source-here-or-in spell.kak            "%val{runtime}/rc/tools"
+#source-here-or-in jedi.kak             "%val{runtime}/rc/tools/python"
+#source-here-or-in go-tools.kak         "%val{runtime}/rc/tools/go"
+#source-here-or-in racer.kak            "%val{runtime}/rc/tools/rust"
 
-#source-here-or-in asciidoc.kak          "%val{runtime}/rc/core"
-source-here-or-in c-family.kak          "%val{runtime}/rc/core"
-source-here-or-in comment.kak           "%val{runtime}/rc/core"
-source-here-or-in diff.kak              "%val{runtime}/rc/core"
-source-here-or-in doc.kak               "%val{runtime}/rc/core"
-source-here-or-in formatter.kak         "%val{runtime}/rc/core"
-source-here-or-in grep.kak              "%val{runtime}/rc/core"
-source-here-or-in kakrc.kak             "%val{runtime}/rc/core"
-source-here-or-in make.kak              "%val{runtime}/rc/core"
-source-here-or-in makefile.kak          "%val{runtime}/rc/core"
-source-here-or-in man.kak               "%val{runtime}/rc/core"
-source-here-or-in python.kak            "%val{runtime}/rc/core"
-source-here-or-in sh.kak                "%val{runtime}/rc/core"
+ source-here-or-in arch-linux.kak       "%val{runtime}/rc/filetype"
+ source-here-or-in asciidoc.kak         "%val{runtime}/rc/filetype"
+#source-here-or-in cabal.kak            "%val{runtime}/rc/filetype"
+ source-here-or-in c-family.kak         "%val{runtime}/rc/filetype"
+#source-here-or-in clojure.kak          "%val{runtime}/rc/filetype"
+ source-here-or-in cmake.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in coffee.kak           "%val{runtime}/rc/filetype"
+#source-here-or-in css.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in cucumber.kak         "%val{runtime}/rc/filetype"
+#source-here-or-in dart.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in diff.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in d.kak                "%val{runtime}/rc/filetype"
+#source-here-or-in dockerfile.kak       "%val{runtime}/rc/filetype"
+#source-here-or-in elixir.kak           "%val{runtime}/rc/filetype"
+#source-here-or-in elm.kak              "%val{runtime}/rc/filetype"
+ source-here-or-in etc.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in exherbo.kak          "%val{runtime}/rc/filetype"
+#source-here-or-in fish.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in gas.kak              "%val{runtime}/rc/filetype"
+ source-here-or-in git.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in go.kak               "%val{runtime}/rc/filetype"
+#source-here-or-in haml.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in haskell.kak          "%val{runtime}/rc/filetype"
+#source-here-or-in hbs.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in html.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in i3.kak               "%val{runtime}/rc/filetype"
+#source-here-or-in ini.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in java.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in javascript.kak       "%val{runtime}/rc/filetype"
+ source-here-or-in json.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in julia.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in just.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in kakrc.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in kickstart.kak        "%val{runtime}/rc/filetype"
+#source-here-or-in latex.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in lisp.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in lua.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in mail.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in makefile.kak         "%val{runtime}/rc/filetype"
+ source-here-or-in markdown.kak         "%val{runtime}/rc/filetype"
+#source-here-or-in mercurial.kak        "%val{runtime}/rc/filetype"
+#source-here-or-in moon.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in nim.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in ocaml.kak            "%val{runtime}/rc/filetype"
+ source-here-or-in perl.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in php.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in pony.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in protobuf.kak         "%val{runtime}/rc/filetype"
+#source-here-or-in pug.kak              "%val{runtime}/rc/filetype"
+ source-here-or-in python.kak           "%val{runtime}/rc/filetype"
+#source-here-or-in ragel.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in restructuredtext.kak "%val{runtime}/rc/filetype"
+#source-here-or-in ruby.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in rust.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in sass.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in scala.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in scheme.kak           "%val{runtime}/rc/filetype"
+#source-here-or-in scss.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in sh.kak               "%val{runtime}/rc/filetype"
+#source-here-or-in sql.kak              "%val{runtime}/rc/filetype"
+#source-here-or-in swift.kak            "%val{runtime}/rc/filetype"
+ source-here-or-in systemd.kak          "%val{runtime}/rc/filetype"
+#source-here-or-in taskpaper.kak        "%val{runtime}/rc/filetype"
+#source-here-or-in toml.kak             "%val{runtime}/rc/filetype"
+#source-here-or-in troff.kak            "%val{runtime}/rc/filetype"
+#source-here-or-in tupfile.kak          "%val{runtime}/rc/filetype"
+#source-here-or-in void-linux.kak       "%val{runtime}/rc/filetype"
+#source-here-or-in yaml.kak             "%val{runtime}/rc/filetype"
 
-source-here-or-in autowrap.kak          "%val{runtime}/rc/base"
-#source-here-or-in clojure.kak           "%val{runtime}/rc/base"
-#source-here-or-in css.kak               "%val{runtime}/rc/base"
-source-here-or-in ctags.kak             "%val{runtime}/rc/base"
-#source-here-or-in d.kak                 "%val{runtime}/rc/base"
-#source-here-or-in etc.kak               "%val{runtime}/rc/base"
-source-here-or-in file.kak              "%val{runtime}/rc/base"
-#source-here-or-in fish.kak              "%val{runtime}/rc/base"
-#source-here-or-in gas.kak               "%val{runtime}/rc/base"
-source-here-or-in git.kak               "%val{runtime}/rc/base"
-#source-here-or-in go.kak                "%val{runtime}/rc/base"
-#source-here-or-in haskell.kak           "%val{runtime}/rc/base"
-source-here-or-in html.kak              "%val{runtime}/rc/base"
-#source-here-or-in ini.kak               "%val{runtime}/rc/base"
-#source-here-or-in java.kak              "%val{runtime}/rc/base"
-#source-here-or-in javascript.kak        "%val{runtime}/rc/base"
-source-here-or-in json.kak              "%val{runtime}/rc/base"
-#source-here-or-in julia.kak             "%val{runtime}/rc/base"
-source-here-or-in lint.kak              "%val{runtime}/rc/base"
-#source-here-or-in lisp.kak              "%val{runtime}/rc/base"
-source-here-or-in lua.kak               "%val{runtime}/rc/base"
-#source-here-or-in mail.kak              "%val{runtime}/rc/base"
-source-here-or-in markdown.kak          "%val{runtime}/rc/base"
-#source-here-or-in mercurial.kak         "%val{runtime}/rc/base"
-#source-here-or-in ocaml.kak             "%val{runtime}/rc/base"
-source-here-or-in perl.kak              "%val{runtime}/rc/base"
-#source-here-or-in restructuredtext.kak  "%val{runtime}/rc/base"
-#source-here-or-in ruby.kak              "%val{runtime}/rc/base"
-#source-here-or-in rust.kak              "%val{runtime}/rc/base"
-#source-here-or-in scala.kak             "%val{runtime}/rc/base"
-#source-here-or-in screen.kak            "%val{runtime}/rc/base"
-source-here-or-in spell.kak             "%val{runtime}/rc/base"
-source-here-or-in sql.kak               "%val{runtime}/rc/base"
-#source-here-or-in swift.kak             "%val{runtime}/rc/base"
-#source-here-or-in tmux.kak              "%val{runtime}/rc/base"
-source-here-or-in x11.kak               "%val{runtime}/rc/base"
-source-here-or-in yaml.kak              "%val{runtime}/rc/base"
-#source-here-or-in new-client.kak        "%val{runtime}/rc/base"
+#source-here-or-in iterm.kak            "%val{runtime}/rc/windowing"
+#source-here-or-in kitty.kak            "%val{runtime}/rc/windowing"
+ source-here-or-in new-client.kak       "%val{runtime}/rc/windowing"
+#source-here-or-in screen.kak           "%val{runtime}/rc/windowing"
+#source-here-or-in tmux.kak             "%val{runtime}/rc/windowing"
+ source-here-or-in x11.kak              "%val{runtime}/rc/windowing"
+#source-here-or-in x11.kak              "%val{runtime}/rc/windowing/repl"
+#source-here-or-in tmux.kak             "%val{runtime}/rc/windowing/repl"
 
-#source-here-or-in arch-linux.kak        "%val{runtime}/rc/extra"
-#source-here-or-in autorestore.kak       "%val{runtime}/rc/extra"
-#source-here-or-in cabal.kak             "%val{runtime}/rc/extra"
-#source-here-or-in clang.kak             "%val{runtime}/rc/extra"
-#source-here-or-in cmake.kak             "%val{runtime}/rc/extra"
-#source-here-or-in coffee.kak            "%val{runtime}/rc/extra"
-#source-here-or-in cucumber.kak          "%val{runtime}/rc/extra"
-#source-here-or-in dart.kak              "%val{runtime}/rc/extra"
-#source-here-or-in dockerfile.kak        "%val{runtime}/rc/extra"
-#source-here-or-in editorconfig.kak      "%val{runtime}/rc/extra"
-#source-here-or-in elixir.kak            "%val{runtime}/rc/extra"
-#source-here-or-in elm.kak               "%val{runtime}/rc/extra"
-#source-here-or-in exherbo.kak           "%val{runtime}/rc/extra"
-source-here-or-in git-tools.kak         "%val{runtime}/rc/extra"
-#source-here-or-in go-tools.kak          "%val{runtime}/rc/extra"
-#source-here-or-in haml.kak              "%val{runtime}/rc/extra"
-#source-here-or-in hbs.kak               "%val{runtime}/rc/extra"
-#source-here-or-in i3.kak                "%val{runtime}/rc/extra"
-#source-here-or-in iterm.kak             "%val{runtime}/rc/extra"
-#source-here-or-in jedi.kak              "%val{runtime}/rc/extra"
-#source-here-or-in just.kak              "%val{runtime}/rc/extra"
-#source-here-or-in kickstart.kak         "%val{runtime}/rc/extra"
-#source-here-or-in kitty.kak             "%val{runtime}/rc/extra"
-#source-here-or-in latex.kak             "%val{runtime}/rc/extra"
-#source-here-or-in modeline.kak          "%val{runtime}/rc/extra"
-#source-here-or-in moon.kak              "%val{runtime}/rc/extra"
-#source-here-or-in nim.kak               "%val{runtime}/rc/extra"
-#source-here-or-in php.kak               "%val{runtime}/rc/extra"
-#source-here-or-in pony.kak              "%val{runtime}/rc/extra"
-#source-here-or-in protobuf.kak          "%val{runtime}/rc/extra"
-#source-here-or-in pug.kak               "%val{runtime}/rc/extra"
-#source-here-or-in racer.kak             "%val{runtime}/rc/extra"
-#source-here-or-in ragel.kak             "%val{runtime}/rc/extra"
-#source-here-or-in ranger.kak            "%val{runtime}/rc/extra"
-#source-here-or-in sass.kak              "%val{runtime}/rc/extra"
-#source-here-or-in scheme.kak            "%val{runtime}/rc/extra"
-#source-here-or-in scss.kak              "%val{runtime}/rc/extra"
-source-here-or-in systemd.kak           "%val{runtime}/rc/extra"
-#source-here-or-in taskpaper.kak         "%val{runtime}/rc/extra"
-#source-here-or-in tmux-repl.kak         "%val{runtime}/rc/extra"
-#source-here-or-in toml.kak              "%val{runtime}/rc/extra"
-#source-here-or-in troff.kak             "%val{runtime}/rc/extra"
-#source-here-or-in tupfile.kak           "%val{runtime}/rc/extra"
-#source-here-or-in void-linux.kak        "%val{runtime}/rc/extra"
-#source-here-or-in x11-repl.kak          "%val{runtime}/rc/extra"
+#source-here-or-in editorconfig.kak     "%val{runtime}/rc/detection"
+ source-here-or-in file.kak             "%val{runtime}/rc/detection"
+#source-here-or-in modeline.kak         "%val{runtime}/rc/detection"
 
+
+source-here-or-in   snippets.kak               "%val{config}"
+source-here-or-in   snippets-directory.kak     "%val{config}"
 source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
 source-here-or-in   expand.kak                 "%val{config}"
@@ -132,7 +134,6 @@ source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
 source-here-or-in   gdb.kak                    "%val{config}"
-#source-here-or-in   kak-lsp.kak                "%val{config}"
 source-here-or-in   multiples.kak              "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
@@ -189,19 +190,19 @@ def -hidden text-object-indented-paragraph %{
         exec '<a-i>i<a-z>i'
     }
 }
-try %{ set global expand_commands %{
-    expand-impl %{ exec <a-i>b }
-    expand-impl %{ exec <a-a>b }
-    expand-impl %{ exec <a-i>B }
-    expand-impl %{ exec <a-a>B }
-    expand-impl %{ exec <a-i>r }
-    expand-impl %{ exec <a-a>r }
-    expand-impl %{ exec <a-i>i }
-    expand-impl %{ exec <a-i>i_ }
-    expand-impl %{ text-object-indented-paragraph }
-    expand-impl %{ text-object-indented-paragraph; exec _ }
-    expand-impl %{ exec <a-x>_ }
-}}
+try %{ set global expand_commands \
+    %{ exec <a-i>b } \
+    %{ exec <a-a>b } \
+    %{ exec <a-i>B } \
+    %{ exec <a-a>B } \
+    %{ exec <a-i>r } \
+    %{ exec <a-a>r } \
+    %{ exec <a-i>i } \
+    %{ exec <a-i>i_ } \
+    %{ text-object-indented-paragraph } \
+    %{ text-object-indented-paragraph; exec _ } \
+    %{ exec <a-x>_ }
+}
 
 def -hidden smart-star -params 1 %{
     try %{
@@ -343,6 +344,7 @@ def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
 
 # delete the *scratch* buffer as soon as another is created, but only if it's empty
 hook global BufCreate '^\*scratch\*$' %{
+    exec '%d'
     hook -once -always global BufCreate '^(?!\*scratch\*).*$' %{
         try %{
             # throw if the buffer has more than one character

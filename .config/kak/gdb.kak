@@ -61,7 +61,7 @@ def -params .. -file-completion gdb-session-new %{
             sleep 0.1
         done
     }
-    terminal %opt{gdb_program} %arg{@} --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
+    terminal %opt{gdb_program} %arg{@} --init-eval-command "set mi-async on" --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
 }
 
 def rr-session-new %{
@@ -71,7 +71,7 @@ def rr-session-new %{
             sleep 0.1
         done
     }
-    terminal rr replay -o --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
+    terminal rr replay -o --init-eval-command "set mi-async on" --init-eval-command "new-ui mi3 %opt{gdb_dir}/pty"
 }
 
 def gdb-session-connect %{
@@ -109,7 +109,7 @@ def -hidden gdb-session-connect-internal %§
             # too bad gdb only exposes its new-ui via a pty, instead of simply a socket
             # the 'wait-slave' argument makes socat exit when the other end of the pty (gdb) exits, which is exactly what we want
             # 'setsid socat' allows us to ignore any ctrl+c sent from kakoune
-            tail -n +1 -f "${tmpdir}/input_pipe" | tee /tmp/gdb_output | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
+            tail -n +1 -f "${tmpdir}/input_pipe" | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
 use strict;
 use warnings;
 my $session = $ENV{"kak_session"};
@@ -322,15 +322,12 @@ sub get_line_file {
     return 1;
 }
 my $connected = 0;
-open(my $outputfh, ">", "/tmp/gdb_perl_input");
 while (my $input = <STDIN>) {
     $input =~ s/\s+\z//;
     my $err = 0;
-    print $outputfh "$input\n";
     if (!$connected) {
         $connected = 1;
         open(my $fh, '\''>'\'', "${tmpdir}/input_pipe") or die;
-        print $fh "-gdb-set mi-async on\n";
         print $fh "-break-list\n";
         print $fh "-stack-info-frame\n";
         close($fh);
@@ -383,7 +380,8 @@ while (my $input = <STDIN>) {
                 ($err, $file) = parse_string($err, $frame{"fullname"});
             }
             if ($line ne "???" and $file ne "???") {
-                ($err, $content) = get_line_file($line, $file);
+                my ($err_get_line, $found_content) = get_line_file($line, $file);
+                if (not $err_get_line) { $content = $found_content; }
             }
             print $fifo "$file:$line:$content\n";
         }
@@ -464,13 +462,29 @@ def gdb-jump-to-location %{
     }}
 }
 
-def -params 1 gdb-cmd %{
+def gdb-cmd -params 1.. %{
     eval %sh{
         if [ "$kak_opt_gdb_started" = false ] || [ ! -p "$kak_opt_gdb_dir"/input_pipe ]; then
             printf "fail 'This command must be executed in a gdb session'"
             exit
         fi
-        printf %s\\n "$1"  > "$kak_opt_gdb_dir"/input_pipe
+        {
+            # TODO do this in awk or something
+            # safe to assume that the gdb command does not need escaping
+            printf %s "$1"
+            shift
+            for i; do
+                printf ' '
+                # special case to preserve empty variables as sed won't touch these
+                if [ "$i" = '' ]; then
+                    printf "''"
+                else
+                    # \ -> \\ then " -> \" and surround with ".."
+                    printf %s "$i" | sed -e 's|\\|\\\\|g; s|"|\\"|g; s|^|"|; s|$|"|'
+                fi
+            done
+            printf \\n
+        } > "$kak_opt_gdb_dir"/input_pipe
     }
 }
 
@@ -486,6 +500,15 @@ def gdb-continue          %{ gdb-cmd "-exec-continue" }
 def gdb-set-breakpoint    %{ gdb-breakpoint-impl false true }
 def gdb-clear-breakpoint  %{ gdb-breakpoint-impl true false }
 def gdb-toggle-breakpoint %{ gdb-breakpoint-impl true true }
+def gdb-continue-or-run %{
+   %sh{
+      if [ "$kak_opt_gdb_program_running" = true ]; then
+         printf "gdb-continue\n"
+      else
+         printf "gdb-run\n"
+      fi
+   }
+}
 
 # gdb doesn't tell us in its output what was the expression we asked for, so keep it internally for printing later
 decl -hidden str gdb_expression_demanded
@@ -497,7 +520,7 @@ def gdb-print -params ..1 %{
     } catch %{
         set global gdb_expression_demanded %val{selection}
     }
-    gdb-cmd "-data-evaluate-expression '%opt{gdb_expression_demanded}'"
+    gdb-cmd -data-evaluate-expression "%opt{gdb_expression_demanded}"
 }
 
 def gdb-enable-autojump %{
