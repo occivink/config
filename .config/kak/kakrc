@@ -12,7 +12,7 @@ def source-here-or-in -params 2 %{
 hook global KakBegin .* %{
     eval -save-regs 'p' %{
         reg p %sh{
-            while :; do
+            while true; do
                 if [ -f init.kak ]; then
                     printf "%s" "$PWD"
                     exit
@@ -190,19 +190,19 @@ def -hidden text-object-indented-paragraph %{
         exec '<a-i>i<a-z>i'
     }
 }
-try %{ set global expand_commands \
-    %{ exec <a-i>b } \
-    %{ exec <a-a>b } \
-    %{ exec <a-i>B } \
-    %{ exec <a-a>B } \
-    %{ exec <a-i>r } \
-    %{ exec <a-a>r } \
-    %{ exec <a-i>i } \
-    %{ exec <a-i>i_ } \
-    %{ text-object-indented-paragraph } \
-    %{ text-object-indented-paragraph; exec _ } \
-    %{ exec <a-x>_ }
-}
+#try %{ set global expand_commands \
+#    %{ exec <a-i>b } \
+#    %{ exec <a-a>b } \
+#    %{ exec <a-i>B } \
+#    %{ exec <a-a>B } \
+#    %{ exec <a-i>r } \
+#    %{ exec <a-a>r } \
+#    %{ exec <a-i>i } \
+#    %{ exec <a-i>i_ } \
+#    %{ text-object-indented-paragraph } \
+#    %{ text-object-indented-paragraph; exec _ } \
+#    %{ exec <a-x>_ }
+#}
 
 def -hidden smart-star -params 1 %{
     try %{
@@ -239,13 +239,14 @@ map global normal ':' ';'
 map -docstring "file" global goto f "<esc>: open-selected-files<ret>"
 map -docstring "find" global goto p "<esc>: find<ret>"
 
+# indent with tab
+map global insert <tab> '<a-;><a-gt>'
+map global insert <s-tab> '<a-;><lt>'
+
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
-    try %{
-        exec -draft ';<a-K>^.<ret>hGh<a-K>\A\h+\z<ret>'
-        map window insert <s-tab> <c-p>
-        map window insert <tab> <c-n>
-    }
+    map window insert <s-tab> <c-p>
+    map window insert <tab> <c-n>
 }
 hook global InsertCompletionHide .* %{
     unmap window insert <tab> <c-n>
@@ -371,15 +372,17 @@ hook global GlobalSetOption gdb_started=false %{
     unmap global normal <f5>    ': gdb-continue<ret>'
 }
 
-map -docstring "select 🡓"           global user v     ': select-down<ret>'
-map -docstring "select 🡑"           global user <a-v> ': select-up<ret>'
-map -docstring "select 🡓🡑"          global user V     ': select-vertically<ret>'
-map -docstring "trim whitespaces"   global user w     ': trim-whitespaces<ret>'
-map -docstring "clip-paste after"   global user p     '<a-!>xsel --output --clipboard<ret>'
-map -docstring "clip-paste before"  global user P     '!xsel --output --clipboard<ret>'
-map -docstring "clip-replace"       global user R     '|xsel --output --clipboard<ret>'
-map -docstring "clip-yank"          global user y     '<a-|>xsel --input --clipboard<ret>'
-map -docstring "math"               global user m     ': math<ret>'
+map -docstring "select 🡓"          -- global user v     ': select-down<ret>'
+map -docstring "select 🡑"          -- global user <a-v> ': select-up<ret>'
+map -docstring "select 🡓🡑"         -- global user V     ': select-vertically<ret>'
+map -docstring "trim whitespaces"  -- global user w     ': trim-whitespaces<ret>'
+map -docstring "clip-paste after"  -- global user p     '<a-!>xsel --output --clipboard<ret>'
+map -docstring "clip-paste before" -- global user P     '!xsel --output --clipboard<ret>'
+map -docstring "clip-replace"      -- global user R     '|xsel --output --clipboard<ret>'
+map -docstring "clip-yank"         -- global user y     '<a-|>xsel --input --clipboard<ret>'
+map -docstring "math"              -- global user m     ': math<ret>'
+map -docstring "++"                -- global user +     'a+1<esc>: math<ret>'
+map -docstring "--"                -- global user -     'a-1<esc>: math<ret>'
 
 map global normal <a-,> ': prev<ret>'
 map global normal <a-.> ': next<ret>'
