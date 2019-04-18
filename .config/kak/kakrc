@@ -141,6 +141,9 @@ source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
+#source-here-or-in   lsp.kak                    "%val{config}"
+#lsp-enable
+
 #try %{
 #    addhl global/ scrollbar
 #    addhl global/scrollbar/ scrollbar-indicator blue,default gdb_location_flag
@@ -171,6 +174,7 @@ set global disabled_hooks .*-trim-indent
 
 set global autoinfo command|onkey
 set global ui_options ncurses_set_title=false
+#set global ui_options ncurses_assistant=cat
 set global scrolloff 2,5
 
 try %{
@@ -283,8 +287,8 @@ map global insert <a-F> '<esc>: phantom-sel-iterate-prev<ret>i'
 # move line up/down
 # not very mnemonic but whatever
 map global normal t     ': exec -itersel "<lt>a-x>d%arg{1}j<lt>a-P>"<ret>'
-map global normal T     ''
 map global normal <a-t> ': exec -itersel "<lt>a-x>d%arg{1}k<lt>a-P>"<ret>'
+map global normal T     ''
 map global normal <a-T> ''
 
 map global normal <c-b> ': make<ret>'
@@ -295,7 +299,7 @@ face global SecondaryCursorEol black,white+fg
 face global SecondaryCursor black,rgb:babaa3+fg
 face global Whitespace rgb:363636,default+f
 face global LineNumbersWrapped rgb:606060,default+i
-face global MatchigChar black,yellow+F
+face global MatchingChar black,yellow+F
 
 # highlight current word
 decl -hidden regex curword
@@ -330,9 +334,12 @@ def scratch -docstring "Open a scratch buffer" -params ..1 %{
     }
 }
 
-def kakrc -docstring "Open kakrc" %{
-    edit ~/.config/kak/kakrc
-}
+def kakrc -docstring "Open kakrc"       %{ cd ~/.config/kak/  ; edit kakrc }
+def kitty -docstring "Open kitty.conf"  %{ cd ~/.config/kitty ; edit kitty.conf }
+def mpv -docstring "Open mpv.conf"      %{ cd ~/.config/mpv   ; edit mpv.conf ; edit input.conf }
+def mvi -docstring "Open mvi.conf"      %{ cd ~/.config/mvi   ; edit mpv.conf ; edit input.conf }
+def mmp -docstring "Open mmp.conf"      %{ cd ~/.config/mmp   ; edit mpv.conf ; edit input.conf }
+def elvish -docstring "Open rc.elv"     %{ cd ~/.elvish/      ; edit rc.elv }
 
 def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{
@@ -351,6 +358,27 @@ hook global BufCreate '^\*scratch\*$' %{
             # throw if the buffer has more than one character
             exec -buffer *scratch* 'L<a-K>..<ret>'
             db *scratch*
+        }
+    }
+}
+
+# wew
+def buffer-switcher %{
+    try %{
+        b *buffer-switcher*
+    } catch %{
+        eval -save-regs '"/' %{
+            eval reg dquote %val{buflist}
+            reg / "^\Q%val{bufname}\E$"
+            edit -scratch *buffer-switcher*
+            exec '<a-P>)<a-space>i<ret><esc>'
+            exec '%<a-s>'
+            exec -draft '<a-k>^\*debug\*$<ret>d'
+            exec '<a-k><ret>'
+            addhl buffer/ regex %reg{/} 0:black,green
+            map buffer normal <ret> '<space>;<a-x>H: eval -save-regs b %{ reg b %val{selection}; delete-buffer; buffer %reg{b} }<ret>'
+            map buffer normal <esc> ': db<ret>'
+            hook global -once WinDisplay .* %{ try %{ delete-buffer *buffer-switcher* } }
         }
     }
 }
@@ -384,9 +412,7 @@ map -docstring "math"              -- global user m     ': math<ret>'
 map -docstring "++"                -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                -- global user -     'a-1<esc>: math<ret>'
 
-map global normal <a-,> ': prev<ret>'
-map global normal <a-.> ': next<ret>'
-map global normal <a-r> ': e!<ret>'
-map global normal <a-d> ': db<ret>'
+map global normal <a-d> ': buffer-switcher<ret>'
+map global normal <a-D> ': db<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }

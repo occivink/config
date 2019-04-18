@@ -12,11 +12,11 @@ decl str-list expand_commands \
     %{ exec '<a-:>j<a-K>^$<ret><a-i>i' }
 
 decl str-list shrink_commands \
+    %{ exec 's\(.*?\)<ret>' } \
     %{ exec 's\{.*?\}<ret>' } \
     %{ exec 's\[.*?\]<ret>' } \
     %{ exec 's<lt>.*?><ret>' } \
     %{ exec '1S\n(\n+)<ret>' } \
-    %{ exec 's\w+<ret>' } \
     %{ exec '<a-X>' }
 
 def expand -docstring '

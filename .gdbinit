@@ -27,8 +27,3 @@ from printers import register_eigen_printers
 register_eigen_printers (None)
 
 end
-
-dir ~/QT595/qtbase/src/corelib
-dir ~/QT595/qtbase/src/gui
-dir ~/QT595/qtbase/src/widgets
-dir ~/QT595/qtbase/src/network
