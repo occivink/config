@@ -25,6 +25,8 @@ hook global KakBegin .* %{
     }
 }
 
+decl bool gdb_debug true
+
  source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
 #source-here-or-in autowrap.kak         "%val{runtime}/rc/tools"
 #source-here-or-in clang.kak            "%val{runtime}/rc/tools"
@@ -124,9 +126,6 @@ hook global KakBegin .* %{
  source-here-or-in file.kak             "%val{runtime}/rc/detection"
 #source-here-or-in modeline.kak         "%val{runtime}/rc/detection"
 
-
-source-here-or-in   snippets.kak               "%val{config}"
-source-here-or-in   snippets-directory.kak     "%val{config}"
 source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
 source-here-or-in   expand.kak                 "%val{config}"
@@ -137,12 +136,18 @@ source-here-or-in   gdb.kak                    "%val{config}"
 source-here-or-in   multiples.kak              "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
+source-here-or-in   snippets-directory.kak     "%val{config}"
+source-here-or-in   snippets.kak               "%val{config}"
+source-here-or-in   sort-selections.kak        "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
-#source-here-or-in   lsp.kak                    "%val{config}"
-#lsp-enable
+# source-here-or-in   lsp.kak                    "%val{config}"
+# 
+# hook global WinSetOption filetype=(cpp) %{
+#     lsp-enable-window
+# }
 
 #try %{
 #    addhl global/ scrollbar
@@ -208,22 +213,22 @@ def -hidden text-object-indented-paragraph %{
 #    %{ exec <a-x>_ }
 #}
 
-def -hidden smart-star -params 1 %{
-    try %{
-        exec -draft <a-space>
-        eval -no-hooks -draft -save-regs '"' %{
-            exec -save-regs '' "%arg{1}""""*"
-            edit -scratch *smart-star-temp*
-            exec '<a-P>)<a-space>i|<esc>'
-        }
-        try %{ exec -buffer *smart-star-temp* -save-regs '' "%%H""%val{register}/<c-r>.<ret>" }
-        db *smart-star-temp*
-    } catch %{
-        exec -save-regs '' """%val{register}%arg{1}"
-    }
-}
-map global normal * ': smart-star *<ret>'
-map global normal <a-*> ': smart-star <lt>a-*><ret>'
+#def -hidden smart-star -params 1 %{
+#    try %{
+#        exec -draft <a-space>
+#        eval -no-hooks -draft -save-regs '"' %{
+#            exec -save-regs '' "%arg{1}""""*"
+#            edit -scratch *smart-star-temp*
+#            exec '<a-P>)<a-space>i|<esc>'
+#        }
+#        try %{ exec -buffer *smart-star-temp* -save-regs '' "%%H""%val{register}/<c-r>.<ret>" }
+#        db *smart-star-temp*
+#    } catch %{
+#        exec -save-regs '' """%val{register}%arg{1}"
+#    }
+#}
+#map global normal * ': smart-star *<ret>'
+#map global normal <a-*> ': smart-star <lt>a-*><ret>'
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -375,12 +380,22 @@ def buffer-switcher %{
             exec '%<a-s>'
             exec -draft '<a-k>^\*debug\*$<ret>d'
             exec '<a-k><ret>'
-            addhl buffer/ regex %reg{/} 0:black,green
-            map buffer normal <ret> '<space>;<a-x>H: eval -save-regs b %{ reg b %val{selection}; delete-buffer; buffer %reg{b} }<ret>'
+            addhl buffer/ regex "%reg{/}" 0:black,green
+            map buffer normal <ret> ': buffer-switcher-switch<ret>'
             map buffer normal <esc> ': db<ret>'
             hook global -once WinDisplay .* %{ try %{ delete-buffer *buffer-switcher* } }
         }
     }
+}
+def -hidden buffer-switcher-switch %{
+	exec '<space>;<a-x>H'
+	eval %sh{
+	}
+	eval -save-regs b %{
+		reg b %val{selection}
+		delete-buffer *buffer-switcher*
+		buffer %reg{b}
+	}
 }
 
 hook global GlobalSetOption gdb_started=true %{

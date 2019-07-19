@@ -2,6 +2,8 @@
 # they must be compatible with gdb arguments
 decl str gdb_program "gdb"
 
+decl bool gdb_debug false
+
 # script summary:
 # a long running shell process starts a gdb session (or connects to an existing one) and handles input/output
 # kakoune -> gdb communication is done by writing the gdb commands to a fifo
@@ -21,9 +23,9 @@ decl bool gdb_started false
 decl bool gdb_program_running false
 # the debugged program is currently running, but stopped
 decl bool gdb_program_stopped false
-# if not empty, contains the name of client in which the autojump is performed
+# if not empty, contains the name of the client in which the autojump is performed
 decl str gdb_autojump_client
-# if not empty, contains the name of client in which the value is printed
+# if not empty, contains the name of the client in which the value is printed
 # set by default to the client which started the session
 decl str gdb_print_client
 
@@ -52,6 +54,15 @@ decl -hidden line-specs gdb_location_flag
 addhl shared/gdb group -passes move
 addhl shared/gdb/ flag-lines GdbLocation gdb_location_flag
 addhl shared/gdb/ flag-lines GdbBreakpoint gdb_breakpoints_flags
+
+eval %{
+    try %{
+        %sh{ [ gdb_debug = "false" ] && printf 'fail' }
+        def gdb-debug -hidden -params .. ''
+    } catch %{
+        def gdb-debug -hidden -params .. %{ echo -debug '[gdb][kak]' %arg{@} }
+    }
+}
 
 def -params .. -file-completion gdb-session-new %{
     gdb-session-connect-internal
@@ -112,8 +123,15 @@ def -hidden gdb-session-connect-internal %§
             tail -n +1 -f "${tmpdir}/input_pipe" | setsid socat "pty,wait-slave,link=${tmpdir}/pty" STDIO,nonblock=1 | perl -e '
 use strict;
 use warnings;
-my $session = $ENV{"kak_session"};
-my $tmpdir = $ENV{"tmpdir"};
+my $kak_session = $ENV{"kak_session"};
+my $debug = $ENV{"kak_opt_gdb_debug"};
+if (defined($debug)) {
+    $debug = ($debug eq "true");
+} else {
+    $debug = 0;
+}
+my $tmpdir = $ENV{"tmpdir"} || "/tmp";
+print($tmpdir);
 sub escape {
     my $command = shift;
     if (not defined($command)) { return '\'''\''; }
@@ -124,14 +142,18 @@ sub send_to_kak {
     my $err = shift;
     if ($err) { return $err; }
     my $command = join('\'' '\'', @_);
-    my $pid = open(CHILD_STDIN, "|-");
-    defined($pid) || die "can'\''t fork: $!";
-    $SIG{PIPE} = sub { die "child pipe broke" };
-    if ($pid > 0) { # parent
-        print CHILD_STDIN $command;
-        close(CHILD_STDIN) || return 1;
-    } else { # child
-        exec("kak", "-p", $session) || die "can'\''t exec program: $!";
+    if ($kak_session) {
+        my $pid = open(CHILD_STDIN, "|-");
+        defined($pid) || die "can'\''t fork: $!";
+        $SIG{PIPE} = sub { die "child pipe broke" };
+        if ($pid > 0) { # parent
+            print CHILD_STDIN $command;
+            close(CHILD_STDIN) || return 1;
+        } else { # child
+            exec("kak", "-p", $kak_session) || die "can'\''t exec program: $!";
+        }
+    } else {
+        print("${command}\n");
     }
     return 0;
 }
@@ -321,20 +343,30 @@ sub get_line_file {
     close($fh);
     return 1;
 }
+sub debug_maybe {
+    if (not $debug) { return; }
+    my $input = shift;
+    my $err = 0;
+    send_to_kak($err, "echo", "-debug", "[gdb][perl]", escape($input));
+}
 my $connected = 0;
 while (my $input = <STDIN>) {
     $input =~ s/\s+\z//;
     my $err = 0;
     if (!$connected) {
         $connected = 1;
-        open(my $fh, '\''>'\'', "${tmpdir}/input_pipe") or die;
-        print $fh "-break-list\n";
-        print $fh "-stack-info-frame\n";
-        close($fh);
+        if ($kak_session) {
+            open(my $fh, '\''>'\'', "${tmpdir}/input_pipe") or die;
+            print $fh "-break-list\n";
+            print $fh "-stack-info-frame\n";
+            close($fh);
+        }
     }
     if ($input =~ /^\*running/) {
+        debug_maybe($input);
         $err = send_to_kak($err, '\''gdb-handle-running'\'');
     } elsif ($input =~ /^\*stopped,(.*)$/) {
+        debug_maybe($input);
         my (%map, $reason, %frame, $line, $file, $skip);
         ($err, %map) = parse_map($err, '\''{'\'' . $1 . '\''}'\'');
         $skip = 0;
@@ -355,14 +387,17 @@ while (my $input = <STDIN>) {
             }
         }
     } elsif ($input =~ /^=thread-group-exited/) {
+        debug_maybe($input);
         $err = send_to_kak($err, '\''gdb-handle-exited'\'');
     } elsif ($input =~ /\^done,frame=(.*)$/) {
+        debug_maybe($input);
         my (%map, $line, $file);
         ($err, %map) = parse_map($err, $1);
         ($err, $line) = parse_string($err, $map{"line"});
         ($err, $file) = parse_string($err, $map{"fullname"});
         $err = send_to_kak($err, '\''gdb-clear-location'\'', '\'';'\'', '\''gdb-handle-stopped'\'', $line, escape($file));
     } elsif ($input =~ /\^done,stack=(.*)$/) {
+        debug_maybe($input);
         my @array;
         ($err, @array) = parse_array($err, $1);
         open(my $fifo, ">>", "${tmpdir}/backtrace") or next;
@@ -387,6 +422,7 @@ while (my $input = <STDIN>) {
         }
         close($fifo);
     } elsif ($input =~ /^=breakpoint-(created|modified),bkpt=(.*)$/) {
+        debug_maybe($input);
         my ($operation, @command);
         $operation = $1;
         ($err, @command) = breakpoint_to_command($err, "gdb-handle-breakpoint-$operation", '\''['\'' . $2 . '\'']'\'');
@@ -394,11 +430,13 @@ while (my $input = <STDIN>) {
             $err = send_to_kak($err, @command);
         }
     } elsif ($input =~ /^=breakpoint-deleted,(.*)$/) {
+        debug_maybe($input);
         my (%map, $id);
         ($err, %map) = parse_map($err, '\''{'\'' . $1 . '\''}'\'');
         ($err, $id)  = parse_string($err, $map{"id"});
         $err = send_to_kak($err, '\''gdb-handle-breakpoint-deleted'\'', $id);
     } elsif ($input =~ /\^done,BreakpointTable=(.*)$/) {
+        debug_maybe($input);
         my (%map, @body, @body_fixed, @command, @subcommand);
         ($err, %map) = parse_map($err, $1);
         ($err, @body) = parse_array($err, $map{"body"});
@@ -413,10 +451,12 @@ while (my $input = <STDIN>) {
         }
         $err = send_to_kak($err, @command);
     } elsif ($input =~ /^\^error,msg=(.*)$/) {
+        debug_maybe($input);
         my $msg;
         ($err, $msg) = parse_string($err, $1);
-        $err = send_to_kak($err, "echo", "-debug", "[gdb]", escape($msg));
+        $err = send_to_kak($err, "echo", "-debug", "[gdb][error]", escape($msg));
     } elsif ($input =~ /^\^done,value=(.*)$/){
+        debug_maybe($input);
         my $val;
         ($err, $val) = parse_string($err, $1);
         $err = send_to_kak($err, "gdb-handle-print", escape($val));
@@ -463,6 +503,7 @@ def gdb-jump-to-location %{
 }
 
 def gdb-cmd -params 1.. %{
+    gdb-debug gdb-cmd %arg{@}
     eval %sh{
         if [ "$kak_opt_gdb_started" = false ] || [ ! -p "$kak_opt_gdb_dir"/input_pipe ]; then
             printf "fail 'This command must be executed in a gdb session'"
@@ -656,6 +697,7 @@ def gdb-breakpoint-impl -hidden -params 2 %{
 
 
 def -hidden -params 2 gdb-handle-stopped %{
+    gdb-debug gdb-handle-stopped %arg{@}
     try %{
         gdb-process-pending-commands
         gdb-continue
@@ -669,6 +711,7 @@ def -hidden -params 2 gdb-handle-stopped %{
 }
 
 def -hidden gdb-handle-stopped-unknown %{
+    gdb-debug gdb-handle-stopped-unknown
     try %{
         gdb-process-pending-commands
         gdb-continue
@@ -679,6 +722,7 @@ def -hidden gdb-handle-stopped-unknown %{
 }
 
 def -hidden gdb-handle-exited %{
+    gdb-debug gdb-handle-exited
     try %{ gdb-process-pending-commands }
     set global gdb_program_running false
     set global gdb_program_stopped false
@@ -687,6 +731,7 @@ def -hidden gdb-handle-exited %{
 }
 
 def -hidden gdb-process-pending-commands %{
+    gdb-debug gdb-process-pending-commands
     eval %sh{
         if [ ! -n "$kak_opt_gdb_pending_commands" ]; then
             printf fail
@@ -698,6 +743,7 @@ def -hidden gdb-process-pending-commands %{
 }
 
 def -hidden gdb-handle-running %{
+    gdb-debug gdb-handle-running
     set global gdb_program_running true
     set global gdb_program_stopped false
     gdb-set-indicator-from-current-state
@@ -705,6 +751,7 @@ def -hidden gdb-handle-running %{
 }
 
 def -hidden gdb-clear-location %{
+    gdb-debug gdb-clear-location
     try %{ eval %sh{
         eval set -- "$kak_opt_gdb_location_info"
         [ $# -eq 0 ] && exit
@@ -716,6 +763,7 @@ def -hidden gdb-clear-location %{
 
 # refresh the location flag of the buffer passed as argument
 def -hidden -params 1 gdb-refresh-location-flag %{
+    gdb-debug gdb-refresh-location-flag %arg{@}
     # buffer may not exist, only try
     try %{
         eval -buffer %arg{1} %{
@@ -733,11 +781,13 @@ def -hidden -params 1 gdb-refresh-location-flag %{
 }
 
 def -hidden -params 4 gdb-handle-breakpoint-created %{
+    gdb-debug gdb-handle-breakpoint-created %arg{@}
     set -add global gdb_breakpoints_info %arg{1} %arg{2} %arg{3} %arg{4}
     gdb-refresh-breakpoints-flags %arg{4}
 }
 
 def -hidden -params 1 gdb-handle-breakpoint-deleted %{
+    gdb-debug gdb-handle-breakpoint-deleted %arg{@}
     eval %sh{
         id_to_delete="$1"
         printf "set global gdb_breakpoints_info\n"
@@ -755,6 +805,7 @@ def -hidden -params 1 gdb-handle-breakpoint-deleted %{
 }
 
 def -hidden -params 4 gdb-handle-breakpoint-modified %{
+    gdb-debug gdb-handle-breakpoint-modified %arg{@}
     eval %sh{
         id_modified="$1"
         active="$2"
@@ -776,6 +827,7 @@ def -hidden -params 4 gdb-handle-breakpoint-modified %{
 
 # refresh the breakpoint flags of the file passed as argument
 def -hidden -params 1 gdb-refresh-breakpoints-flags %{
+    gdb-debug gdb-refresh-breakpoints-flags %arg{@}
     # buffer may not exist, so only try
     try %{
         eval -buffer %arg{1} %{
@@ -803,6 +855,7 @@ def -hidden -params 1 gdb-refresh-breakpoints-flags %{
 }
 
 def -hidden gdb-handle-print -params 1 %{
+    gdb-debug gdb-handle-print %arg{@}
     try %{
         eval -buffer *gdb-print* %{
             reg '"' "%opt{gdb_expression_demanded} == %arg{1}"
@@ -815,11 +868,13 @@ def -hidden gdb-handle-print -params 1 %{
 
 # clear all breakpoint information internal to kakoune
 def -hidden gdb-clear-breakpoints %{
+    gdb-debug gdb-clear-breakpoints
     eval -buffer * %{ unset buffer gdb_breakpoints_flags }
     set global gdb_breakpoints_info
 }
 
 def -hidden gdb-handle-perl-exited -params 1 %{
+    gdb-debug gdb-handle-perl-exited %arg{@}
     try %{
         # only do this if the session that exited is the current one
         # this might not be the case if a session was started while another was active

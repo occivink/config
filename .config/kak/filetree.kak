@@ -33,7 +33,7 @@ def -hidden filetree-buflist-to-regex -params ..1 %{
         eval -buffer *filetree* %{
             set-option buffer filetree_open_files %sh{
                 exclude="$1"
-                eval set -- "$kak_buflist"
+                eval set -- "$kak_quoted_buflist"
                 first=1
                 printf '^\./('
                 for buffer do
