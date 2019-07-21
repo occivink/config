@@ -2,13 +2,13 @@
 # bspwm hotkeys
 #
 
-#Focus the next or previous node
-alt + {_,shift + } Tab
-	bspc node -f {next, prev}
-
 #Quit
 super + alt + Escape 
 	bspc quit
+
+
+super + {1,2,3,4}
+	bspc desktop -f ^{1,2,3,4}
 
 #Close
 super + w
@@ -35,7 +35,7 @@ super + shift + {comma, period}
 #
 
 ctrl + alt + t 
-	alacritty
+	kitty
 
 ctrl + alt + w
 	firefox

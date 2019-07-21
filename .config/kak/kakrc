@@ -144,7 +144,7 @@ source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
 # source-here-or-in   lsp.kak                    "%val{config}"
-# 
+#
 # hook global WinSetOption filetype=(cpp) %{
 #     lsp-enable-window
 # }
@@ -154,17 +154,6 @@ source-here-or-in   vertical-selection.kak     "%val{config}"
 #    addhl global/scrollbar/ scrollbar-indicator blue,default gdb_location_flag
 #    addhl global/scrollbar/ scrollbar-indicator red,default gdb_breakpoints_flags
 #}
-
-def do-or-die -params 2 %{
-    try %{
-        eval %arg{1}
-        write-all-quit
-    } catch %{
-        buffer *debug*
-        write %arg{2}
-        quit! 1
-    }
-}
 
 def -hidden open-selected-files %{
     eval -itersel %{ try %{ exec -with-hooks -draft gf } }
@@ -212,23 +201,6 @@ def -hidden text-object-indented-paragraph %{
 #    %{ text-object-indented-paragraph; exec _ } \
 #    %{ exec <a-x>_ }
 #}
-
-#def -hidden smart-star -params 1 %{
-#    try %{
-#        exec -draft <a-space>
-#        eval -no-hooks -draft -save-regs '"' %{
-#            exec -save-regs '' "%arg{1}""""*"
-#            edit -scratch *smart-star-temp*
-#            exec '<a-P>)<a-space>i|<esc>'
-#        }
-#        try %{ exec -buffer *smart-star-temp* -save-regs '' "%%H""%val{register}/<c-r>.<ret>" }
-#        db *smart-star-temp*
-#    } catch %{
-#        exec -save-regs '' """%val{register}%arg{1}"
-#    }
-#}
-#map global normal * ': smart-star *<ret>'
-#map global normal <a-*> ': smart-star <lt>a-*><ret>'
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -388,14 +360,14 @@ def buffer-switcher %{
     }
 }
 def -hidden buffer-switcher-switch %{
-	exec '<space>;<a-x>H'
-	eval %sh{
-	}
-	eval -save-regs b %{
-		reg b %val{selection}
-		delete-buffer *buffer-switcher*
-		buffer %reg{b}
-	}
+    exec '<space>;<a-x>H'
+    eval %sh{
+    }
+    eval -save-regs b %{
+        reg b %val{selection}
+        delete-buffer *buffer-switcher*
+        buffer %reg{b}
+    }
 }
 
 hook global GlobalSetOption gdb_started=true %{
