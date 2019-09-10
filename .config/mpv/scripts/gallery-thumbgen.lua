@@ -3,6 +3,7 @@ local msg = require 'mp.msg'
 
 local jobs_queue = {} -- queue of thumbnail jobs
 local failed = {} -- list of failed output paths, to avoid redoing them
+local script_id = mp.get_script_name() .. utils.getpid()
 
 local opts = {
     ytdl_exclude = "",
@@ -23,14 +24,9 @@ function append_table(lhs, rhs)
     return lhs
 end
 
-function file_exists(path)
-    local f = io.open(path, "r")
-    if f ~= nil then
-        io.close(f)
-        return true
-    else
-        return false
-    end
+local function file_exists(path)
+    local info = utils.file_info(path)
+    return info ~= nil and info.is_file
 end
 
 local video_extensions = { "mkv", "webm", "mp4", "avi", "wmv" }
@@ -123,7 +119,7 @@ function ytdl_thumbnail_url(input_path)
     return json.thumbnail
 end
 
-function thumbnail_command(input_path, width, height, take_thumbnail_at, output_path, with_mpv)
+function thumbnail_command(input_path, width, height, take_thumbnail_at, output_path, accurate, with_mpv)
     local vf = string.format("%s,%s",
         string.format("scale=iw*min(1\\,min(%d/iw\\,%d/ih)):-2", width, height),
         string.format("pad=%d:%d:(%d-iw)/2:(%d-ih)/2:color=0x00000000", width, height, width, height)
@@ -153,12 +149,15 @@ function thumbnail_command(input_path, width, height, take_thumbnail_at, output_
                     if duration then
                         local percent = tonumber(string.sub(take_thumbnail_at, 1, -2))
                         local start = tostring(duration * percent / 100)
-                        add({ "-ss", start, "-noaccurate_seek" })
+                        add({ "-ss", start })
                     end
                 end
             else
-                add({ "-ss", tonumber(take_thumbnail_at), "-noaccurate_seek" })
+                add({ "-ss", take_thumbnail_at })
             end
+        end
+        if not accurate then
+            add({"-noaccurate_seek"})
         end
         add({
             "-i", input_path,
@@ -174,7 +173,10 @@ function thumbnail_command(input_path, width, height, take_thumbnail_at, output_
     else
         out = { "mpv", input_path }
         if take_thumbnail_at ~= "0" and is_video(input_path) then
-            add({ "--hr-seek=no", "--start", take_thumbnail_at })
+            if not accurate then
+                add({ "--hr-seek=no"})
+            end
+            add({ "--start", take_thumbnail_at })
         end
         add({
             "--no-config", "--msg-level=all=no",
@@ -194,7 +196,7 @@ function generate_thumbnail(thumbnail_job)
     if file_exists(thumbnail_job.output_path) then return true end
 
     local dir, _ = utils.split_path(thumbnail_job.output_path)
-    local tmp_output_path = utils.join_path(dir, mp.get_script_name())
+    local tmp_output_path = utils.join_path(dir, script_id)
 
     local command = thumbnail_command(
         thumbnail_job.input_path,
@@ -202,6 +204,7 @@ function generate_thumbnail(thumbnail_job)
         thumbnail_job.height,
         thumbnail_job.take_thumbnail_at,
         tmp_output_path,
+        thumbnail_job.accurate,
         thumbnail_job.with_mpv
     )
 
@@ -209,7 +212,7 @@ function generate_thumbnail(thumbnail_job)
     --"atomically" generate the output to avoid loading half-generated thumbnails (results in crashes)
     if res.status == 0 then
         local info = utils.file_info(tmp_output_path)
-        if not info or info.size == 0 then
+        if not info or not info.is_file or info.size == 0 then
             return false
         end
         if os.rename(tmp_output_path, thumbnail_job.output_path) then
@@ -233,7 +236,8 @@ function handle_events(wait)
                     height = tonumber(e.args[5]),
                     take_thumbnail_at = e.args[6],
                     output_path = e.args[7],
-                    with_mpv = (e.args[8] == "true"),
+                    accurate = (e.args[8] == "true"),
+                    with_mpv = (e.args[9] == "true"),
                 }
                 if e.args[1] == "push-thumbnail-front" then
                     jobs_queue[#jobs_queue + 1] = thumbnail_job

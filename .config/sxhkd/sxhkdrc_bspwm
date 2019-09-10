@@ -7,8 +7,8 @@ super + alt + Escape
 	bspc quit
 
 
-super + {1,2,3,4}
-	bspc desktop -f ^{1,2,3,4}
+super + {1,2,3,4,5}
+	bspc desktop -f ^{1,2,3,4,5}
 
 #Close
 super + w
@@ -35,7 +35,7 @@ super + shift + {comma, period}
 #
 
 ctrl + alt + t 
-	kitty
+	alacritty
 
 ctrl + alt + w
 	firefox
