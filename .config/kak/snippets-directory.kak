@@ -9,10 +9,9 @@ define-command snippets-directory-disable %{
 
 define-command snippets-directory-reload %{
     snippets-directory-disable
-    echo -debug "Reloading from %opt{snippets_directories}"
     hook -group snippets-directory global BufSetOption filetype=.* %{ unset-option buffer snippets }
     evaluate-commands %sh{
-        eval set -- $kak_opt_snippets_directories
+        eval "set -- $kak_quoted_opt_snippets_directories"
         cat <<'EOF' | perl - "$@"
 use strict;
 use warnings;
@@ -139,7 +138,7 @@ define-command -hidden snippets-add-snippet-impl -params 2..3 %{ evaluate-comman
     elif [ -z "${description##*/*}" ]; then
         printf "echo -markup %%{{Error}Description cannot contain '/' character}"
     else
-        eval "set -- $kak_opt_snippets_directories"
+        eval "set -- $kak_quoted_opt_snippets_directories"
         printf 'menu -auto-single --'
         for dir do
             directory="$dir/$filetype"

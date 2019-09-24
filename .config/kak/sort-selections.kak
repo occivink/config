@@ -1,7 +1,7 @@
 define-command sort-selections -params ..2 -docstring '
 sort-selections [-reverse] [<register>]: sort the selections
 Sorting is done numerically if possible, otherwise lexicographically
-If a <register> is passed, the values of the register will be sorted instead,
+If a <register> is specified, the values of the register will be sorted instead,
 and the resulting order then applied to the selections.
 '%{
     eval %sh{
@@ -33,6 +33,7 @@ reverse-selections: reverses the order of all selections
 
 define-command sort-selections-impl -hidden -params .. %{
     eval -save-regs '"' %{
+        reg dquote '' # in case the %sh fails, not great
         eval %sh{
 perl - "$@" <<'EOF'
 use strict;

@@ -66,7 +66,7 @@ def -hidden filetree-open-files %{
     eval -save-regs 'f' %{
         exec '<space>;<a-x>H'
         reg f %reg{.}
-        eval -try-client %opt{jumpclient} %{ buffer %reg{f} }
+        eval -try-client %opt{jumpclient} buffer '%reg{f}'
     }
     try %{ focus %opt{jumpclient} }
 }

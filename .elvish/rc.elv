@@ -5,7 +5,6 @@ use smart-matcher
 
 E:EDITOR=kak
 E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
-E:MESA_LOADER_DRIVER_OVERRIDE=iris
 
 edit:max-height=25
 

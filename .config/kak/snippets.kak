@@ -7,7 +7,7 @@ hook global WinSetOption 'snippets=$' %{
 }
 hook global WinSetOption 'snippets=.+$' %{
     set window snippets_triggers_regex %sh{
-        eval set -- "$kak_opt_snippets"
+        eval set -- "$kak_quoted_opt_snippets"
         if [ $(($#%3)) -ne 0 ]; then printf '\\\A\\\z'; exit; fi
         res=""
         while [ $# -ne 0 ]; do
@@ -63,7 +63,7 @@ def snippets-expand-trigger -params ..1 %{
                     done
                 }
 
-                eval set -- "$kak_opt_snippets"
+                eval set -- "$kak_quoted_opt_snippets"
                 if [ $(($#%3)) -ne 0 ]; then exit; fi
                 first=0
                 while [ $# -ne 0 ]; do
@@ -144,7 +144,7 @@ def snippets-impl -hidden -params 1.. %{
 }
 
 def snippets -params 1 -shell-script-candidates %{
-    eval set -- "$kak_opt_snippets"
+    eval set -- "$kak_quoted_opt_snippets"
     if [ $(($#%3)) -ne 0 ]; then exit; fi
     while [ $# -ne 0 ]; do
         printf '%s\n' "$1"
@@ -174,7 +174,7 @@ def snippets-menu %{
 
 def snippets-info %{
     info -title Snippets %sh{
-        eval set -- "$kak_opt_snippets"
+        eval set -- "$kak_quoted_opt_snippets"
         if [ $(($#%3)) -ne 0 ]; then printf "Invalid 'snippets' value"; exit; fi
         if [ $# -eq 0 ]; then printf 'No snippets defined'; exit; fi
         maxtriglen=0
@@ -184,7 +184,7 @@ def snippets-info %{
             fi
             shift 3
         done
-        eval set -- "$kak_opt_snippets"
+        eval set -- "$kak_quoted_opt_snippets"
         while [ $# -ne 0 ]; do
             if [ $maxtriglen -eq 0 ]; then
                 printf '%s\n' "$1"
@@ -267,13 +267,13 @@ def snippets-insert -hidden -params 1 %<
 >
 
 def -hidden snippets-insert-perl-impl %<
-    eval %sh< # $kak_selections
+    eval %sh< # $kak_quoted_selections
         perl -e '
 use strict;
 use warnings;
 use Text::ParseWords();
 
-my @sel_content = Text::ParseWords::shellwords($ENV{"kak_selections"});
+my @sel_content = Text::ParseWords::shellwords($ENV{"kak_quoted_selections"});
 
 my %placeholder_id_to_default;
 my @placeholder_ids;
@@ -320,7 +320,7 @@ print("\n");
 def snippets-select-next-placeholders %{
     update-option window snippets_placeholders
     eval %sh{
-        eval set -- "$kak_opt_snippets_placeholder_groups"
+        eval set -- "$kak_quoted_opt_snippets_placeholder_groups"
         if [ $# -eq 0 ]; then printf "fail 'There are no next placeholders'"; exit; fi
         next_id=9999
         second_next_id=9999
@@ -349,7 +349,7 @@ def snippets-select-next-placeholders %{
         done
         printf '\n'
 
-        eval set -- "$kak_opt_snippets_placeholders"
+        eval set -- "$kak_quoted_opt_snippets_placeholders"
         printf 'set window snippets_placeholders'
         printf ' %s' "$1"
         shift
