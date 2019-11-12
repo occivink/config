@@ -33,7 +33,7 @@ decl bool gdb_debug true
  source-here-or-in comment.kak          "%val{runtime}/rc/tools"
  source-here-or-in ctags.kak            "%val{runtime}/rc/tools"
  source-here-or-in doc.kak              "%val{runtime}/rc/tools"
- source-here-or-in formatter.kak        "%val{runtime}/rc/tools"
+ source-here-or-in format.kak           "%val{runtime}/rc/tools"
  source-here-or-in git.kak              "%val{runtime}/rc/tools"
  source-here-or-in grep.kak             "%val{runtime}/rc/tools"
 #source-here-or-in lint.kak             "%val{runtime}/rc/tools"
@@ -72,7 +72,7 @@ decl bool gdb_debug true
 #source-here-or-in i3.kak               "%val{runtime}/rc/filetype"
 #source-here-or-in ini.kak              "%val{runtime}/rc/filetype"
 #source-here-or-in java.kak             "%val{runtime}/rc/filetype"
-#source-here-or-in javascript.kak       "%val{runtime}/rc/filetype"
+ source-here-or-in javascript.kak       "%val{runtime}/rc/filetype"
  source-here-or-in json.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in julia.kak            "%val{runtime}/rc/filetype"
 #source-here-or-in just.kak             "%val{runtime}/rc/filetype"
@@ -143,11 +143,11 @@ source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
-# source-here-or-in   lsp.kak                    "%val{config}"
-#
-# hook global WinSetOption filetype=(cpp) %{
-#     lsp-enable-window
-# }
+source-here-or-in   lsp.kak                    "%val{config}"
+
+#hook global WinSetOption filetype=(cpp) %{
+#    lsp-enable-window
+#}
 
 #try %{
 #    addhl global/ scrollbar
@@ -167,7 +167,7 @@ set global eolformat lf
 set global disabled_hooks .*-trim-indent
 
 set global autoinfo command|onkey
-set global ui_options ncurses_set_title=false
+set global ui_options ncurses_set_title=false ncurses_builtin_key_parser=true
 #set global ui_options ncurses_assistant=cat
 set global scrolloff 2,5
 
@@ -254,12 +254,12 @@ map global normal W     '"_s.<ret><a-i>w'
 map global normal <a-W> '"_s.<ret><a-i><a-w>'
 
 # replace select-onto with phantom-sel stuff; more useful
-map global normal f     ': phantom-sel-add-selection<ret>'
-map global normal F     ': phantom-sel-select-all; phantom-sel-clear<ret>'
-map global normal <a-f> ': phantom-sel-iterate-next<ret>'
-map global normal <a-F> ': phantom-sel-iterate-prev<ret>'
-map global insert <a-f> '<esc>: phantom-sel-iterate-next<ret>i'
-map global insert <a-F> '<esc>: phantom-sel-iterate-prev<ret>i'
+map global normal f     ': phantom-selection-add-selection<ret>'
+map global normal F     ': phantom-selection-select-all; phantom-selection-clear<ret>'
+map global normal <a-f> ': phantom-selection-iterate-next<ret>'
+map global normal <a-F> ': phantom-selection-iterate-prev<ret>'
+map global insert <a-f> '<esc>: phantom-selection-iterate-next<ret>i'
+map global insert <a-F> '<esc>: phantom-selection-iterate-prev<ret>i'
 
 # move line up/down
 # not very mnemonic but whatever
@@ -339,6 +339,35 @@ hook global BufCreate '^\*scratch\*$' %{
     }
 }
 
+def paste-join -params ..2 %{
+    eval -save-regs '"c' %{
+        # if a register was specified, move its content to "
+        # this is to avoid a potential collision between the register specified
+        # and the ones used as implementation detail (c in this case)
+        try %{ eval "reg '""' %%reg{%val{register}}" }
+        reg c %val{selection}
+        # use R instead of P to bypass the 'smart' pasting when the content contains newlines
+        exec %sh{
+            head=1
+            tail=1
+            for arg do
+                [ "$arg" = "-head" ] && head=0
+                [ "$arg" = "-tail" ] && tail=0
+            done
+            if [ $head -eq 0 ] && [ $tail -eq 0 ]; then
+               printf '%s' 'i<space><esc>h"cR<a-p>'
+            elif [ $head -eq 0 ]; then
+               printf '%s' '<a-p>'
+            elif [ $tail -eq 0 ]; then
+               printf '%s' '<a-P>'
+            else
+               printf '%s' '<a-d><a-P>'
+            fi
+        }
+        exec -draft ')<a-space>i<space><esc>h"cR'
+    }
+}
+
 # wew
 def buffer-switcher %{
     try %{
@@ -361,8 +390,6 @@ def buffer-switcher %{
 }
 def -hidden buffer-switcher-switch %{
     exec '<space>;<a-x>H'
-    eval %sh{
-    }
     eval -save-regs b %{
         reg b %val{selection}
         delete-buffer *buffer-switcher*
@@ -371,25 +398,26 @@ def -hidden buffer-switcher-switch %{
 }
 
 hook global GlobalSetOption gdb_started=true %{
-    map global normal <f10>   ': gdb-next<ret>'
-    map global normal <f11>   ': gdb-step<ret>'
-    map global normal <s-f11> ': gdb-finish<ret>'
-    map global normal <f12>   ': gdb-print<ret>'
-    map global normal <f9>    ': gdb-toggle-breakpoint<ret>'
-    map global normal <f5>    ': gdb-continue<ret>'
-}
-hook global GlobalSetOption gdb_started=false %{
-    unmap global normal <f10>   ': gdb-next<ret>'
-    unmap global normal <f11>   ': gdb-step<ret>'
-    unmap global normal <s-f11> ': gdb-finish<ret>'
-    unmap global normal <f12>   ': gdb-print<ret>'
-    unmap global normal <f9>    ': gdb-toggle-breakpoint<ret>'
-    unmap global normal <f5>    ': gdb-continue<ret>'
+    map global normal <F10>   ': gdb-next<ret>'
+    map global normal <F11>   ': gdb-step<ret>'
+    map global normal <s-F11> ': gdb-finish<ret>'
+    map global normal <F12>   ': gdb-print<ret>'
+    map global normal <F9>    ': gdb-toggle-breakpoint<ret>'
+    map global normal <F5>    ': gdb-continue<ret>'
 }
 
-map -docstring "select 🡓"          -- global user v     ': select-down<ret>'
-map -docstring "select 🡑"          -- global user <a-v> ': select-up<ret>'
-map -docstring "select 🡓🡑"         -- global user V     ': select-vertically<ret>'
+hook global GlobalSetOption gdb_started=false %{
+    unmap global normal <F10>   ': gdb-next<ret>'
+    unmap global normal <F11>   ': gdb-step<ret>'
+    unmap global normal <s-F11> ': gdb-finish<ret>'
+    unmap global normal <F12>   ': gdb-print<ret>'
+    unmap global normal <F9>    ': gdb-toggle-breakpoint<ret>'
+    unmap global normal <F5>    ': gdb-continue<ret>'
+}
+
+map -docstring "select 🡓"          -- global user v     ': vertical-selection-down<ret>'
+map -docstring "select 🡑"          -- global user <a-v> ': vertical-selection-up<ret>'
+map -docstring "select 🡓🡑"         -- global user V     ': vertical-selection-up-and-down<ret>'
 map -docstring "trim whitespaces"  -- global user w     ': trim-whitespaces<ret>'
 map -docstring "clip-paste after"  -- global user p     '<a-!>xsel --output --clipboard<ret>'
 map -docstring "clip-paste before" -- global user P     '!xsel --output --clipboard<ret>'
@@ -400,6 +428,5 @@ map -docstring "++"                -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                -- global user -     'a-1<esc>: math<ret>'
 
 map global normal <a-d> ': buffer-switcher<ret>'
-map global normal <a-D> ': db<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }

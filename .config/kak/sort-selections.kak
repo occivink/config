@@ -46,7 +46,6 @@ my $how = shift;
 
 my @sel_content = shellwords($ENV{"kak_quoted_selections"});
 
-
 if ($how eq 'DIRECT') {
     my $all_numbers=1;
     for my $val (@sel_content) {

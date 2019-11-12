@@ -12,6 +12,8 @@ set pagination off
 
 set auto-load safe-path /
 
+set index-cache on
+
 python
 import sys, os.path
 sys.path.insert(0, os.path.expanduser('~/.config/gdb'))
@@ -27,3 +29,7 @@ from printers import register_eigen_printers
 register_eigen_printers (None)
 
 end
+
+skip -gfi /usr/include/c++/*
+skip -gfi /usr/include/c++/*/*
+skip -gfi /usr/include/c++/*/*/*

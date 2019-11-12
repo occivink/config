@@ -302,7 +302,7 @@ define-command -hidden lsp-workspace-symbol-buffer -params 4 -docstring %{
     buffile filetype timestamp query
     Open buffer with a list of project-wide symbols matching the query
     on behalf of the buffile at timestamp
- } %{ try %{
+} %{ try %{
     evaluate-commands %sh{
         if [ -z "${4}" ];
         then echo "fail";
@@ -395,7 +395,7 @@ version  = %d
 method   = "workspace/didChangeConfiguration"
 [params.settings]
 ' "${kak_session}" "${kak_client}" "${kak_buffile}" "${kak_opt_filetype}" "${kak_timestamp}";
-eval set -- $kak_opt_lsp_server_configuration
+eval "set -- $kak_quoted_opt_lsp_server_configuration"
 while [ $# -gt 0 ]; do
     key=${1%%=*}
     value=${1#*=}
@@ -681,6 +681,13 @@ define-command -hidden lsp-show-signature-help -params 2 -docstring "Render sign
     echo %arg{2}
 }
 
+define-command -hidden lsp-show-message -params 2 -docstring %{
+    lsp-show-message <type> <message>
+    Render language server message.
+} %{
+    info %arg{2}
+}
+
 define-command -hidden lsp-insert-after-selection -params 1 -docstring %{
     Insert content after current selections while keeping cursor intact.
     It is used to apply text edits from language server.
@@ -732,7 +739,7 @@ define-command -hidden lsp-get-server-initialization-options -params 1 -docstrin
     Format lsp_server_initialization_options as TOML and write to the given <fifo> path.
 } %{
     nop %sh{
-(eval set -- $kak_opt_lsp_server_initialization_options
+(eval "set -- $kak_quoted_opt_lsp_server_initialization_options"
 while [ $# -gt 0 ]; do
     key=${1%%=*}
     value=${1#*=}
@@ -760,7 +767,7 @@ Jump to the next or previous diagnostic error" %{
             errorCompare="Diagnostic"
         fi
         #expand quoting, stores option in $@
-        eval "set -- ${kak_opt_lsp_errors}"
+        eval "set -- ${kak_quoted_opt_lsp_errors}"
 
         first=""
         current=""
@@ -943,7 +950,20 @@ define-command -hidden lsp-enable -docstring "Default integration with kak-lsp" 
         lsp-did-change
         %sh{if $kak_opt_lsp_auto_highlight_references; then echo "lsp-highlight-references"; else echo "nop"; fi}
     }
-    hook -group lsp global KakEnd .* lsp-exit
+}
+
+define-command -hidden lsp-disable -docstring "Disable kak-lsp in the window scope" %{
+    remove-highlighter global/cquery_semhl
+    remove-highlighter global/lsp_references
+    lsp-inline-diagnostics-disable global
+    lsp-diagnostic-lines-disable global
+    unmap global goto d '<esc>: lsp-definition<ret>' -docstring 'definition'
+    unmap global goto r '<esc>: lsp-references<ret>' -docstring 'references'
+    remove-hooks global lsp
+    remove-hooks global lsp-auto-hover
+    remove-hooks global lsp-auto-hover-insert-mode
+    remove-hooks global lsp-auto-signature-help
+    lsp-exit
 }
 
 define-command lsp-enable-window -docstring "Default integration with kak-lsp in the window scope" %{
@@ -971,4 +991,19 @@ define-command lsp-enable-window -docstring "Default integration with kak-lsp in
     lsp-did-change-config
 }
 
+define-command lsp-disable-window -docstring "Disable kak-lsp in the window scope" %{
+    remove-highlighter window/cquery_semhl
+    remove-highlighter window/lsp_references
+    lsp-inline-diagnostics-disable window
+    lsp-diagnostic-lines-disable window
+    unmap window goto d '<esc>: lsp-definition<ret>'
+    unmap window goto r '<esc>: lsp-references<ret>'
+    remove-hooks window lsp
+    remove-hooks global lsp-auto-hover
+    remove-hooks global lsp-auto-hover-insert-mode
+    remove-hooks global lsp-auto-signature-help
+    lsp-exit
+}
+
 lsp-stop-on-exit-enable
+hook -always -group lsp global KakEnd .* lsp-exit

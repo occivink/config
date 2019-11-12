@@ -9,6 +9,6 @@ eval %sh{
         printf %s "$1" | shuf -n1
     }
     if test "$kak_session" -ge 0 2>/dev/null; then
-        printf 'rename-session %s-%s' $(rnd "$adj") $(rnd "$nouns")
+        printf 'try %%{ rename-session %s-%s }' $(rnd "$adj") $(rnd "$nouns")
     fi
 }

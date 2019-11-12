@@ -19,7 +19,7 @@ local opts = {
     load_file_on_toggle_off = false,
     close_on_load_file = true,
     pause_on_start = true,
-    resume_on_stop = true,
+    resume_on_stop = "only-if-did-pause",
     follow_playlist_position = true,
     remember_time_position = true,
 
@@ -94,6 +94,7 @@ local gallery = gallery_new()
 
 local flags = {}
 local resume = {}
+local did_pause = false
 local hash_cache = {}
 
 gallery.config.accurate = false
@@ -368,7 +369,7 @@ function playlist_changed(key, playlist)
     gallery:items_changed()
 end
 
-function select(_, val)
+function follow_selection(_, val)
     gallery.pending.selection = val
 end
 
@@ -380,18 +381,21 @@ function start()
 
     local pos = mp.get_property_number("playlist-pos-1")
     if not gallery:activate(pos or 1) then return end
-    if opts.pause_on_start then
+
+    did_pause = false
+    if opts.pause_on_start and not mp.get_property_bool("pause", false) then
         mp.set_property_bool("pause", true)
+        did_pause = true
     end
     if opts.follow_playlist_position then
-        mp.observe_property("playlist-pos-1", "native", select)
+        mp.observe_property("playlist-pos-1", "native", follow_selection)
     end
 
     setup_ui_handlers()
 end
 
 function load_selection()
-    local sel = mp.get_property_number("playlist-pos-1")
+    local sel = mp.get_property_number("playlist-pos-1", -1)
     if sel == gallery.selection then return end
     if opts.remember_time_position then
         if sel then
@@ -416,11 +420,11 @@ end
 
 function stop()
     if not gallery.active then return end
-    if opts.resume_on_stop then
+    if opts.resume_on_stop == "yes" or (opts.resume_on_stop == "only-if-did-pause" and did_pause) then
         mp.set_property_bool("pause", false)
     end
     if opts.follow_playlist_position then
-        mp.unobserve_property(select)
+        mp.unobserve_property(follow_selection)
     end
     gallery:deactivate()
     teardown_ui_handlers()
