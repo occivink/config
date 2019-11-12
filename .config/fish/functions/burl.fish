@@ -20,7 +20,9 @@ function burl
 
     mkdir -p (dirname $new_names)
     for i in (seq (count $new_names))
-        mv --no-clobber $old_names[$i] $new_names[$i] ^&-
+        if test $new_names[$i] != $old_names[$i]
+            mv --no-clobber $old_names[$i] $new_names[$i] ^&-
+        end
     end
     return 0
 end

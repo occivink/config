@@ -127,6 +127,8 @@ decl bool gdb_debug true
 #source-here-or-in modeline.kak         "%val{runtime}/rc/detection"
 
 source-here-or-in   auto-percent.kak           "%val{config}"
+source-here-or-in   build.kak                  "%val{config}"
+source-here-or-in   buffer-switcher.kak        "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
 source-here-or-in   expand.kak                 "%val{config}"
 source-here-or-in   filetree.kak               "%val{config}"
@@ -172,8 +174,8 @@ set global ui_options ncurses_set_title=false ncurses_builtin_key_parser=true
 set global scrolloff 2,5
 
 try %{
-    nop %opt{gdb_indicator}
-    set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {red,default}%opt{gdb_indicator}{default,default}- %val{client}@[%val{session}]'
+    nop %opt{gdb_indicator} %opt{build_modeline_progress} %opt{build_modeline_failure} %opt{build_modeline_success}
+    set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {black,cyan}%opt{build_modeline_progress}{black,green}%opt{build_modeline_success}{black,red}%opt{build_modeline_failure}{default,default} {red,default}%opt{gdb_indicator} {default,default}- %val{client}@[%val{session}]'
 } catch %{
     set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {default,default}- %val{client}@[%val{session}]'
 }
@@ -235,17 +237,9 @@ hook global InsertCompletionHide .* %{
 }
 
 map global normal q     ': surround<ret>'
-map global normal Q     ': surround-lock<ret>'
+map global normal Q     ''
 map global normal <a-q> ': expand<ret>'
 map global normal <a-Q> ''
-
-# auto-percent mappings (kinda annoying, so disabled)
-#map global normal <a-s> ': auto-percent <lt>a-s> \%<ret>'
-#map global normal <a-S> ': auto-percent <lt>a-S> \%<ret>'
-#map global normal s     ': auto-percent-prompt s \%<ret>'
-#map global normal S     ': auto-percent-prompt S \%<ret>'
-#map global normal <a-k> ': auto-percent-prompt <lt>a-k> \%<lt>a-s><ret>'
-#map global normal <a-K> ': auto-percent-prompt <lt>a-K> \%<lt>a-s><ret>'
 
 # word-related mappings
 map global normal w     <a-i>w
@@ -263,13 +257,20 @@ map global insert <a-F> '<esc>: phantom-selection-iterate-prev<ret>i'
 
 # move line up/down
 # not very mnemonic but whatever
-map global normal t     ': exec -itersel "<lt>a-x>d%arg{1}j<lt>a-P>"<ret>'
-map global normal <a-t> ': exec -itersel "<lt>a-x>d%arg{1}k<lt>a-P>"<ret>'
+map global normal t     ': exec -itersel "<lt>a-x>dj<lt>a-P>"<ret>'
+map global normal <a-t> ': exec -itersel "<lt>a-x>dk<lt>a-P>"<ret>'
 map global normal T     ''
 map global normal <a-T> ''
 
+map global normal <c-a> ': alt<ret>'
 map global normal <c-b> ': make<ret>'
-map global normal <c-f> ''
+map global normal <c-v> ': eval -draft make<ret>'
+map global normal <c-w> ': delete-buffer<ret>'
+map global normal <c-s> ': write<ret>'
+map global normal <c-n> ': edit -scratch<ret>'
+map global normal <c-f> ': try %{ buffer *filetree* } catch %{ filetree }<ret>'
+map global normal <c-d> ': buffer-switcher<ret>'
+map global normal <c-u> ''
 
 face global PrimaryCursorEol black,white+fg
 face global SecondaryCursorEol black,white+fg
@@ -307,7 +308,7 @@ def scratch -docstring "Open a scratch buffer" -params ..1 %{
         eval %sh{ [ -z "$1" ] && printf fail }
         edit -scratch %arg{1}
     } catch %{
-        edit -scratch *scratch*
+        edit -scratch
     }
 }
 
@@ -320,7 +321,7 @@ def elvish -docstring "Open rc.elv"     %{ cd ~/.elvish/      ; edit rc.elv }
 
 def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{
-        exec -draft '%s\h+$<ret>d'
+        exec -draft '%<a-s>ghgl<a-i><space>d'
         echo -markup "{Information}trimmed"
     } catch %{
         echo -markup "{Information}nothing to trim"
@@ -368,35 +369,6 @@ def paste-join -params ..2 %{
     }
 }
 
-# wew
-def buffer-switcher %{
-    try %{
-        b *buffer-switcher*
-    } catch %{
-        eval -save-regs '"/' %{
-            eval reg dquote %val{buflist}
-            reg / "^\Q%val{bufname}\E$"
-            edit -scratch *buffer-switcher*
-            exec '<a-P>)<a-space>i<ret><esc>'
-            exec '%<a-s>'
-            exec -draft '<a-k>^\*debug\*$<ret>d'
-            exec '<a-k><ret>'
-            addhl buffer/ regex "%reg{/}" 0:black,green
-            map buffer normal <ret> ': buffer-switcher-switch<ret>'
-            map buffer normal <esc> ': db<ret>'
-            hook global -once WinDisplay .* %{ try %{ delete-buffer *buffer-switcher* } }
-        }
-    }
-}
-def -hidden buffer-switcher-switch %{
-    exec '<space>;<a-x>H'
-    eval -save-regs b %{
-        reg b %val{selection}
-        delete-buffer *buffer-switcher*
-        buffer %reg{b}
-    }
-}
-
 hook global GlobalSetOption gdb_started=true %{
     map global normal <F10>   ': gdb-next<ret>'
     map global normal <F11>   ': gdb-step<ret>'
@@ -426,7 +398,5 @@ map -docstring "clip-yank"         -- global user y     '<a-|>xsel --input --cli
 map -docstring "math"              -- global user m     ': math<ret>'
 map -docstring "++"                -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                -- global user -     'a-1<esc>: math<ret>'
-
-map global normal <a-d> ': buffer-switcher<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }

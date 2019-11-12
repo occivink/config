@@ -5,6 +5,7 @@ use smart-matcher
 
 E:EDITOR=kak
 E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
+E:KAKOUNE_POSIX_SHELL=/bin/dash
 
 edit:max-height=25
 
