@@ -11,7 +11,7 @@ declare-option int build_last_timestamp 0
 declare-option str build_shell_command "make"
 declare-option str build_fifo
 declare-option int build_current_line 0
-declare-option regex build_error_pattern "^(?<file>[^\n]*?):(?<line>\d+):(?<column>\d+): (?<type>error):(?<error>[^\n]*?)"
+declare-option regex build_error_pattern "^(?<file>[^\n]*?):(?<line>\d+):(?<column>\d+): (?<type>(fatal )?error):(?<error>[^\n]*?)"
 declare-option regex build_warning_pattern "^(?<file>[^\n]*?):(?<line>\d+):(?<column>\d+): (?<type>warning):(?<warning>[^\n]*?)"
 
 declare-option regex directory_pattern "Entering directory [`'](?<directory>[^\n]*)'$"
@@ -38,7 +38,7 @@ All the optional arguments are forwarded to the specified command
     }
 
     set global build_last_timestamp %sh{ printf '%s' $(( kak_opt_build_last_timestamp + 1 )) }
-    build-set-modeline "building" "" ""
+    build-set-modeline "building..." "" ""
 
     eval -try-client %opt{toolsclient} %{
         edit! -fifo %opt{build_fifo} -scroll *build*
@@ -56,14 +56,41 @@ All the optional arguments are forwarded to the specified command
     }
 }
 
+def build-sync -params .. %{
+    try %{ delete-buffer! *build* }
+
+    edit! -scratch *build*
+
+    eval -save-regs | %{
+        reg | %{ eval "${kak_opt_build_shell_command}" "$@" 2>&1 }
+        exec '!<ret>'
+        exec gj
+    }
+    set buffer build_current_line 0
+    add-highlighter buffer/ regex %opt{build_error_pattern} file:cyan line:green column:green type:red
+    add-highlighter buffer/ regex %opt{build_warning_pattern} file:cyan line:green column:green type:yellow
+    add-highlighter buffer/ line '%opt{build_current_line}' default+b
+    map buffer normal <ret> ': build-jump<ret>'
+
+    eval -save-regs '/c' %{
+        reg c ''
+        try %{
+            reg / %opt{build_error_pattern}
+            exec -draft '%s<a-s><a-k><ret>'
+            reg c 'fail "Build failed"'
+        }
+        eval %reg{c}
+    }
+}
+
 def -hidden build-update-modeline %{
     eval -save-regs '/' -draft %{
         try %{
             reg / %opt{build_error_pattern}
             exec '%s<a-s><a-k><ret>'
-            build-set-modeline "" "" "%reg{#} errors"
+            build-set-modeline "" "" "build: %reg{#} error(s)"
         } catch %{
-            build-set-modeline "" "success" ""
+            build-set-modeline "" "build: success" ""
         }
     }
 
@@ -98,8 +125,7 @@ def -hidden build-jump %{
                     eval -draft %{
                         reg / %opt{directory_pattern}
                         exec '<a-/><ret>1s<ret>'
-                        # append a /
-                        reg d "%val{selection}/"
+                        reg d "%val{selection}"
                     }
                 }
                 exec '<a-x>'
@@ -112,7 +138,7 @@ def -hidden build-jump %{
                 reg i "%reg{5}"
             }
             set buffer build_current_line %val{cursor_line}
-            edit -existing "%reg{d}%reg{f}" %reg{l} %reg{c}
+            edit -existing "%reg{d}/%reg{f}" %reg{l} %reg{c}
             info -title %reg{t} %reg{i}
         }
     } catch %{

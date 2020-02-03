@@ -10,18 +10,16 @@ def source-here-or-in -params 2 %{
 # load first 'init.kak' file found when going up directories
 # equally dangerous, but practical
 hook global KakBegin .* %{
-    eval -save-regs 'p' %{
-        reg p %sh{
-            while true; do
-                if [ -f init.kak ]; then
-                    printf "%s" "$PWD"
-                    exit
-                fi
-                [ "$PWD" = / ] && exit
-                cd ..
-            done
-        }
-        try %{ source "%reg{p}/init.kak" "%reg{p}" }
+    eval %sh{
+        while :; do
+            if test -f init.kak; then
+                dir=$(printf '%s' "$PWD" | sed "s|'|''|g")
+                printf "source '%s' '%s'" "$dir/init.kak" "$dir"
+                exit
+            fi
+            test "$PWD" = / && exit
+            cd ..
+        done
     }
 }
 
@@ -169,7 +167,7 @@ set global eolformat lf
 set global disabled_hooks .*-trim-indent
 
 set global autoinfo command|onkey
-set global ui_options ncurses_set_title=false ncurses_builtin_key_parser=true
+set global ui_options terminal_set_title=false ncurses_builtin_key_parser=true
 #set global ui_options ncurses_assistant=cat
 set global scrolloff 2,5
 
@@ -283,7 +281,7 @@ face global MatchingChar black,yellow+F
 decl -hidden regex curword
 def -hidden update-curword %{
     eval -save-regs / -draft %{ try %{
-        exec -save-regs '' <space><a-i>w*
+        exec -save-regs '' <a-i>w*
         set buffer curword "%reg{/}"
     } catch %{
         set buffer curword ''
