@@ -26,10 +26,12 @@ define-command buffer-switcher %{
     }
 }
 
+# delete all buffers whose lines were removed
 define-command -hidden buffer-switcher-delete-buffers %{
-    # delete all buffers whose lines were removed
+    # print buflist, and all lines
+    # everything that appears only once gets removed
     eval -draft %{
-        exec '%<a-s><ret>H'
+        exec '%<a-s>H'
         eval %sh{
             {
             eval set -- "$kak_quoted_buflist"
@@ -64,6 +66,13 @@ define-command -hidden buffer-switcher-delete-buffers %{
                         }
                 }"
         }
+    }
+}
+
+define-command -hidden buffer-switcher-sort-buffers %{
+    eval -draft %{
+        exec '%<a-s>H'
+        arrange-buffers %val{selections}
     }
 }
 

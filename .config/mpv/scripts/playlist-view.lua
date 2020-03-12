@@ -1,6 +1,13 @@
 local utils = require 'mp.utils'
 local msg = require 'mp.msg'
-local gallery = require 'lib/gallery'
+
+local lib = mp.find_config_file('scripts/lib')
+if not lib then
+    return
+end
+-- lib can be nil if the folder does not exist or we're in --no-config mode
+package.path = package.path .. ';' .. lib .. '/?.lua;'
+local gallery = require 'gallery'
 
 local ON_WINDOWS = (package.config:sub(1,1) ~= "/")
 
@@ -42,6 +49,9 @@ local opts = {
     flagged_border_size = 3,
     selected_flagged_border_color = "BAFFCA",
     placeholder_color = "222222",
+
+    command_on_open = "",
+    command_on_close = "",
 
     flagged_file_path = "./mpv_gallery_flagged",
 
@@ -387,6 +397,9 @@ function start()
         mp.set_property_bool("pause", true)
         did_pause = true
     end
+    if opts.command_on_open ~= "" then
+        mp.command(opts.command_on_open)
+    end
     if opts.follow_playlist_position then
         mp.observe_property("playlist-pos-1", "native", follow_selection)
     end
@@ -422,6 +435,9 @@ function stop()
     if not gallery.active then return end
     if opts.resume_on_stop == "yes" or (opts.resume_on_stop == "only-if-did-pause" and did_pause) then
         mp.set_property_bool("pause", false)
+    end
+    if opts.command_on_close ~= "" then
+        mp.command(opts.command_on_close)
     end
     if opts.follow_playlist_position then
         mp.unobserve_property(follow_selection)

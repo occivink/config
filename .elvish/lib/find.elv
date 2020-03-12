@@ -2,7 +2,7 @@ fn find [&dirs=$true &files=$true &hidden=$false &depth_first=$true]{
     put_files = [all dirs]{
         i=0
         next_dir = {
-            if (has-key $dirs $i) {
+            if (< $i (count $dirs)) {
                 put $dirs[$i][:-1]
                 i = (+ $i 1)
             } else {

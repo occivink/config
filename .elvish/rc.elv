@@ -20,11 +20,11 @@ fn fzf [@args]{ e:fzf --height 40% $@args }
 edit:prompt = {
     use re
     # abbreviate path by shortening the parent directories
-    edit:styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" " "bg-blue;bold"
+    styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" "  bg-blue bold
     if (not-eq $E:SSH_CLIENT "") {
-        edit:styled " "(cat /etc/hostname)" " "white;bg-red;bold"
+        styled " "(cat /etc/hostname)" " "white;bg-red;bold"
     }
-    edit:styled " λ " "white;bg-green;bold"
+    styled " λ " white bg-green bold
     put " "
 }
 edit:rprompt = { }
