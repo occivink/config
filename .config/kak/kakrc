@@ -23,6 +23,22 @@ hook global KakBegin .* %{
     }
 }
 
+define-command word-count \
+    -params 0 \
+    -docstring "Count words in the current buffer" \
+%{
+    evaluate-commands -save-regs "c" %{
+        evaluate-commands -draft %{
+            # Select non-whitespace spans and count them
+            execute-keys '%S\s+<ret>'
+            set-register c "%reg{#}"
+        }
+        # Report our result
+        info "Word count: %reg{c}"
+    }
+}
+map -docstring "Word count" global user w ': word-count<ret>'
+
 decl bool gdb_debug true
 
  source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
@@ -124,7 +140,6 @@ decl bool gdb_debug true
  source-here-or-in file.kak             "%val{runtime}/rc/detection"
 #source-here-or-in modeline.kak         "%val{runtime}/rc/detection"
 
-source-here-or-in   auto-percent.kak           "%val{config}"
 source-here-or-in   build.kak                  "%val{config}"
 source-here-or-in   buffer-switcher.kak        "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
@@ -133,7 +148,6 @@ source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
 source-here-or-in   gdb.kak                    "%val{config}"
-source-here-or-in   multiples.kak              "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets-directory.kak     "%val{config}"
@@ -142,8 +156,6 @@ source-here-or-in   sort-selections.kak        "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
-
-source-here-or-in   lsp.kak                    "%val{config}"
 
 #hook global WinSetOption filetype=(cpp) %{
 #    lsp-enable-window
