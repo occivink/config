@@ -23,22 +23,6 @@ hook global KakBegin .* %{
     }
 }
 
-define-command word-count \
-    -params 0 \
-    -docstring "Count words in the current buffer" \
-%{
-    evaluate-commands -save-regs "c" %{
-        evaluate-commands -draft %{
-            # Select non-whitespace spans and count them
-            execute-keys '%S\s+<ret>'
-            set-register c "%reg{#}"
-        }
-        # Report our result
-        info "Word count: %reg{c}"
-    }
-}
-map -docstring "Word count" global user w ': word-count<ret>'
-
 decl bool gdb_debug true
 
  source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
