@@ -176,7 +176,7 @@ try %{
 try %{ set global makecmd 'make --jobs=8' }
 try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
 try %{ set global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
-try %{ set global termcmd 'kitty sh -c' }
+try %{ set global termcmd 'kitty dash -c' }
 
 def -hidden text-object-indented-paragraph %{
     eval -save-regs '^' %{
