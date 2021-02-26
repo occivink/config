@@ -124,14 +124,15 @@ decl bool gdb_debug true
  source-here-or-in file.kak             "%val{runtime}/rc/detection"
 #source-here-or-in modeline.kak         "%val{runtime}/rc/detection"
 
-source-here-or-in   build.kak                  "%val{config}"
-source-here-or-in   buffer-switcher.kak        "%val{config}"
 source-here-or-in   buffers-info.kak           "%val{config}"
+source-here-or-in   buffer-switcher.kak        "%val{config}"
+source-here-or-in   build.kak                  "%val{config}"
 source-here-or-in   expand.kak                 "%val{config}"
 source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
 source-here-or-in   gdb.kak                    "%val{config}"
+source-here-or-in   number-comparison.kak      "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets-directory.kak     "%val{config}"
@@ -140,6 +141,8 @@ source-here-or-in   sort-selections.kak        "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
+
+require-module x11
 
 #hook global WinSetOption filetype=(cpp) %{
 #    lsp-enable-window
@@ -176,7 +179,7 @@ try %{
 try %{ set global makecmd 'make --jobs=8' }
 try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
 try %{ set global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
-try %{ set global termcmd 'kitty sh -c' }
+try %{ set global termcmd 'alacritty -e sh -c' }
 
 def -hidden text-object-indented-paragraph %{
     eval -save-regs '^' %{
@@ -184,6 +187,7 @@ def -hidden text-object-indented-paragraph %{
         exec '<a-i>i<a-z>i'
     }
 }
+
 #try %{ set global expand_commands \
 #    %{ exec <a-i>b } \
 #    %{ exec <a-a>b } \
@@ -275,14 +279,14 @@ map global normal <c-v> ': eval -draft make<ret>'
 map global normal <c-w> ': delete-buffer<ret>'
 map global normal <c-s> ': write<ret>'
 map global normal <c-n> ': edit -scratch<ret>'
-map global normal <c-f> ': try %{ buffer *filetree* } catch %{ filetree }<ret>'
+map global normal <c-f> ': filetree-switch-or-start<ret>'
 map global normal <c-d> ': buffer-switcher<ret>'
 map global normal <c-u> ''
 
 face global PrimaryCursorEol black,white+fg
 face global SecondaryCursorEol black,white+fg
 face global SecondaryCursor black,rgb:babaa3+fg
-face global Whitespace rgb:363636,default+f
+face global Whitespace rgb:363636+f
 face global LineNumbersWrapped rgb:606060,default+i
 face global MatchingChar black,yellow+F
 
@@ -319,12 +323,12 @@ def scratch -docstring "Open a scratch buffer" -params ..1 %{
     }
 }
 
-def kakrc -docstring "Open kakrc"       %{ cd ~/.config/kak/  ; edit kakrc }
-def kitty -docstring "Open kitty.conf"  %{ cd ~/.config/kitty ; edit kitty.conf }
-def mpv -docstring "Open mpv.conf"      %{ cd ~/.config/mpv   ; edit mpv.conf ; edit input.conf }
-def mvi -docstring "Open mvi.conf"      %{ cd ~/.config/mvi   ; edit mpv.conf ; edit input.conf }
-def mmp -docstring "Open mmp.conf"      %{ cd ~/.config/mmp   ; edit mpv.conf ; edit input.conf }
-def elvish -docstring "Open rc.elv"     %{ cd ~/.elvish/      ; edit rc.elv }
+def kakrc -docstring "Open kakrc"       %{ edit ~/.config/kak/kakrc }
+def kitty -docstring "Open kitty.conf"  %{ edit ~/.config/kitty/kitty.conf }
+def mpv -docstring "Open mpv.conf"      %{ edit ~/.config/mpv/mpv.conf ; edit ~/.config/mpv/input.conf }
+def mvi -docstring "Open mvi.conf"      %{ edit ~/.config/mvi/mpv.conf ; edit ~/.config/mvi/input.conf }
+def mmp -docstring "Open mmp.conf"      %{ edit ~/.config/mmp/mpv.conf ; edit ~/.config/mmp/input.conf }
+def elvish -docstring "Open rc.elv"     %{ edit ~/.elvish/rc.elv }
 
 def trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{

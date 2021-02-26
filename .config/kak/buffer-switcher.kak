@@ -1,12 +1,14 @@
 # we assume that a buffer name will never contain newlines (not exactly true, but who cares)
 
+face global BufferSwitcherCurrent black,green
+
 define-command buffer-switcher %{
     try %{
         b *buffer-switcher*
     } catch %{
         eval -save-regs '"/' %{
             reg / "^\Q%val{bufname}\E$"
-            eval reg dquote %val{buflist}
+            reg dquote %val{buflist}
 
             edit -scratch *buffer-switcher*
             exec '<a-P>)<a-space>i<ret><esc>'
@@ -17,12 +19,25 @@ define-command buffer-switcher %{
                 # select current one
                 exec '<a-k><ret>'
                 # also highlight it in green
-                addhl buffer/ regex "%reg{/}" 0:black,green
+                addhl buffer/ regex "%reg{/}" 0:BufferSwitcherCurrent
+            } catch %{
+                exec gg
             }
-            map buffer normal <ret> ': buffer-switcher-delete-buffers; buffer-switcher-switch<ret>'
+            map buffer normal <ret> ': buffer-switcher-switch<ret>'
             map buffer normal <esc> ': delete-buffer *buffer-switcher*<ret>'
-            hook global -once WinDisplay .* %{ try %{ delete-buffer *buffer-switcher* } }
+            hook global WinDisplay -once .* %{ try %{ delete-buffer *buffer-switcher* } }
         }
+    }
+}
+
+define-command -hidden buffer-switcher-switch %{
+    buffer-switcher-delete-buffers
+    buffer-switcher-sort-buffers
+    exec '<space>;<a-x>H'
+    eval -save-regs b %{
+        reg b %val{selection}
+        delete-buffer *buffer-switcher*
+        buffer %reg{b}
     }
 }
 
@@ -30,7 +45,7 @@ define-command buffer-switcher %{
 define-command -hidden buffer-switcher-delete-buffers %{
     # print buflist, and all lines
     # everything that appears only once gets removed
-    eval -draft %{
+    eval -buffer *buffer-switcher* %{
         exec '%<a-s>H'
         eval %sh{
             {
@@ -69,18 +84,10 @@ define-command -hidden buffer-switcher-delete-buffers %{
     }
 }
 
+# re-arrange the buflist according to the order in the *buffer-switcher*
 define-command -hidden buffer-switcher-sort-buffers %{
-    eval -draft %{
+    eval -buffer *buffer-switcher* %{
         exec '%<a-s>H'
         arrange-buffers %val{selections}
-    }
-}
-
-define-command -hidden buffer-switcher-switch %{
-    exec '<space>;<a-x>H'
-    eval -save-regs b %{
-        reg b %val{selection}
-        delete-buffer *buffer-switcher*
-        buffer %reg{b}
     }
 }

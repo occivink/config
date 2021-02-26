@@ -33,26 +33,6 @@ edit:completion:arg-completer[kak] = [@cmd]{
 }
 edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
 
-edit:completion:arg-completer[cd] = [@cmd]{
-    if (> (count $cmd) 2) { return }
-
-    # this looks more complex than it should be but there are lots of edge cases
-    path = $cmd[1]
-    dir base = (if (re:match '/' $path) {
-        re:replace '/[^/]*$' '/' $path
-        re:replace '.*/' '' $path
-    } else {
-        put './' $path
-    })
-    # show hidden directories if last path component starts with '.'
-    # uses ls so that we get resolving of symlinks
-    flags = [-p -L (if (has-prefix $base '.') { put -a })]
-    try { e:ls $@flags $dir 2> /dev/null } except _ { } |
-        each [i]{ if (re:match '/$' $i) {
-            edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
-        }}
-}
-
 edit:completion:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {
