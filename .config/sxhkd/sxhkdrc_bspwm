@@ -14,6 +14,9 @@ super + {1,2,3,4,5}
 super + w
 	bspc node -c
 
+super + m
+    pactl set-source-mute 0 toggle
+
 #Toggle floating or fullscreen state for that node
 super + {s,f,t}
 	bspc node -t ~{floating,fullscreen,tiled}
