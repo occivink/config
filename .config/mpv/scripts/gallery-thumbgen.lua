@@ -128,9 +128,13 @@ function thumbnail_command(input_path, width, height, take_thumbnail_at, output_
     local add = function(table) out = append_table(out, table) end
 
 
-    if input_path:find("https?://") == 1 and not is_blacklisted(input_path) then
+    if input_path:find("^https?://") and not is_blacklisted(input_path) then
         -- returns the original input_path on failure
         input_path = ytdl_thumbnail_url(input_path)
+    end
+
+    if input_path:find("^archive://") or input_path:find("^edl://") then
+        with_mpv = true
     end
 
 
@@ -176,17 +180,17 @@ function thumbnail_command(input_path, width, height, take_thumbnail_at, output_
             if not accurate then
                 add({ "--hr-seek=no"})
             end
-            add({ "--start", take_thumbnail_at })
+            add({ "--start="..take_thumbnail_at })
         end
         add({
             "--no-config", "--msg-level=all=no",
-            "--vf", "lavfi=[" .. vf .. ",format=bgra]",
-            "--audio", "no",
-            "--sub", "no",
-            "--frames", "1",
-            "--image-display-duration", "0",
-            "--of", "rawvideo", "--ovc", "rawvideo",
-            "--o", output_path
+            "--vf=lavfi=[" .. vf .. ",format=bgra]",
+            "--audio=no",
+            "--sub=no",
+            "--frames=1",
+            "--image-display-duration=0",
+            "--of=rawvideo", "--ovc=rawvideo",
+            "--o="..output_path
         })
     end
     return out

@@ -2,7 +2,6 @@ function rotate(inc)
     if (360 + inc) % 90 ~= 0 then
         return
     end
-    inc = inc / 180 * math.pi
     local vf_table = mp.get_property_native("vf")
     local previous_angle = 0
     local rotation_index = #vf_table + 1

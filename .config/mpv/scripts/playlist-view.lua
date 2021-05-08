@@ -1,7 +1,7 @@
 local utils = require 'mp.utils'
 local msg = require 'mp.msg'
 
-local lib = mp.find_config_file('scripts/lib')
+local lib = mp.find_config_file('scripts/lib.disable')
 if not lib then
     return
 end
@@ -413,7 +413,7 @@ function load_selection()
     if opts.remember_time_position then
         if sel then
             local time = mp.get_property_number("time-pos")
-            if time > 1 then
+            if time and time > 1 then
                 resume[gallery.items[sel].filename] = time
             end
         end
