@@ -6,15 +6,15 @@
 # use github.com/xiaq/edit.elv/smart-matcher
 
 fn match [seed]{
-    inputs = [(all)]
-    results = []
+    var inputs = [(all)]
+    var results = []
     for matcher [$edit:match-prefix~ $edit:match-substr~ $edit:match-subseq~] {
-        results = [(put $@inputs | $matcher $seed)]
+        set results = [(put $@inputs | $matcher $seed)]
         if (or $@results) {
             put $@results
             return
         }
-        results = [(put $@inputs | $matcher &smart-case $seed)]
+        set results = [(put $@inputs | $matcher &smart-case $seed)]
         if (or $@results) {
             put $@results
             return
@@ -23,4 +23,4 @@ fn match [seed]{
     put $@results
 }
 
-edit:completion:matcher[''] = $match~
+set edit:completion:matcher[''] = $match~

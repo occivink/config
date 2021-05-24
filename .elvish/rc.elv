@@ -2,12 +2,13 @@ use bindings
 use timer
 use completers
 use smart-matcher
+use str
 
-E:EDITOR=kak
-E:PATH=(joins : [~/bin ~/.config/bin $E:PATH])
-E:KAKOUNE_POSIX_SHELL=/bin/dash
+set E:EDITOR = kak
+set E:PATH = (str:join : [~/bin ~/.config/bin $E:PATH])
+set E:KAKOUNE_POSIX_SHELL = /bin/dash
 
-edit:max-height=25
+set edit:max-height = 25
 
 fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
 fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
@@ -17,7 +18,7 @@ fn k [@args]{ e:kak $@args }
 fn g [@args]{ e:git $@args }
 fn fzf [@args]{ e:fzf --height 40% $@args }
 
-edit:prompt = {
+set edit:prompt = {
     use re
     # abbreviate path by shortening the parent directories
     styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" "  bg-blue bold
@@ -27,4 +28,4 @@ edit:prompt = {
     styled " λ " white bg-green bold
     put " "
 }
-edit:rprompt = { }
+set edit:rprompt = { }

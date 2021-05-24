@@ -24,16 +24,16 @@ use re
 #        }
 #}
 
-edit:completion:arg-completer[kak] = [@cmd]{
+set edit:completion:arg-completer[kak] = [@cmd]{
     if (eq $cmd[-2] -c) {
         kak -l
     } else {
         edit:complete-filename $cmd[-1]
     }
 }
-edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
+set edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
 
-edit:completion:arg-completer[ssh] = [@cmd]{
+set edit:completion:arg-completer[ssh] = [@cmd]{
     cat ~/.ssh/config | each [line]{
         if (re:match "^Host " $line) {
             _ host = (re:split &max=2 'Host\s+' $line)
@@ -45,11 +45,11 @@ edit:completion:arg-completer[ssh] = [@cmd]{
 systemd_units = [state]{
     use re
     systemctl list-unit-files --no-legend --state=$state | each [l]{
-        a=(re:find '^(.*)\.(service|target|socket|path|timer) +'$state'$' $l)
+        var a = (re:find '^(.*)\.(service|target|socket|path|timer) +'$state'$' $l)
         edit:complex-candidate $a[groups][1][text] &display-suffix=" ("$a[groups][2][text]")"
     }
 }
-edit:completion:arg-completer[systemctl] = [@cmd]{
+set edit:completion:arg-completer[systemctl] = [@cmd]{
     if (eq (count $cmd) 2) {
         put suspend poweroff reboot enable disable status start stop restart daemon-reload edit
     } else {
@@ -65,7 +65,7 @@ edit:completion:arg-completer[systemctl] = [@cmd]{
     }
 }
 
-edit:completion:arg-completer[ffmpeg] = [@cmd]{
+set edit:completion:arg-completer[ffmpeg] = [@cmd]{
     if (eq (count $cmd) 2) {
         put -i -ss
     } elif (eq $cmd[-2] -i) {
@@ -76,7 +76,7 @@ edit:completion:arg-completer[ffmpeg] = [@cmd]{
 }
 
 # kind of lazy, but what else do you need really?
-pac_completer = [paccmd~ @cmd]{
+var pac_completer = [paccmd~ @cmd]{
     if (eq (count $cmd) 2) {
         put -S -Syu -Rns -Qdt
     } else {
@@ -88,11 +88,11 @@ pac_completer = [paccmd~ @cmd]{
         }
     }
 }
-edit:completion:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
-edit:completion:arg-completer[pacaur] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
+set edit:completion:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
+set edit:completion:arg-completer[trizen] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
 
 # git
-git_completer = [gitcmd~ @cmd]{
+var git_completer = [gitcmd~ @cmd]{
     # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
         put add stage unstage show status commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
@@ -114,6 +114,6 @@ git_completer = [gitcmd~ @cmd]{
         }
     }
 }
-edit:completion:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
-edit:completion:arg-completer[g] = $edit:completion:arg-completer[git]
-edit:completion:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }
+set edit:completion:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
+set edit:completion:arg-completer[g] = $edit:completion:arg-completer[git]
+set edit:completion:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }
