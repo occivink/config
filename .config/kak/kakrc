@@ -253,23 +253,17 @@ map global normal <a-F> ': phantom-selection-iterate-prev<ret>'
 map global insert <a-f> '<esc>: phantom-selection-iterate-next<ret>i'
 map global insert <a-F> '<esc>: phantom-selection-iterate-prev<ret>i'
 
-# move line up/down
+# move lines up/down
 # not very mnemonic but whatever
 
-define-command -hidden move-line-below %{
-    execute-keys '<a-x><a-_>'
-    evaluate-commands -itersel %{
-        execute-keys -draft '<a-:>glw'
-        execute-keys -draft '<a-:>Zj<a-x>dzP'
-    }
+define-command move-lines-down %{
+    execute-keys -draft '<a-x><a-_><a-:>Z;ezj<a-x>dzP'
 }
-define-command -hidden move-line-above %{
-    execute-keys '<a-x><a-_>'
-    execute-keys -draft '<a-:><a-;>ghb'
-    execute-keys -draft '<a-:><a-;>Zk<a-x>dzp'
+define-command move-lines-up %{
+    execute-keys -draft '<a-x><a-_><a-:><a-;>Z;bzk<a-x>dzp'
 }
-map global normal t     ': move-line-below<ret>'
-map global normal <a-t> ': move-line-above<ret>'
+map global normal t     ': move-lines-down<ret>'
+map global normal <a-t> ': move-lines-up<ret>'
 map global normal T     ''
 map global normal <a-T> ''
 
