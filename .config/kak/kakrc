@@ -23,7 +23,7 @@ hook global KakBegin .* %{
     }
 }
 
-decl bool gdb_debug true
+decl -hidden bool gdb_debug true
 
  source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
 #source-here-or-in autowrap.kak         "%val{runtime}/rc/tools"
@@ -37,7 +37,7 @@ decl bool gdb_debug true
 #source-here-or-in lint.kak             "%val{runtime}/rc/tools"
  source-here-or-in make.kak             "%val{runtime}/rc/tools"
  source-here-or-in man.kak              "%val{runtime}/rc/tools"
-#source-here-or-in spell.kak            "%val{runtime}/rc/tools"
+ source-here-or-in spell.kak            "%val{runtime}/rc/tools"
 #source-here-or-in jedi.kak             "%val{runtime}/rc/tools/python"
 #source-here-or-in go-tools.kak         "%val{runtime}/rc/tools/go"
 #source-here-or-in racer.kak            "%val{runtime}/rc/tools/rust"
@@ -62,7 +62,7 @@ decl bool gdb_debug true
 #source-here-or-in fish.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in gas.kak              "%val{runtime}/rc/filetype"
  source-here-or-in git.kak              "%val{runtime}/rc/filetype"
-#source-here-or-in go.kak               "%val{runtime}/rc/filetype"
+ source-here-or-in go.kak               "%val{runtime}/rc/filetype"
 #source-here-or-in haml.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in haskell.kak          "%val{runtime}/rc/filetype"
 #source-here-or-in hbs.kak              "%val{runtime}/rc/filetype"
@@ -93,7 +93,7 @@ decl bool gdb_debug true
 #source-here-or-in pug.kak              "%val{runtime}/rc/filetype"
  source-here-or-in python.kak           "%val{runtime}/rc/filetype"
 #source-here-or-in ragel.kak            "%val{runtime}/rc/filetype"
-#source-here-or-in restructuredtext.kak "%val{runtime}/rc/filetype"
+ source-here-or-in restructuredtext.kak "%val{runtime}/rc/filetype"
 #source-here-or-in ruby.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in rust.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in sass.kak             "%val{runtime}/rc/filetype"
@@ -142,7 +142,7 @@ source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
 
-require-module x11
+try %{ require-module x11 }
 
 #hook global WinSetOption filetype=(cpp) %{
 #    lsp-enable-window
@@ -166,8 +166,7 @@ set global eolformat lf
 set global disabled_hooks .*-trim-indent
 
 set global autoinfo command|onkey
-set global ui_options terminal_set_title=false ncurses_builtin_key_parser=true
-#set global ui_options ncurses_assistant=cat
+set global ui_options terminal_set_title=false
 set global scrolloff 2,5
 
 try %{
@@ -178,7 +177,6 @@ try %{
 }
 try %{ set global makecmd 'make --jobs=8' }
 try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
-try %{ set global filetree_find_cmd 'elvish -c "use find; find:find &dirs=\$false | each [f]{ echo \$f }"' }
 try %{ set global termcmd 'alacritty -e sh -c' }
 
 def -hidden text-object-indented-paragraph %{
@@ -380,7 +378,7 @@ def paste-join -params ..2 %{
     }
 }
 
-hook global GlobalSetOption gdb_started=true %{
+hook global GlobalSetOption gdb_session_started=true %{
     map global normal <F10>   ': gdb-next<ret>'
     map global normal <F11>   ': gdb-step<ret>'
     map global normal <s-F11> ': gdb-finish<ret>'
@@ -389,7 +387,7 @@ hook global GlobalSetOption gdb_started=true %{
     map global normal <F5>    ': gdb-continue<ret>'
 }
 
-hook global GlobalSetOption gdb_started=false %{
+hook global GlobalSetOption gdb_session_started=false %{
     unmap global normal <F10>   ': gdb-next<ret>'
     unmap global normal <F11>   ': gdb-step<ret>'
     unmap global normal <s-F11> ': gdb-finish<ret>'

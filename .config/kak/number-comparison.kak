@@ -1,7 +1,7 @@
-declare-option -hidden str number_comparison_install_path %sh{dirname "$kak_source"}
+declare-option -hidden str number_comparison_helper_script %sh{ printf '%s/%s' "${kak_source%/*}" "number-comparison-regex.sh" }
 
 define-command number-comparison -params .. -docstring "
-number-comparison [<switches>] <operator> <number>
+number-comparison [<switches>] <operator> <number>: Generates a regular expression that matches a number range
 Switches:
     -no-bounds-check: The surrounding with lookarounds is disabled
     -no-negative: The matching of negative numbers is disabled
@@ -14,7 +14,7 @@ Switches:
 } %{
     eval %sh{
         NOAUTOCOMPARE=''
-        . "$kak_opt_number_comparison_install_path"/number-comparison-regex.sh
+        . "$kak_opt_number_comparison_helper_script"
 
         arg_num=0
         register='/'
@@ -74,13 +74,11 @@ Switches:
                     printf "fail \"Invalid operator '%%arg{%s}'\"" "$arg_num"
                     exit 1
                 fi
-                op=$arg
-            elif [ -z "$number" ]; then
+            elif [ -z "$num" ]; then
                 if ! parse_number "$arg"; then
                     printf "fail \"Invalid number '%%arg{%s}'\"" "$arg_num"
                     exit 1
                 fi
-                number="$arg"
             else
                 printf "fail \"Unrecognized extra parameter '%%arg{%s}'\"" "$arg_num"
                 exit 1
@@ -89,7 +87,7 @@ Switches:
         if [ -z "$op" ]; then
             echo 'fail "Missing operator"'
             exit 1
-        elif [ -z "$number" ]; then
+        elif [ -z "$num" ]; then
             echo 'fail "Missing number"'
             exit 1
         fi

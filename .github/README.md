@@ -21,16 +21,19 @@ For anything not mentioned, this repo is considered the source.
 * [find](https://github.com/occivink/kakoune-find)
 * [sudo-write](https://github.com/occivink/kakoune-sudo-write)
 * [vertical-selection](https://github.com/occivink/kakoune-vertical-selection)
+* [snippets](https://github.com/occivink/kakoune-snippets)
+* [buffer-switcher](https://github.com/occivink/kakoune-buffer-switcher)
+* [number-comparison](https://github.com/occivink/kakoune-number-comparison)
+* [sort-selections](https://github.com/occivink/kakoune-sort-selections)
 * [filetree](https://github.com/occivink/kakoune-filetree)
 * [gdb](https://github.com/occivink/kakoune-gdb)
-* [kak-lsp](https://github.com/ul/kak-lsp)
 
 ## [mpv](https://github.com/mpv-player/mpv) (and mvi, mmp)
 
 * [crop, encode, blacklist-extensions, blur-edges, seek-to](https://github.com/occivink/mpv-scripts)
-* [gallery, gallery-thumbgen](https://github.com/occivink/mpv-gallery-view)
+* [gallery](https://github.com/occivink/mpv-gallery-view)
 * [image-viewer](https://github.com/occivink/mpv-image-viewer)
-* [auto-profiles](https://github.com/wm4/mpv-scripts)
+* [music-player](https://github.com/occivink/mpv-music-player)
 * [visualizer](https://github.com/mfcc64/mpv-scripts)
 
 mvi and mmp are just aliases to different profiles of mpv. More specifically, I use mpv for videos, mvi for images and mmp for music.
@@ -38,13 +41,6 @@ mvi and mmp are just aliases to different profiles of mpv. More specifically, I 
 ## [elvish](https://github.com/elves/elvish)
 
 * [smart-matcher](https://github.com/xiaq/edit.elv/blob/master/smart-matcher.elv)
-
-## gdb
-
-Some useful C++ pretty printers that I've amassed.
-* [qt5](https://github.com/Lekensteyn/qt5printers)
-* [STL](https://sourceware.org/gdb/wiki/STLSupport)
-* [eigen](https://bitbucket.org/eigen/eigen/src/8b18ff2c70289b47928ae75fdb89a6ac3d018e08/debug/gdb)
 
 ## misc
 

@@ -486,14 +486,31 @@ compare()
 if [ -n "${NOAUTOCOMPARE+a}" ]; then
     :
 else
+    for arg do
+        if [ "$arg" = '--help' ] || [ "$arg" = '-h' ]; then
+            echo 'Generate a regular expression that matches a range of number'
+            echo
+            echo 'USAGE:'
+            echo '    number-comparison-regex [OPTIONS] [OPERATOR] [NUMBER]'
+            echo
+            echo 'OPERATOR is one of <, <=, >, >=, = or != (or the shell equivalents used by "test")'
+            echo 'NUMBER is the number to be compared to'
+            echo
+            echo 'OPTIONS:'
+            echo '    -n, --no-negative     Only consider positive numbers (input and output)'
+            echo '    -d, --no-decimal      Only consider integral number (input and output)'
+            echo '    -h, --help            Print this help message'
+            exit 0
+        fi
+    done
     if [ $# -lt 2 ]; then
-        echo Missing arguments
+        echo "Missing arguments, use '--help' for more information"
         exit 1
     fi
-    for arg; do
-        if [ "$arg" = '-no-negative' ]; then
+    for arg do
+        if [ "$arg" = '--no-negative' ] || [ "$arg" = '-n' ]; then
             with_negative='n'
-        elif [ "$arg" = '-no-decimal' ]; then
+        elif [ "$arg" = '--no-decimal' ] || [ "$arg" = '-d' ] ; then
             with_decimal='n'
         elif [ -z "$op" ]; then
             if ! parse_operator "$arg"; then

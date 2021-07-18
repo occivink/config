@@ -7,12 +7,34 @@ local opts = {
     text_bottom_left = "${filename} [${playlist-pos-1}/${playlist-count}]",
     text_bottom_right = "[${dwidth:X}x${dheight:X}]",
 }
-(require 'mp.options').read_options(opts)
 
 local msg = require 'mp.msg'
 local assdraw = require 'mp.assdraw'
+local options = require 'mp.options'
+
+options.read_options(opts, nil, function(c)
+    if c["enabled"] then
+        if opts.enabled then
+            enable()
+        else
+            disable()
+        end
+    end
+    if c["size"] or c["margin"] then
+        mark_stale()
+    end
+    if c["text_top_left"] or
+       c["text_top_right"] or
+       c["text_bottom_left"] or
+       c["text_bottom_right"]
+    then
+        observe_properties()
+        mark_stale()
+    end
+end)
 
 local stale = true
+local active = false
 
 function draw_ass(ass)
     local ww, wh = mp.get_osd_size()
@@ -50,11 +72,9 @@ function mark_stale()
     stale = true
 end
 
-local active = false
-
-function enable()
-    if active then return end
-    active = true
+function observe_properties()
+    mp.unobserve_property(mark_stale)
+    if not active then return end
     for _, str in ipairs({
         opts.text_top_left,
         opts.text_top_right,
@@ -72,6 +92,12 @@ function enable()
     end
     mp.observe_property("osd-width", nil, mark_stale)
     mp.observe_property("osd-height", nil, mark_stale)
+end
+
+function enable()
+    if active then return end
+    active = true
+    observe_properties()
     mp.register_idle(refresh)
     mark_stale()
 end
@@ -80,10 +106,9 @@ end
 function disable()
     if not active then return end
     active = false
-    mp.unobserve_property(mark_stale)
+    observe_properties()
     mp.unregister_idle(refresh)
-    ass.status_line = ""
-    draw_ass()
+    draw_ass("")
 end
 
 function toggle()
@@ -98,6 +123,20 @@ if opts.enabled then
     enable()
 end
 
-mp.add_key_binding(nil, "enable-status-line", enable)
-mp.add_key_binding(nil, "disable-status-line", disable)
-mp.add_key_binding(nil, "toggle-status-line", toggle)
+mp.add_key_binding(nil, "status-line-enable", enable)
+mp.add_key_binding(nil, "status-line-disable", disable)
+mp.add_key_binding(nil, "status-line-toggle", toggle)
+
+-- TODO remove
+mp.add_key_binding(nil, "enable-status-line", function()
+    msg.warn("This binding is deprecated, use 'status-line-enable' instead")
+    enable()
+end)
+mp.add_key_binding(nil, "disable-status-line", function()
+    msg.warn("This binding is deprecated, use 'status-line-disable' instead")
+    disable()
+end)
+mp.add_key_binding(nil, "toggle-status-line", function()
+    msg.warn("This binding is deprecated, use 'status-line-toggle' instead")
+    toggle()
+end)
