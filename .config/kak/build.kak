@@ -38,11 +38,20 @@ All the optional arguments are forwarded to the specified command
     }
 
     set global build_last_timestamp %sh{ printf '%s' $(( kak_opt_build_last_timestamp + 1 )) }
+    trigger-user-hook build:started
     build-set-modeline "building..." "" ""
 
     eval -try-client %opt{toolsclient} %{
         edit! -fifo %opt{build_fifo} -scroll *build*
 
+        hook -group build-trigger-user-hook BufClose .* %{
+            remove-hooks build-trigger-user-hook
+            trigger-user-hook build:finished
+        }
+        hook -group build-trigger-user-hook BufCloseFifo .* %{
+            remove-hooks build-trigger-user-hook
+            trigger-user-hook build:interrupted
+        }
         hook -always -once buffer BufCloseFifo .* %{
             nop %sh{ rm -f "$kak_opt_build_fifo" }
             unset buffer build_fifo

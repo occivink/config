@@ -28,6 +28,7 @@ Q,":                 double quotes
 q,':                 single quotes
 g,`:                 grave quotes
 <space>:             spaces
+c:                   custom delimiter
 h,<left>:            reduce
 j,<right>:           extend
 k,<up>:              shrink
@@ -48,6 +49,7 @@ define-command -hidden surround-impl -params 1 %{
             q|\')                    printf "surround-add \\\\' \\\\'" ;;
             g|\`)                    printf "surround-add \` \`" ;;
             \<space\>)               printf "surround-add ' ' ' '" ;;
+            c)                       printf "surround-custom" ;;
             \<backspace\>|\<del\>|d) printf "surround-del" ;;
             h|\<left\>)              printf "surround-move H L" ;;
             l|\<right\>)             printf "surround-move L H" ;;
@@ -56,6 +58,10 @@ define-command -hidden surround-impl -params 1 %{
             *)                       printf "fail" ;;
         esac
     }
+}
+
+define-command -hidden surround-custom %{
+	on-key %{ surround-add %val{key} %val{key} }
 }
 
 define-command -hidden surround-add -params 2 %{

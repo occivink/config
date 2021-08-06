@@ -175,7 +175,7 @@ def -hidden gdb-session-start-receiver %{
     addhl global/gdb-ref ref -passes move gdb
 }
 
-# 
+# gdb interaction commands
 
 def gdb-jump-to-location -docstring "
 if execution is stopped, jump to the current location
@@ -248,21 +248,27 @@ def gdb-finish -docstring "
 send the 'finish' command to gdb, resuming the execution until the end of the current function
 " %{ gdb-cmd "-exec-finish" }
 
+def gdb-interrupt -docstring "
+send the 'interrupt' command to gdb, interrupting the execution
+" %{ gdb-cmd "-exec-interrupt" }
+
 def gdb-continue -docstring "
 send the 'continue' command to gdb, resuming the execution
 " %{ gdb-cmd "-exec-continue" }
 
-def gdb-set-breakpoint -docstring "
-set breakpoint(s) at the current cursor lines
-" %{ gdb-breakpoint-impl false true }
-
-def gdb-clear-breakpoint -docstring "
-clear any breakpoint at the current cursor lines
-" %{ gdb-breakpoint-impl true false }
-
-def gdb-toggle-breakpoint -docstring "
-clear any breakpoint at the current cursor lines
-" %{ gdb-breakpoint-impl true true }
+def gdb-toggle-execution -docstring "
+start, stop or continue the execution of the program (whichever makes sense at the time)
+" %{
+   %sh{
+      if [ "$kak_opt_gdb_program_running" = false ]; then
+         printf "gdb-run\n"
+      elif [ "$kak_opt_gdb_program_stopped" = false ]; then
+         printf "gdb-interrupt\n"
+      else
+         printf "gdb-continue\n"
+      fi
+   }
+}
 
 def gdb-continue-or-run -docstring "
 if the program has already been started, send 'continue' (otherwise 'run') to gdb
@@ -276,13 +282,30 @@ if the program has already been started, send 'continue' (otherwise 'run') to gd
    }
 }
 
+def gdb-set-breakpoint -docstring "
+set breakpoint(s) at the current cursor lines
+" %{ gdb-breakpoint-impl false true }
+
+def gdb-clear-breakpoint -docstring "
+clear any breakpoint at the current cursor lines
+" %{ gdb-breakpoint-impl true false }
+
+# -break-delete is not used here (or anywhere) because it just responds with '^done'
+# whereas 'delete' does tell us about deleted breakpoints
+def gdb-clear-all-breakpoints -docstring "
+clear all breakpoints
+" %{ gdb-cmd "delete" }
+
+def gdb-toggle-breakpoint -docstring "
+clear or set breakpoint(s), depending on whether there are already ones
+" %{ gdb-breakpoint-impl true true }
+
 # gdb doesn't tell us in its output what was the expression we asked for, so keep it internally for printing later
 decl -hidden str gdb_expression_demanded
 
 def gdb-print -params ..1 -docstring "
 gdb-print [<expression>]: print the value of an expression
-Print the value of the expression specified. If no expression is specified,
-the main selection is used instead.
+If no expression is specified, the main selection is used instead.
 If a *gdb-print* buffer exists, the result will also be appended there.
 " %{
     try %{
@@ -368,7 +391,7 @@ def -hidden gdb-backtrace-jump %{
 }
 
 def gdb-backtrace-up -docstring "
-change the current stack frame to the one above 
+change the current stack frame to the one above
 " %{
     eval -try-client %opt{jumpclient} %{
         buffer *gdb-backtrace*
