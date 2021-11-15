@@ -1,8 +1,0 @@
-#!/bin/sh
-s=$(mktemp -u)
-maim --format png --quality 1 $s
-mvi $s
-status=$?
-rm $s
-exit $status
-

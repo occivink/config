@@ -1,7 +1,7 @@
 #!/bin/sh
 date -d "$@" >/dev/null 2>&1 || { echo "Not a date"; exit 1; }
 time_to_sleep=$(( $(date +%s -d "$@") - $(date +%s) ))
-if [ $time_to_sleep -lt 0 ]; then 
+if [ "$time_to_sleep" -lt 0 ]; then 
     echo "The specified date has already passed" >&2
     return 1
 fi

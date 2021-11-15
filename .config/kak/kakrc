@@ -97,7 +97,7 @@ decl -hidden bool gdb_debug true
 #source-here-or-in ragel.kak            "%val{runtime}/rc/filetype"
  source-here-or-in restructuredtext.kak "%val{runtime}/rc/filetype"
 #source-here-or-in ruby.kak             "%val{runtime}/rc/filetype"
-#source-here-or-in rust.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in rust.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in sass.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in scala.kak            "%val{runtime}/rc/filetype"
 #source-here-or-in scheme.kak           "%val{runtime}/rc/filetype"
@@ -311,12 +311,13 @@ def scratch -docstring "Open a scratch buffer" -params ..1 %{
     }
 }
 
-def kakrc -docstring "Open kakrc"       %{ edit ~/.config/kak/kakrc }
-def kitty -docstring "Open kitty.conf"  %{ edit ~/.config/kitty/kitty.conf }
-def mpv -docstring "Open mpv.conf"      %{ edit ~/.config/mpv/input.conf ; edit ~/.config/mpv/mpv.conf }
-def mvi -docstring "Open mvi.conf"      %{ edit ~/.config/mvi/input.conf ; edit ~/.config/mvi/mpv.conf }
-def mmp -docstring "Open mmp.conf"      %{ edit ~/.config/mmp/input.conf ; edit ~/.config/mmp/mpv.conf }
-def elvish -docstring "Open rc.elv"     %{ edit ~/.elvish/rc.elv }
+def kakrc -docstring "Open kakrc"         %{ edit ~/.config/kak/kakrc }
+def foot -docstring "Open foot.ini"       %{ edit ~/.config/foot/foot.ini }
+def wayfire -docstring "Open wayfire.ini" %{ edit ~/.config/wayfire.ini }
+def mpv -docstring "Open mpv.conf"        %{ edit ~/.config/mpv/input.conf ; edit ~/.config/mpv/mpv.conf }
+def mvi -docstring "Open mvi.conf"        %{ edit ~/.config/mvi/input.conf ; edit ~/.config/mvi/mpv.conf }
+def mmp -docstring "Open mmp.conf"        %{ edit ~/.config/mmp/input.conf ; edit ~/.config/mmp/mpv.conf }
+def elvish -docstring "Open rc.elv"       %{ edit ~/.elvish/rc.elv }
 
 def -hidden trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{
@@ -360,16 +361,25 @@ hook global GlobalSetOption gdb_session_started=false %{
 def -hidden duplicate-before %{ exec 'y<a-:><a-;>i<space><esc>hR' }
 def -hidden duplicate-after %{ exec 'y<a-:>li<space><esc>hR' }
 
+try %{
+    eval %sh{ [ "$XDG_SESSION_TYPE" != wayland ] && printf fail }
+    decl -hidden str clipboard_copy_command "wl-copy"
+    decl -hidden str clipboard_paste_command "wl-paste -n"
+} catch %{
+    decl -hidden str clipboard_copy_command "xsel --input --clipboard"
+    decl -hidden str clipboard_paste_command "xsel --output --clipboard"
+}
+
 map -docstring "select 🡓"             -- global user v     ': vertical-selection-down<ret>'
 map -docstring "select 🡑"             -- global user <a-v> ': vertical-selection-up<ret>'
 map -docstring "select 🡓🡑"            -- global user V     ': vertical-selection-up-and-down<ret>'
 map -docstring "trim whitespaces"     -- global user w     ': trim-whitespaces<ret>'
 map -docstring "duplicate selection"  -- global user <a-d> ': duplicate-before<ret>'
 map -docstring "duplicate selection"  -- global user d     ': duplicate-after<ret>'
-map -docstring "clip-paste after"     -- global user p     '<a-!>xsel --output --clipboard<ret>'
-map -docstring "clip-paste before"    -- global user P     '!xsel --output --clipboard<ret>'
-map -docstring "clip-replace"         -- global user R     '|xsel --output --clipboard<ret>'
-map -docstring "clip-yank"            -- global user y     '<a-|>xsel --input --clipboard<ret>'
+map -docstring "clip-paste after"     -- global user p     "<a-!>%opt{clipboard_paste_command}<ret>"
+map -docstring "clip-paste before"    -- global user P     "!%opt{clipboard_paste_command}<ret>"
+map -docstring "clip-replace"         -- global user R     "|%opt{clipboard_paste_command}<ret>"
+map -docstring "clip-yank"            -- global user y     "<a-|>%opt{clipboard_copy_command}<ret>"
 map -docstring "math"                 -- global user m     ': math<ret>'
 map -docstring "++"                   -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                   -- global user -     'a-1<esc>: math<ret>'
