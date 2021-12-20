@@ -112,6 +112,7 @@ decl -hidden bool gdb_debug true
 #source-here-or-in tupfile.kak          "%val{runtime}/rc/filetype"
 #source-here-or-in void-linux.kak       "%val{runtime}/rc/filetype"
 #source-here-or-in yaml.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in zig.kak              "%val{runtime}/rc/filetype"
 
 #source-here-or-in iterm.kak            "%val{runtime}/rc/windowing"
 #source-here-or-in kitty.kak            "%val{runtime}/rc/windowing"
@@ -177,7 +178,6 @@ try %{
 }
 try %{ set global makecmd 'make --jobs=8' }
 try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
-try %{ set global termcmd 'kitty sh -c' }
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -365,9 +365,11 @@ try %{
     eval %sh{ [ "$XDG_SESSION_TYPE" != wayland ] && printf fail }
     decl -hidden str clipboard_copy_command "wl-copy"
     decl -hidden str clipboard_paste_command "wl-paste -n"
+    try %{ set global termcmd 'foot sh -c' }
 } catch %{
     decl -hidden str clipboard_copy_command "xsel --input --clipboard"
     decl -hidden str clipboard_paste_command "xsel --output --clipboard"
+    try %{ set global termcmd 'kitty sh -c' }
 }
 
 map -docstring "select 🡓"             -- global user v     ': vertical-selection-down<ret>'
@@ -376,10 +378,10 @@ map -docstring "select 🡓🡑"            -- global user V     ': vertical-sel
 map -docstring "trim whitespaces"     -- global user w     ': trim-whitespaces<ret>'
 map -docstring "duplicate selection"  -- global user <a-d> ': duplicate-before<ret>'
 map -docstring "duplicate selection"  -- global user d     ': duplicate-after<ret>'
-map -docstring "clip-paste after"     -- global user p     "<a-!>%opt{clipboard_paste_command}<ret>"
-map -docstring "clip-paste before"    -- global user P     "!%opt{clipboard_paste_command}<ret>"
-map -docstring "clip-replace"         -- global user R     "|%opt{clipboard_paste_command}<ret>"
-map -docstring "clip-yank"            -- global user y     "<a-|>%opt{clipboard_copy_command}<ret>"
+map -docstring "clip-paste after"     -- global user p     "<a-!> %opt{clipboard_paste_command}<ret>"
+map -docstring "clip-paste before"    -- global user P     "! %opt{clipboard_paste_command}<ret>"
+map -docstring "clip-replace"         -- global user R     "| %opt{clipboard_paste_command}<ret>"
+map -docstring "clip-yank"            -- global user y     "<a-|> %opt{clipboard_copy_command}<ret>"
 map -docstring "math"                 -- global user m     ': math<ret>'
 map -docstring "++"                   -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                   -- global user -     'a-1<esc>: math<ret>'

@@ -1,0 +1,83 @@
+#!/bin/sh
+
+if [ "$#" -eq 0 ]; then
+    echo "Nothing to rename" >&2
+    exit 1
+fi
+
+check_duplicates()
+{
+    awk "
+    BEGIN { seen[\"\"] = 1;  }
+    // {
+        line=\$0
+        if (line in seen)
+            exit(1);
+        seen[line] = 1;
+    }" < "$1"
+    return "$?"
+}
+
+tmp=$(mktemp -t -u burl.XXXXXXXX)
+printf "%s\n" "$@" > "$tmp"
+
+cleanup() { rm "$tmp"; }
+trap cleanup EXIT
+
+if ! check_duplicates "$tmp" ; then
+    echo "Duplicate filenames in input" >&2
+    exit 1
+fi
+
+entries_before=$(wc -l < "$tmp")
+
+"$EDITOR" "$tmp"
+if [ "$?" -ne 0 ]; then
+    echo "$EDITOR exited with non-0" >&2
+    exit 1
+fi
+
+entries_after=$(wc -l < "$tmp")
+if [ "$entries_before" -ne "$entries_after" ]; then
+    echo 'Different number of filenames' >&2
+    exit 1
+fi
+
+if ! check_duplicates "$tmp" ; then
+    echo "Duplicate filenames in output" >&2
+    exit 1
+fi
+
+IFS='
+'
+unchanged=0
+changed=0
+renamed=0
+failed=0
+for new in $(cat "$tmp"); do
+    old="$1"
+    shift
+    if [ "$new" != "$old" ]; then
+        changed=$((changed+1))
+        dir="${new%/*}"
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir"
+        fi
+        if [ -f "$new" ]; then
+            failed=$((failed+1))
+            printf "Could not rename '%s' to '%s'\n (already exists)" "$old" "$new" >&2
+        elif mv --no-clobber "$old" "$new" ; then
+            renamed=$((renamed+1))
+        else
+            failed=$((failed+1))
+            printf "Could not rename '%s' to '%s'\n" "$old" "$new" >&2
+        fi
+    else
+        unchanged=$((unchanged+1))
+    fi
+done
+if [ "$changed" -eq 0 ]; then
+    echo "No changes made" >&2
+else
+    printf "%s files renamed, %s failed, %s unchanged\n" "$renamed" "$failed" "$unchanged" >&2
+fi
