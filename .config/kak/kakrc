@@ -317,7 +317,7 @@ def wayfire -docstring "Open wayfire.ini" %{ edit ~/.config/wayfire.ini }
 def mpv -docstring "Open mpv.conf"        %{ edit ~/.config/mpv/input.conf ; edit ~/.config/mpv/mpv.conf }
 def mvi -docstring "Open mvi.conf"        %{ edit ~/.config/mvi/input.conf ; edit ~/.config/mvi/mpv.conf }
 def mmp -docstring "Open mmp.conf"        %{ edit ~/.config/mmp/input.conf ; edit ~/.config/mmp/mpv.conf }
-def elvish -docstring "Open rc.elv"       %{ edit ~/.elvish/rc.elv }
+def elvish -docstring "Open rc.elv"       %{ edit ~/.config/elvish/rc.elv }
 
 def -hidden trim-whitespaces -docstring "Remove trailing whitespace from every line" %{
    try %{

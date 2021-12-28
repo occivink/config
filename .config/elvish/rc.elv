@@ -10,13 +10,13 @@ set E:KAKOUNE_POSIX_SHELL = /bin/dash
 
 set edit:max-height = 25
 
-fn ls [@args]{ e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
-fn ffmpeg [@args]{ e:ffmpeg -hide_banner $@args }
-fn cp [@args]{ e:cp --no-clobber $@args }
-fn mv [@args]{ e:mv --no-clobber $@args }
-fn k [@args]{ e:kak $@args }
-fn g [@args]{ e:git $@args }
-fn fzf [@args]{ e:fzf --height 40% $@args }
+fn ls {|@args| e:ls --color=auto --group-directories-first --human-readable --quoting-style=literal --indicator-style=classify -v $@args }
+fn ffmpeg {|@args| e:ffmpeg -hide_banner $@args }
+fn cp {|@args| e:cp --no-clobber $@args }
+fn mv {|@args| e:mv --no-clobber $@args }
+fn k {|@args| e:kak $@args }
+fn g {|@args| e:git $@args }
+fn fzf {|@args| e:fzf --height 40% $@args }
 
 set edit:prompt = {
     use re

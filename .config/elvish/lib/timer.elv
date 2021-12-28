@@ -1,7 +1,7 @@
 fn now { date +%s }
 var time_start = (now)
 
-set edit:after-readline = [ $@edit:after-readline [@a]{ time_start = (now) } ]
+set edit:after-readline = [ $@edit:after-readline {|@a| set time_start = (now) } ]
 set edit:before-readline = [ $@edit:before-readline {
     var elapsed = (- (now) $time_start)
     if (> $elapsed 3600) {

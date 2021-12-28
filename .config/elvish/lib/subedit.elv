@@ -3,7 +3,7 @@ use str
 
 # edit the subtitles in a matroska file as a text file
 # takes care of demuxing and muxing back together
-fn subedit [pre input_matroska post]{
+fn subedit {|pre input_matroska post|
     #validate basic stuff
     if (not (eq (kind-of $pre) list)) { fail "Not an array" }
     if (not (>= (count $pre) 1)) { fail "Missing command" }

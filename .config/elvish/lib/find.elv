@@ -1,5 +1,5 @@
-fn find [&dirs=$true &files=$true &hidden=$false &depth_first=$true]{
-    var put_files = [all dirs]{
+fn find {|&dirs=$true &files=$true &hidden=$false &depth_first=$true|
+    var put_files = {|all dirs|
         var i = 0
         var next_dir = {
             if (< $i (count $dirs)) {
@@ -10,7 +10,7 @@ fn find [&dirs=$true &files=$true &hidden=$false &depth_first=$true]{
             }
         }
         var dir = ($next_dir)
-        put $@all | each [f]{
+        put $@all | each {|f|
             if (eq $f $dir) {
                 set dir = ($next_dir)
             } else {

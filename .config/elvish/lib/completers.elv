@@ -1,7 +1,7 @@
 use re
 
 # useless as of yet since completer output is sorted
-#complete-filename-sorted = [prefix]{
+#complete-filename-sorted = {|prefix|
 #    if (> (count $cmd) 2) { return }
 #
 #    # this looks more complex than it should be but there are lots of edge cases
@@ -16,7 +16,7 @@ use re
 #    # uses ls so that we get resolving of symlinks
 #    flags = [-p -L (if (has-prefix $base '.') { put -a })]
 #    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
-#        each [i]{ if (re:match '/$' $i) { 
+#        each {|i| if (re:match '/$' $i) { 
 #               edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
 #           } else { 
 #               edit:complex-candidate (path-clean $dir$i)
@@ -24,7 +24,7 @@ use re
 #        }
 #}
 
-set edit:completion:arg-completer[kak] = [@cmd]{
+set edit:completion:arg-completer[kak] = {|@cmd|
     if (eq $cmd[-2] -c) {
         kak -l
     } else {
@@ -33,27 +33,27 @@ set edit:completion:arg-completer[kak] = [@cmd]{
 }
 set edit:completion:arg-completer[k] = $edit:completion:arg-completer[kak]
 
-set edit:completion:arg-completer[ssh] = [@cmd]{
-    cat ~/.ssh/config | each [line]{
+set edit:completion:arg-completer[ssh] = {|@cmd|
+    cat ~/.ssh/config | each {|line|
         if (re:match "^Host " $line) {
-            _ host = (re:split &max=2 'Host\s+' $line)
+            var _ host = (re:split &max=2 'Host\s+' $line)
             put $host
         }
     }
 }
 
-systemd_units = [state]{
+var systemd_units = {|state|
     use re
-    systemctl list-unit-files --no-legend --state=$state | each [l]{
+    systemctl list-unit-files --no-legend --state=$state | each {|l|
         var a = (re:find '^(.*)\.(service|target|socket|path|timer) +'$state'$' $l)
         edit:complex-candidate $a[groups][1][text] &display-suffix=" ("$a[groups][2][text]")"
     }
 }
-set edit:completion:arg-completer[systemctl] = [@cmd]{
+set edit:completion:arg-completer[systemctl] = {|@cmd|
     if (eq (count $cmd) 2) {
         put suspend poweroff reboot enable disable status start stop restart daemon-reload edit
     } else {
-        subcommand = $cmd[1]
+        var subcommand = $cmd[1]
         if (eq $subcommand "enable") {
             $systemd_units disabled
         } elif (eq $subcommand "disable") {
@@ -65,7 +65,7 @@ set edit:completion:arg-completer[systemctl] = [@cmd]{
     }
 }
 
-set edit:completion:arg-completer[ffmpeg] = [@cmd]{
+set edit:completion:arg-completer[ffmpeg] = {|@cmd|
     if (eq (count $cmd) 2) {
         put -i -ss
     } elif (eq $cmd[-2] -i) {
@@ -76,11 +76,11 @@ set edit:completion:arg-completer[ffmpeg] = [@cmd]{
 }
 
 # kind of lazy, but what else do you need really?
-var pac_completer = [paccmd~ @cmd]{
+var pac_completer = {|paccmd~ @cmd|
     if (eq (count $cmd) 2) {
         put -S -Syu -Rns -Qdt
     } else {
-        operation = $cmd[1]
+        var operation = $cmd[1]
         if (re:match "^(-S|--sync$)" $operation) {
             paccmd -Ssq
         } elif (re:match "^(-R|--remove$)" $operation) {
@@ -88,16 +88,16 @@ var pac_completer = [paccmd~ @cmd]{
         }
     }
 }
-set edit:completion:arg-completer[pacman] = [@cmd]{ $pac_completer (external pacman) $@cmd }
-set edit:completion:arg-completer[trizen] = [@cmd]{ $pac_completer (external pacaur) $@cmd }
+set edit:completion:arg-completer[pacman] = {|@cmd| $pac_completer (external pacman) $@cmd }
+set edit:completion:arg-completer[trizen] = {|@cmd| $pac_completer (external pacaur) $@cmd }
 
 # git
-var git_completer = [gitcmd~ @cmd]{
+var git_completer = {|gitcmd~ @cmd|
     # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
         put add stage unstage show status commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
     } else {
-        subcommand = $cmd[1]
+        var subcommand = $cmd[1]
         if (has-value [add stage] $subcommand) {
             gitcmd diff --name-only --relative .
             gitcmd ls-files --others --exclude-standard
@@ -114,6 +114,6 @@ var git_completer = [gitcmd~ @cmd]{
         }
     }
 }
-set edit:completion:arg-completer[git] = [@cmd]{ $git_completer (external git) $@cmd }
+set edit:completion:arg-completer[git] = {|@cmd| $git_completer (external git) $@cmd }
 set edit:completion:arg-completer[g] = $edit:completion:arg-completer[git]
-set edit:completion:arg-completer[conf] = [@cmd]{ $git_completer (external conf) $@cmd }
+set edit:completion:arg-completer[conf] = {|@cmd| $git_completer (external conf) $@cmd }

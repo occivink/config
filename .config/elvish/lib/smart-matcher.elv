@@ -5,7 +5,7 @@
 # Usage:
 # use github.com/xiaq/edit.elv/smart-matcher
 
-fn match [seed]{
+fn match {|seed|
     var inputs = [(all)]
     var results = []
     for matcher [$edit:match-prefix~ $edit:match-substr~ $edit:match-subseq~] {
