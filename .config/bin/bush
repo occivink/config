@@ -1,0 +1,64 @@
+#!/bin/sh
+
+edit=0
+run=0
+delete=0
+
+while [ $# -gt 0 ]; do
+    if [ "$1" = '-e' ] || [ "$1" = '--edit' ]; then
+        edit=1
+    elif [ "$1" = '-r' ] || [ "$1" = '--run' ]; then
+        run=1
+    elif [ "$1" = '-d' ] || [ "$1" = '--delete' ]; then
+        delete=1
+    elif [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
+        printf 'bush [--edit] [--run] [--delete] FILES...\n'
+        exit
+    else
+        [ "$1" = '--' ] && shift
+        break
+    fi
+    shift
+done
+
+if [ $# = 0 ]; then
+    echo "Nothing to do" >&2
+    exit 1
+fi
+
+tmp=$(mktemp bush-XXXX.sh)
+chmod +x "$tmp"
+(
+    printf '#!/bin/sh\n'
+    printf 'fn() {\n'
+    printf '    echo "$1"\n'
+    printf '}\n'
+    for arg; do
+        printf "fn '"
+        text=$arg
+        while :; do
+            case "$text" in
+            *"'"*)
+                head=${text%%"'"*}
+                printf "%s'\\''" "$head"
+                text=${text#*"'"}
+                ;;
+            *)
+                printf '%s' "$text"
+                break
+                ;;
+            esac
+        done
+        printf "'\n"
+    done
+) > "$tmp"
+
+if [ $edit -eq 1 ]; then
+    "$EDITOR" "$tmp"
+fi
+if [ $run -eq 1 ]; then
+    ./"$tmp"
+fi
+if [ $delete -eq 1 ]; then
+    rm "$tmp"
+fi

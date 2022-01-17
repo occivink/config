@@ -55,25 +55,54 @@ changed=0
 renamed=0
 failed=0
 for new in $(cat "$tmp"); do
-    old="$1"
+    old=$1
     shift
-    if [ "$new" != "$old" ]; then
-        changed=$((changed+1))
-        dir="${new%/*}"
-        if [ ! -d "$dir" ]; then
-            mkdir -p "$dir"
-        fi
-        if [ -f "$new" ]; then
-            failed=$((failed+1))
-            printf "Could not rename '%s' to '%s'\n (already exists)" "$old" "$new" >&2
-        elif mv --no-clobber "$old" "$new" ; then
-            renamed=$((renamed+1))
-        else
-            failed=$((failed+1))
-            printf "Could not rename '%s' to '%s'\n" "$old" "$new" >&2
-        fi
-    else
+    if [ ! -e "$old" ]; then
+        failed=$((failed+1))
+        printf "Input file '%s' does not exist\n" "$old" >&2
+        continue
+    fi
+    # strip trailing slashes from 'old' and 'new'
+    while :; do
+        case "$old" in
+        *'/')
+            old=${old%/}
+            ;;
+        *)
+            break
+            ;;
+        esac
+    done
+    while :; do
+        case "$new" in
+        *'/')
+            new=${new%/}
+            ;;
+        *)
+            break
+            ;;
+        esac
+    done
+    if [ "$new" = "$old" ]; then
         unchanged=$((unchanged+1))
+        continue
+    fi
+    if [ -e "$new" ]; then
+        failed=$((failed+1))
+        printf "Could not rename '%s' to '%s' (target already exists)\n" "$old" "$new" >&2
+        continue
+    fi
+
+    changed=$((changed+1))
+    parent_dir="${new%/*}"
+    if [ "$parent_dir" != "$new" ] && [ "$parent_dir" != '' ] && [ ! -d "$parent_dir" ]; then
+        mkdir -p "$parent_dir"
+    fi
+    if mv --no-clobber "$old" "$new" ; then
+        renamed=$((renamed+1))
+    else
+        failed=$((failed+1))
+        printf "Could not rename '%s' to '%s'\n" "$old" "$new" >&2
     fi
 done
 if [ "$changed" -eq 0 ]; then

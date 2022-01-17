@@ -1,4 +1,4 @@
-set global startup_info_version 9999999
+set global startup_info_version 99999999
 
 # to ease development of plugins
 # try to load from cwd, otherwise load from config
@@ -170,6 +170,27 @@ set global scrolloff 2,5
 # preserve indent level
 hook global InsertChar \n %{ try %{ exec -draft <semicolon> K <a-&> } }
 
+def -hidden backspace-with-indentwidth %{
+    eval -itersel %{
+        try %{
+            # will only succeed at the beginning of the buffer -> nothing to do
+            exec -draft ';H<a-k>\A.\z<ret>'
+        } catch %{
+            # if there is nothing but horizontal whitespace between character to the left and beginning of line,
+            # delete in increments of indentwidth
+            exec -draft "h<a-K>\n<ret>Gh<a-k>\A[ \t]+\z<ret>s(\t| {1,%opt{indentwidth}})<ret><space>d"
+        } catch %{
+            # regular case, delete previous character
+            exec -draft 'hd'
+        }
+    }
+}
+map global insert <backspace> '<a-;>: backspace-with-indentwidth<ret>'
+map global insert <s-backspace> '<a-;>: backspace-with-indentwidth<ret>'
+
+map global insert <tab> '<a-;><a-gt>'
+map global insert <s-tab> '<a-;><lt>'
+
 try %{
     nop %opt{gdb_indicator} %opt{build_modeline_progress} %opt{build_modeline_failure} %opt{build_modeline_success}
     set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {black,cyan}%opt{build_modeline_progress}{black,green}%opt{build_modeline_success}{black,red}%opt{build_modeline_failure}{default,default} {red,default}%opt{gdb_indicator} {default,default}- %val{client}@[%val{session}]'
@@ -184,6 +205,18 @@ try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build -
 #hook global ModeChange ".*:insert" %{ face global StatusLine black,yellow }
 #hook global ModeChange ".*:normal" %{ face global StatusLine black,cyan }
 
+map global goto G g
+map global goto E e
+map global goto H h
+map global goto J j
+map global goto K k
+map global goto L l
+map global goto I i
+map global goto A a
+
+map global insert <s-space> <space>
+map global insert <s-ret> <ret>
+
 # stop c and d from yanking
 map global normal d <a-d>
 map global normal c <a-c>
@@ -193,18 +226,6 @@ map global normal <a-c> ''
 #swap ; and :
 map global normal ';' ':'
 map global normal ':' ';'
-
-def -hidden open-selected-files %{
-    eval -itersel %{ try %{ exec -with-hooks -draft gf } }
-    exec -with-hooks gf
-}
-
-map -docstring "file" global goto f "<esc>: open-selected-files<ret>"
-map -docstring "find" global goto p "<esc>: find<ret>"
-
-# indent with tab
-map global insert <tab> '<a-;><a-gt>'
-map global insert <s-tab> '<a-;><lt>'
 
 # tab/backtab to cycle through completions
 hook global InsertCompletionShow .* %{
@@ -217,9 +238,9 @@ hook global InsertCompletionHide .* %{
 }
 
 map global normal q     ': surround<ret>'
-map global normal Q     ''
+map global normal Q     'q'
 map global normal <a-q> ': expand<ret>'
-map global normal <a-Q> ''
+map global normal <a-Q> 'Q'
 
 # word-related mappings
 map global normal w     <a-i>w
