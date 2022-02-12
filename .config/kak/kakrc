@@ -1,4 +1,4 @@
-set global startup_info_version 99999999
+set global startup_info_version 999999999
 
 # to ease development of plugins
 # try to load from cwd, otherwise load from config
@@ -107,11 +107,11 @@ decl -hidden bool gdb_debug true
 #source-here-or-in swift.kak            "%val{runtime}/rc/filetype"
  source-here-or-in systemd.kak          "%val{runtime}/rc/filetype"
 #source-here-or-in taskpaper.kak        "%val{runtime}/rc/filetype"
-#source-here-or-in toml.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in toml.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in troff.kak            "%val{runtime}/rc/filetype"
 #source-here-or-in tupfile.kak          "%val{runtime}/rc/filetype"
 #source-here-or-in void-linux.kak       "%val{runtime}/rc/filetype"
-#source-here-or-in yaml.kak             "%val{runtime}/rc/filetype"
+ source-here-or-in yaml.kak             "%val{runtime}/rc/filetype"
  source-here-or-in zig.kak              "%val{runtime}/rc/filetype"
 
 #source-here-or-in iterm.kak            "%val{runtime}/rc/windowing"
@@ -140,7 +140,6 @@ source-here-or-in   number-comparison.kak      "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets.kak               "%val{config}"
-source-here-or-in   snippets-directory.kak     "%val{config}"
 source-here-or-in   sort-selections.kak        "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
@@ -168,7 +167,7 @@ set -add global ui_options terminal_set_title=no
 set global scrolloff 2,5
 
 # preserve indent level
-hook global InsertChar \n %{ try %{ exec -draft <semicolon> K <a-&> } }
+hook global InsertChar \n %{ try %{ exec -itersel -draft ';K<a-&>' } }
 
 def -hidden backspace-with-indentwidth %{
     eval -itersel %{
@@ -178,7 +177,7 @@ def -hidden backspace-with-indentwidth %{
         } catch %{
             # if there is nothing but horizontal whitespace between character to the left and beginning of line,
             # delete in increments of indentwidth
-            exec -draft "h<a-K>\n<ret>Gh<a-k>\A[ \t]+\z<ret>s(\t| {1,%opt{indentwidth}})<ret><space>d"
+            exec -draft "hGh<a-k>\A[ \t]+\z<ret>s(\t| {1,%opt{indentwidth}})<ret><space>d"
         } catch %{
             # regular case, delete previous character
             exec -draft 'hd'
@@ -204,15 +203,6 @@ try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build -
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
 #hook global ModeChange ".*:insert" %{ face global StatusLine black,yellow }
 #hook global ModeChange ".*:normal" %{ face global StatusLine black,cyan }
-
-map global goto G g
-map global goto E e
-map global goto H h
-map global goto J j
-map global goto K k
-map global goto L l
-map global goto I i
-map global goto A a
 
 map global insert <s-space> <space>
 map global insert <s-ret> <ret>

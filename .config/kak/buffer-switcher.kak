@@ -31,14 +31,11 @@ define-command buffer-switcher %{
 }
 
 define-command -hidden buffer-switcher-switch %{
-    buffer-switcher-delete-buffers
-    buffer-switcher-sort-buffers
+    try buffer-switcher-delete-buffers
+    try buffer-switcher-sort-buffers
     exec '<space>;<a-x>H'
-    eval -save-regs b %{
-        reg b %val{selection}
-        delete-buffer *buffer-switcher*
-        buffer %reg{b}
-    }
+    buffer %val{selection}
+    try %{ delete-buffer *buffer-switcher* }
 }
 
 # delete all buffers whose lines were removed

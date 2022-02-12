@@ -1,7 +1,6 @@
 # show information about currently opened buffers
 # originally by danr, with cherry-picked ideas from delapouite
 
-
 define-command buffers-info %{
     eval -no-hooks -save-regs '"/c' %{
         # debug so that it doesn't get iterated over

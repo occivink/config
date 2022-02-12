@@ -1,7 +1,62 @@
+local options = require 'mp.options'
+
+local core_opts = {
+    mode = '',
+    socket = "mmp_socket",
+}
+options.read_options(core_opts, "music-player")
+
+if core_opts.mode ~= "client" then return end
+
+local player_opts = {
+    root_dir = 'music',
+    thumbs_dir = 'thumbs',
+    waveforms_dir = 'waveforms',
+    lyrics_dir = "lyrics",
+    albums_file = '', -- for optimization purposes
+
+    default_layout = 'BROWSE',
+
+    component_spacing = 10,
+
+    background_opacity = 'BB',
+    background_color_focus = 'AAAAAA',
+    background_color_idle = '666666',
+    background_border_size = '3',
+    background_border_color = '000000',
+    background_roundness = 2,
+
+    library_filter_focus_color = 'CB9A79',
+
+    chapters_marker_width = 3,
+    chapters_marker_color = '888888',
+    cursor_bar_width = 4,
+    cursor_bar_color = 'CB9A79',
+    seekbar_snap_distance = 15,
+    waveform_padding_proportion = 0.6666,
+    title_text_size = 32,
+    artist_album_text_size = 24,
+    time_text_size = 24,
+    darker_text_color = '999999',
+
+    controls_default_color = '909090',
+    controls_play_active_color = 'CB9A79',
+    controls_pause_active_color = '7DBEEF',
+    controls_output_active_color = '6EB884',
+    controls_mute_active_color = '5E66F9',
+    controls_volume_inactive_color = '555555',
+    controls_hover_tint_factor = 0.15,
+
+    lyrics_arrows_multiplier = 3.0,
+    lyrics_scroll_multiplier = 2.0,
+    lyrics_min_grace_period = 20,
+}
+
+options.read_options(player_opts, "music-player-client")
+
 local socket = require 'socket.unix'
 local utils = require 'mp.utils'
 local assdraw = require 'mp.assdraw'
-local options = require 'mp.options'
 local msg = require 'mp.msg'
 
 local lib = mp.find_config_file('scripts/lib.disable')
@@ -12,78 +67,41 @@ end
 package.path = package.path .. ';' .. lib .. '/?.lua;'
 require 'gallery'
 
-local opts = {
-    socket = "/tmp/mmp_socket",
-    root_dir = "music",
-    thumbs_dir = "thumbs",
-    waveforms_dir = "waveform",
-    lyrics_dir = "lyrics",
-    albums_file = '', -- for optimization purposes
-    default_layout = "BROWSE",
-}
-options.read_options(opts, "music-player")
-
-local g_root_dir = mp.command_native({"expand-path", opts.root_dir})
-local g_thumbs_dir = mp.command_native({"expand-path", opts.thumbs_dir})
-local g_waveforms_dir = mp.command_native({"expand-path", opts.waveforms_dir})
-local g_lyrics_dir = mp.command_native({"expand-path", opts.lyrics_dir})
-local g_albums_file = mp.command_native({"expand-path", opts.albums_file})
+local g_root_dir = mp.command_native({"expand-path", player_opts.root_dir})
+local g_thumbs_dir = mp.command_native({"expand-path", player_opts.thumbs_dir})
+local g_waveforms_dir = mp.command_native({"expand-path", player_opts.waveforms_dir})
+local g_lyrics_dir = mp.command_native({"expand-path", player_opts.lyrics_dir})
+local g_albums_file = mp.command_native({"expand-path", player_opts.albums_file})
 
 do
+    local bad = false
     for _, p in ipairs({g_root_dir, g_thumbs_dir, g_waveforms_dir, g_lyrics_dir}) do
         local fi = utils.file_info(p)
         if not fi or not fi.is_dir then
             msg.error(string.format("Directory '%s' does not exist", p))
-            mp.commandv('quit')
+            bad = true
         end
+    end
+    if bad then
+        mp.commandv('quit')
+        return
     end
 end
 
-local client = nil
-while true do
-    client = socket()
-    local res, err = client:connect(opts.socket)
-    if res == 1 then break end
-    msg.warn("Could not connect to server, waiting...")
-    mp.command_native({ name = "subprocess", playback_only = false, args = {"sleep", "1"}})
+local client = socket()
+if not client:connect(core_opts.socket) then
+    msg.error("Cannot connect, aborting")
+    mp.commandv("quit")
+    return
 end
 
 local function send_to_server(array)
     client:send(string.format("%s\n", utils.format_json({ command = array })))
     local rep, err = client:receive()
-    if err then
-        print(err)
-        return
-    end
+    if err then print(err) end
 end
+
 send_to_server({"disable_event", "all"})
-
-local red = '5E66F9'
-local blue = 'CB9F79'
-local yellow = '7DBEEF'
-local white = '999999'
-local gray = '555555'
-
--- CONFIG
-local global_offset = 10
-
-local background_opacity = 'BB'
-local background_color_focus = 'AAAAAA'
-local background_color_idle = '666666'
-local background_border_size = '3'
-local background_border_color = '000000'
-local background_roundness = 2
-
-local chapters_marker_width = 3
-local chapters_marker_color = "888888"
-local cursor_bar_width = 3
-local seekbar_snap_distance = 15
-local cursor_bar_color = "BBBBBB"
-local waveform_padding_proportion = 2/3
-local title_text_size = 32
-local artist_album_text_size = 24
-local time_text_size = 24
-local darker_text_color = "888888"
 
 -- VARS
 local ass_changed = false
@@ -103,7 +121,7 @@ properties = {
     ["duration"] = -1,
     ["mute"] = false,
     ["volume"] = -1,
-    ["audio-client-name"] = '',
+    ["audio-device"] = '',
 }
 
 local edl_album_cache = {}
@@ -128,18 +146,23 @@ local function album_from_path(path)
     return nil
 end
 
+local function file_exists(path)
+    local info = utils.file_info(path)
+    return info ~= nil and info.is_file
+end
+
 local function get_background(position, size, focused)
     local a = assdraw.ass_new()
     a:new_event()
     a:append(string.format('{\\bord%s\\shad0\\1a&%s&\\1c&%s&\\3c&%s&}',
-        background_border_size,
-        background_opacity,
-        focused and background_color_focus or background_color_idle,
-        background_border_color
+        player_opts.background_border_size,
+        player_opts.background_opacity,
+        focused and player_opts.background_color_focus or player_opts.background_color_idle,
+        player_opts.background_border_color
     ))
     a:pos(0, 0)
     a:draw_start()
-    a:round_rect_cw(position[1], position[2], position[1] + size[1], position[2] + size[2], background_roundness)
+    a:round_rect_cw(position[1], position[2], position[1] + size[1], position[2] + size[2], player_opts.background_roundness)
     return a.text
 end
 
@@ -503,7 +526,8 @@ do
 
         local a = assdraw.ass_new()
         a:new_event()
-        a:append(string.format('{\\bord4\\shad0\\1a&%s&\\3c&%s&}', 'ff', focus_filter and blue or '222222'))
+        a:append(string.format('{\\bord4\\shad0\\1a&%s&\\3c&%s&}',
+            'ff', focus_filter and player_opts.library_filter_focus_color or '222222'))
         a:pos(0, 0)
         a:draw_start()
         a:rect_cw(filter_position[1], filter_position[2], filter_position[1] + filter_size[1], filter_position[2] + filter_size[2])
@@ -748,67 +772,161 @@ do
     local waveform_size = {0,0}
     local cover_position = {0,0}
     local cover_size = {0,0}
-    local text_position = {0,0}
+    local track_text_position = {0,0}
+    local album_text_position = {0,0}
     local times_position = {0, 0}
 
     local time_pos_coarse = -1
+
+    -- related to holding left mouse button on the seekbar
+    local left_mouse_button_held = false
+    local can_scrub = false -- the seekbar has been clicked, but the cursor not yet moved
+    local scrubbing = false
+    local volume_before_scrub = nil
+    local ignore_volume_change_once = false
+    local scrubbing_volume_ratio = 0.5
 
     local ass_text = {
         background = '',
         elapsed = '',
         times = '',
         chapters = '',
-        text = '',
+        track = '',
+        album = '',
+        cover_bg = '',
     }
     local active = false
     local focus = false
 
     local function redraw_chapters()
+        ass_changed = true
+        local a = assdraw.ass_new()
+
         local duration = properties["duration"]
         local chapters = properties["chapter-list"]
-        if not duration or #chapters == 0 then
-            ass_text.chapters = ''
-            ass_changed = true
-            return
-        end
-        local a = assdraw.ass_new()
-        a:new_event()
-        a:pos(0, 0)
-        a:append('{\\bord0\\shad0\\1c&' .. chapters_marker_color .. '}')
-        a:draw_start()
-        local w = chapters_marker_width/2
-        local y1 = waveform_position[2]
-        local y2 = y1 + waveform_size[2]
-        for _, chap in ipairs(chapters) do
-            local x = waveform_position[1] + waveform_size[1] * (chap.time / duration)
+        if duration and chapters and #chapters > 0 then
+            a:new_event()
+            a:pos(0, 0)
+            a:append('{\\bord0\\shad0\\1c&' .. player_opts.chapters_marker_color .. '}')
+            a:draw_start()
+            local w = player_opts.chapters_marker_width/2
+            local y1 = waveform_position[2]
+            local y2 = y1 + waveform_size[2]
+            for _, chap in ipairs(chapters) do
+                local x = waveform_position[1] + waveform_size[1] * (chap.time / duration)
+                a:rect_cw(x - w, y1, x + w, y2)
+            end
+            local x = waveform_position[1] + waveform_size[1]
             a:rect_cw(x - w, y1, x + w, y2)
         end
-        local x = waveform_position[1] + waveform_size[1]
-        a:rect_cw(x - w, y1, x + w, y2)
-        a:new_event()
-        a:pos(text_position[1], text_position[2] + (title_text_size + artist_album_text_size) / 2 - 5)
-        a:append('{\\bord0\\an4}')
-
-        local chap = math.max(0, properties["chapter"] or 0) + 1
-        local chapter = chapters[chap]
-        local title = string.match(chapter.title, ".*/%d+ (.*)%..-")
-        local track_duration = chap == #chapters and duration - chapter.time or chapters[chap + 1].time - chapter.time
-        local text = string.format("{\\fs%d}%s {\\1c&%s&}[%d/%d] [%s]", title_text_size, title, darker_text_color, chap, #chapters, mp.format_time(track_duration, "%m:%S"))
-        local _, album = album_from_path(properties["path"])
-        if album then
-            text = text .. "\\N" .. string.format("{\\fs%d}{\\1c&FFFFFF&}%s - %s {\\1c&%s&}[%s]", artist_album_text_size, album.artist, album.album, darker_text_color, album.year)
-            a:append(text)
-        end
         ass_text.chapters = a.text
-        ass_changed = true
     end
 
-    -- related to holding left mouse button on the seekbar
-    local left_mouse_button_held = false
-    local scrubbing = false
-    local volume_before_scrub = nil
-    local ignore_volume_change_once = false
-    local scrubbing_volume_ratio = 0.5
+    -- return relevant chapter index (1-based) or nil, as well as (potentially) snapped position
+    local function get_chapter_with_snap(pos, chapters, duration)
+        local nx = pos[1] - waveform_position[1]
+        local ny = pos[2] - waveform_position[2]
+        if nx < 0 or nx > waveform_size[1] or ny < 0 or ny > waveform_size[2] then
+            return nil
+        end
+        local get_chap_x = function(chap_index)
+            return waveform_position[1] + chapters[chap_index].time / duration * waveform_size[1]
+        end
+        local chap_after
+        for i = 1, #chapters do
+            if get_chap_x(i) > pos[1] then
+                chap_after = i
+                break
+            end
+        end
+        local dist_next = chap_after and get_chap_x(chap_after) - pos[1] or 1e30
+        local chap_before = chap_after and chap_after - 1 or #chapters
+        local dist_prev = pos[1] - get_chap_x(chap_before)
+        if dist_prev <= dist_next and dist_prev < player_opts.seekbar_snap_distance then
+            return chap_before, chapters[chap_before].time / duration
+        elseif dist_next < player_opts.seekbar_snap_distance then
+            return chap_after, chapters[chap_after].time / duration
+        else
+            -- no snapping, previous chapter counts
+            return chap_before, (pos[1] - waveform_position[1]) / waveform_size[1]
+        end
+    end
+
+    local function redraw_track_text()
+        ass_changed = true
+        local a = assdraw.ass_new()
+
+        local chapters = properties["chapter-list"]
+        local duration = properties["duration"]
+        if duration and chapters and #chapters > 0 then
+            local chap
+            local time_pos
+            if not scrubbing then
+                local norm_x
+                chap, norm_x = get_chapter_with_snap({mp.get_mouse_pos()}, chapters, duration)
+                if chap then
+                    time_pos = norm_x * duration
+                end
+            end
+            if not chap then
+                chap = math.max(0, properties["chapter"] or 0) + 1 -- mpv prop is 1-based
+                time_pos = time_pos_coarse
+            end
+            if chap then
+                a:new_event()
+                a:pos(track_text_position[1], track_text_position[2])
+                a:append('{\\bord0\\shad0\\an7\\fs' .. player_opts.title_text_size .. '}')
+
+                local chapter = chapters[chap]
+                local title = string.match(chapter.title, ".*/%d+ (.*)%..-")
+                local track_pos = math.floor(time_pos - chapter.time)
+                local track_duration = chap == #chapters and duration - chapter.time or chapters[chap + 1].time - chapter.time
+                local text = string.format("%s {\\1c&%s&}[%s%s] [%d/%d]",
+                    title, player_opts.darker_text_color,
+                    track_pos > 0 and mp.format_time(track_pos, "%m:%S/") or '',
+                    mp.format_time(track_duration, "%m:%S"),
+                    chap, #chapters)
+                a:append(text)
+            end
+        end
+        ass_text.track = a.text
+    end
+
+    local function redraw_cover_bg()
+        ass_changed = true
+        local a = assdraw.ass_new()
+
+        local path = properties["path"]
+        if path and path ~= '' then
+            a:new_event()
+            a:pos(0, 0)
+            a:append('{\\bord0\\shad0\\1c&' .. 'BBBBBB' .. '}')
+            a:draw_start()
+            local border = 1
+            local x = cover_position[1] - border
+            local y = cover_position[2] - border
+            local w = cover_size[1] + 2 * border
+            local h = cover_size[2] + 2 * border
+            a:rect_cw(x, y, x + w, y + h)
+        end
+        ass_text.cover_bg = a.text
+    end
+
+    local function redraw_album_text()
+        ass_changed = true
+        local a = assdraw.ass_new()
+
+        local _, album = album_from_path(properties["path"])
+        if album then
+            a:new_event()
+            a:pos(album_text_position[1], album_text_position[2])
+            a:append('{\\bord0\\shad0\\an7\\fs' .. player_opts.artist_album_text_size .. '}')
+            local text = string.format("{\\1c&FFFFFF&}%s - %s {\\1c&%s&}[%s]",
+                album.artist, album.album, player_opts.darker_text_color, album.year)
+            a:append(text)
+        end
+        ass_text.album = a.text
+    end
 
     local function redraw_times()
         local duration = properties["duration"]
@@ -843,7 +961,7 @@ do
             end
             a:new_event()
             a:pos(x, times_position[2])
-            a:append(string.format("{\\an%s\\fs%s\\bord0}", align, time_text_size))
+            a:append(string.format("{\\an%s\\fs%s\\bord0}", align, player_opts.time_text_size))
             a:append(format_time(time))
         end
 
@@ -851,21 +969,9 @@ do
         local end_x = waveform_position[1] + waveform_size[1]
         local current_x = nil
 
-        do
-            local mx, my = mp.get_mouse_pos()
-            local tx = mx - waveform_position[1]
-            local ty = my - waveform_position[2]
-            if tx >= 0 and tx <= waveform_size[1] and ty >= 0 and ty <= waveform_size[2] then
-                cursor_x = mx
-                if not scrubbing then
-                    for _, chap in ipairs(properties["chapter-list"]) do
-                        local chap_x = waveform_position[1] + chap.time / duration * waveform_size[1]
-                        if math.abs(chap_x - cursor_x) < seekbar_snap_distance then
-                            cursor_x = chap_x
-                        end
-                    end
-                end
-            end
+        if not scrubbing then
+            local _, norm_x  = get_chapter_with_snap({mp.get_mouse_pos()}, properties["chapter-list"], duration)
+            cursor_x = norm_x and (norm_x * waveform_size[1] + waveform_position[1]) or cursor_x
         end
         if time_pos_coarse and duration then
             current_x = waveform_position[1] + waveform_size[1] * (time_pos_coarse / duration)
@@ -912,42 +1018,60 @@ do
         a:rect_cw(x1, y1, x2, y2)
         a:new_event()
         a:pos(0,0)
-        a:append(string.format('{\\r\\bord0\\shad0\\1c&%s\\1a&%s}', blue, "00"))
+        a:append(string.format('{\\r\\bord0\\shad0\\1c&%s\\1a&%s}', player_opts.cursor_bar_color, "00"))
         a:draw_start()
-        a:rect_cw(x2 - 1.5, y1, x2 + 2, y2)
+        a:rect_cw(x2 - player_opts.cursor_bar_width / 2, y1, x2 + player_opts.cursor_bar_width / 2, y2)
         ass_text.elapsed = a.text
         ass_changed = true
     end
 
     local function set_waveform()
         local _, album = album_from_path(properties["path"])
-        if not active or not album then
-            mp.commandv("playlist-remove", "current")
-            return
+        if active and album then
+            local filepath = string.format("%s/%d - %s.png",
+                g_waveforms_dir, album.year, string.gsub(album.album, ':', '\\:'))
+            if file_exists(filepath) then
+                mp.commandv("loadfile", filepath, "replace")
+                return
+            else
+                msg.warn("Cannot find waveform")
+            end
         end
-        local wavefile = string.format("%s/%d - %s.png", g_waveforms_dir, album.year, string.gsub(album.album, ':', '\\:'))
-        mp.commandv("loadfile", wavefile, "replace")
+        mp.commandv("playlist-remove", "current")
+    end
+
+    local function set_waveform_position()
+        local wpp = player_opts.waveform_padding_proportion
+        set_video_position(
+            waveform_position[1],
+            waveform_position[2] - 0.5 * wpp * waveform_size[2] / (1 - wpp),
+            waveform_size[1],
+            waveform_size[2] / (1 - wpp)
+        )
     end
 
     local function set_overlay()
         local _, album = album_from_path(properties["path"])
-        if not active or not album then
-            mp.commandv("overlay-remove", seekbar_overlay_index)
-            return
+        if active and album then
+            local filepath = string.format("%s/%s - %s_%s_%s",
+                g_thumbs_dir, album.artist, album.album, cover_size[1], cover_size[2])
+            if file_exists(filepath) then
+                mp.commandv("overlay-add",
+                    seekbar_overlay_index,
+                    tostring(math.floor(cover_position[1] + 0.5)),
+                    tostring(math.floor(cover_position[2] + 0.5)),
+                    filepath,
+                    "0",
+                    "bgra",
+                    tostring(cover_size[1]),
+                    tostring(cover_size[2]),
+                    tostring(4*cover_size[1]))
+                return
+            else
+                msg.warn("Cannot find album cover")
+            end
         end
-        mp.commandv("overlay-add",
-            seekbar_overlay_index,
-            tostring(math.floor(cover_position[1] + 0.5)),
-            tostring(math.floor(cover_position[2] + 0.5)),
-            string.format("%s/%s - %s_%s_%s", g_thumbs_dir,
-                album.artist, album.album,
-                cover_size[1],
-                cover_size[2]),
-            "0",
-            "bgra",
-            tostring(cover_size[1]),
-            tostring(cover_size[2]),
-            tostring(4*cover_size[1]))
+        mp.commandv("overlay-remove", seekbar_overlay_index)
     end
 
     local function skip_current_maybe()
@@ -956,26 +1080,21 @@ do
         send_to_server({"playlist-remove", "0"})
     end
 
+    local function toggle_pause_maybe()
+        local x, y = normalized_coordinates({mp.get_mouse_pos()}, cover_position, cover_size)
+        if x < 0 or y < 0 or x > 1 or y > 1 then return false end
+        send_to_server({"set_property", "pause", properties["pause"] and "no" or "yes"})
+        return true
+    end
+
     local function seek_maybe()
         local duration = properties["duration"]
         local chapters = properties["chapter-list"]
-        if not duration or not chapters then return end
-        local mouse_pos = {mp.get_mouse_pos()}
-        local x, y = normalized_coordinates(mouse_pos, waveform_position, waveform_size)
-        if x >= 0 and y >= 0 and x <= 1 and y <= 1 then
-            local snap_chap = nil
-            local min_dist = nil
-            for _, chap in ipairs(chapters) do
-                local dist = math.abs(x - chap.time / duration)
-                if dist * waveform_size[1] < seekbar_snap_distance then
-                    if not snap_chap or dist < min_dist then
-                        snap_chap = chap.time
-                        min_dist = dist
-                    end
-                end
-            end
-            send_to_server({"set_property", "time-pos", tostring(snap_chap or x * duration)})
-        end
+        if not duration or not chapters then return false end
+        local chap, norm_x = get_chapter_with_snap({mp.get_mouse_pos()}, chapters, duration)
+        if not chap then return false end
+        send_to_server({"set_property", "time-pos",  tostring(norm_x * duration)})
+        return true
     end
 
     local function scrub_start()
@@ -989,6 +1108,7 @@ do
     local function scrub_stop()
         if not scrubbing then return end
         scrubbing = false
+        can_scrub = false
         if volume_before_scrub then
             send_to_server({"set_property", "volume", volume_before_scrub})
             volume_before_scrub = nil
@@ -1008,9 +1128,14 @@ do
         {"DEL", function() send_to_server({"playlist-remove", "0"}) end, {}},
         {"MBTN_RIGHT", function() skip_current_maybe() end, {}},
         {"MBTN_LEFT", function(table)
-                          left_mouse_button_held = (table["event"] == "down")
-                          if left_mouse_button_held then seek_maybe() end
-                          scrub_stop()
+                          local down = (table["event"] == "down")
+                          left_mouse_button_held = down
+                          if down then
+                              toggle_pause_maybe()
+                              can_scrub = seek_maybe()
+                          else
+                              scrub_stop()
+                          end
                       end, {complex=true,repeatable=false}},
     }
 
@@ -1018,10 +1143,17 @@ do
         active = newactive
         set_overlay()
         set_waveform()
-        redraw_elapsed()
-        redraw_times()
-        redraw_chapters()
-        ass_text.background = get_background(position, size, focus)
+        if active then
+            time_pos_coarse = math.floor(properties["time-pos"])
+            set_waveform_position()
+            redraw_elapsed()
+            redraw_times()
+            redraw_chapters()
+            redraw_album_text()
+            redraw_track_text()
+            redraw_cover_bg()
+            ass_text.background = get_background(position, size, focus)
+        end
         ass_changed = true
     end
     this.set_focus = function(newfocus)
@@ -1039,22 +1171,38 @@ do
         size = { w, h }
         cover_size = { 150, 150 }
 
-        local dist_w = 10
-        cover_position = { x + dist_w, y + (h - cover_size[2]) / 2 }
+        local spacing_h = 10
+        x = x + spacing_h
+        w = w - 2 * spacing_h
+        cover_position = { x, y + (h - cover_size[2]) / 2 }
+        x = x + cover_size[1] + spacing_h
+        w = w - (cover_size[2] + spacing_h)
 
-        local dist_h = 10
-        text_position = { x + cover_size[1] + 2 * dist_w, y + dist_h}
+        local padding_v = 5
+        y = y + padding_v
+        h = h - 2 * padding_v
+        track_text_position = { x, y }
+        y = y + player_opts.title_text_size
+        h = h - player_opts.title_text_size
+        album_text_position = { x, y }
+        y = y + player_opts.artist_album_text_size
+        h = h - player_opts.artist_album_text_size
+        y = y + 3 -- small space between waveform and album text
+        h = h - 3
+        times_position = { x, y + h - player_opts.time_text_size}
+        h = h - player_opts.time_text_size
+        waveform_position = { x, y }
+        waveform_size = { w, h }
 
-        waveform_position = { text_position[1], text_position[2] + artist_album_text_size + title_text_size }
-        waveform_size = { w - cover_size[1] - 3 * dist_w, h - 2 * dist_h - (artist_album_text_size + title_text_size + time_text_size) }
-        times_position = { text_position[1], waveform_position[2] + waveform_size[2] }
-
-        set_video_position(waveform_position[1], waveform_position[2] - 0.5 * waveform_padding_proportion * waveform_size[2] / (1 - waveform_padding_proportion), waveform_size[1], waveform_size[2] / (1 - waveform_padding_proportion))
         if active then
+            set_waveform_position()
             set_overlay()
             redraw_elapsed()
             redraw_times()
             redraw_chapters()
+            redraw_album_text()
+            redraw_track_text()
+            redraw_cover_bg()
             ass_text.background = get_background(position, size, focus)
             ass_changed = true
         end
@@ -1071,8 +1219,10 @@ do
             ass_text.background,
             ass_text.times,
             ass_text.chapters,
-            ass_text.text,
             ass_text.elapsed,
+            ass_text.track,
+            ass_text.album,
+            ass_text.cover_bg,
         }, "\n") or ''
     end
 
@@ -1082,21 +1232,32 @@ do
             scrub_stop()
             set_waveform()
             set_overlay()
+            redraw_album_text()
+            redraw_cover_bg()
+        end,
+        ["chapter-list"] = function()
             redraw_chapters()
-            redraw_elapsed()
+            redraw_track_text()
             redraw_times()
         end,
-        ["chapter-list"] = function() redraw_chapters() end,
-        ["chapter"] = function() redraw_chapters() end,
+        ["chapter"] = function()
+            redraw_track_text()
+        end,
         ["time-pos"] = function(value)
                            -- since time-pos is changed ~15/second during normal playback, we throttle redraws to 1/s
-                           value = math.floor(value)
+                           value = math.max(0, math.floor(value))
                            if value == time_pos_coarse then return end
                            time_pos_coarse = value
                            redraw_elapsed()
                            redraw_times()
+                           redraw_track_text()
                        end,
-        ["duration"] = function() redraw_chapters() redraw_elapsed() end,
+        ["duration"] = function()
+            redraw_chapters()
+            redraw_elapsed()
+            redraw_times()
+            redraw_track_text()
+        end,
         ["volume"] = function(val)
                          -- timing dependent, but probably ok
                          if not ignore_volume_change_once then volume_before_scrub = nil end
@@ -1106,7 +1267,7 @@ do
 
     local cursor_visible = false
     this.mouse_move = function(mx, my)
-        if left_mouse_button_held then
+        if can_scrub and left_mouse_button_held then
             scrub_start()
         end
         if not properties["path"] then return end
@@ -1124,6 +1285,7 @@ do
             redraw_times()
             cursor_visible = false
         end
+        redraw_track_text()
     end
 
     this.idle = function() end
@@ -1201,23 +1363,31 @@ do
         local is_pause = properties["pause"]
         local is_play = not is_pause
         local is_mute = properties["mute"]
-        local is_speakers = properties["audio-client-name"] == 'mmp-speakers'
-        local is_headphones = properties["audio-client-name"] == 'mmp-headphones'
+        local is_speakers = properties["audio-device"] == 'pulse/speakers'
+        local is_headphones = properties["audio-device"] == 'pulse/headphones'
         local current_volume = properties["volume"] / 100
 
-        draw_button(backwards, -border, white, hovered_button == backwards and 0.15)
-        draw_button(forwards, -border, white, hovered_button == forwards and 0.15)
-        draw_button(play, -border, is_play and blue or white, hovered_button == play and 0.15)
-        draw_button(pause, -border, is_pause and yellow or white, hovered_button == pause and 0.15)
+        local def = player_opts.controls_default_color
+        local tf = player_opts.controls_hover_tint_factor
+        draw_button(backwards, -border, def, hovered_button == backwards and tf)
+        draw_button(forwards, -border, def, hovered_button == forwards and tf)
+        draw_button(play, -border, is_play and player_opts.controls_play_active_color or def,
+            hovered_button == play and tf)
+        draw_button(pause, -border, is_pause and player_opts.controls_pause_active_color or def,
+            hovered_button == pause and tf)
 
-        draw_button(speakers, -border, is_speakers and white or gray, hovered_button == speakers and 0.15)
-        draw_button(headphones, -border, is_headphones and white or gray, hovered_button == headphones and 0.15)
+        draw_button(speakers, -border, is_speakers and player_opts.controls_output_active_color or def,
+            hovered_button == speakers and tf)
+        draw_button(headphones, -border, is_headphones and player_opts.controls_output_active_color or def,
+            hovered_button == headphones and tf)
 
-        draw_button(mute, -border, is_mute and red or white, hovered_button == mute and 0.15)
+        draw_button(mute, -border, is_mute and player_opts.controls_mute_active_color or def,
+            hovered_button == mute and tf)
 
         local v = volume
-        draw_button({v[1], v[2], current_volume * v[3], v[4]}, -border, white, hovered_button == volume and 0.15)
-        draw_button({v[1] + current_volume * v[3], v[2], (1 - current_volume) * v[3], v[4]}, -border, gray, hovered_button == volume and 0.15)
+        draw_button({v[1], v[2], current_volume * v[3], v[4]}, -border, def, hovered_button == volume and tf)
+        draw_button({v[1] + current_volume * v[3], v[2], (1 - current_volume) * v[3], v[4]}, -border,
+            player_opts.controls_volume_inactive_color, hovered_button == volume and tf)
 
         local draw_icon = function(b, percent_margin, icon)
             a:new_event()
@@ -1325,9 +1495,9 @@ do
         elseif button == forwards then
             send_to_server({"add", "chapter", 1})
         elseif button == speakers then
-            send_to_server({"set", "audio-client-name", "mmp-speakers"})
+            send_to_server({"set", "audio-device", "pulse/speakers"})
         elseif button == headphones then
-            send_to_server({"set", "audio-client-name", "mmp-headphones"})
+            send_to_server({"set", "audio-device", "pulse/headphones"})
         elseif button == mute then
             send_to_server({"cycle", "mute"})
         end
@@ -1336,8 +1506,8 @@ do
     local bindings = {
         {"MBTN_LEFT", press_button, {complex=true, repeatable=false}},
         {"m", function() send_to_server({"cycle", "mute"}) end, {}},
-        {"s", function() send_to_server({"set", "audio-client-name", "mmp-speakers"}) end, {}},
-        {"h", function() send_to_server({"set", "audio-client-name", "mmp-headphones"}) end, {}},
+        {"s", function() send_to_server({"set", "audio-device", "pulse/speakers"}) end, {}},
+        {"h", function() send_to_server({"set", "audio-device", "pulse/headphones"}) end, {}},
         {"RIGHT", function() send_to_server({"add", "chapter", 1}) end, {}},
         {"LEFT", function() send_to_server({"add", "chapter", -1}) end, {}},
         {"UP", function() send_to_server({"add", "volume", 5}) end, {repeatable=true}},
@@ -1391,7 +1561,7 @@ do
         ["pause"] = redraw_buttons,
         ["mute"] = redraw_buttons,
         ["volume"] = redraw_buttons,
-        ["audio-client-name"] = redraw_buttons,
+        ["audio-device"] = redraw_buttons,
     }
 
     this.mouse_move = function(mx, my)
@@ -1458,7 +1628,7 @@ do
     local function autoscroll()
         if not time_pos_coarse or time_pos_coarse == -1 then return end
         -- don't autoscroll during [0, grace_period] and [end - grace_period, end]
-        local grace_period = math.max(track_length / 15, 20)
+        local grace_period = math.max(track_length / 15, player_opts.lyrics_min_grace_period)
         local pos = time_pos_coarse - track_start
         if pos < grace_period then
             normalized = 0
@@ -1471,33 +1641,44 @@ do
         redraw_lyrics()
     end
 
-    local function fetch_lyrics()
-        offset = 0
-        lyrics = {}
+    local function current_lyrics_filepath()
         local chapters = properties["chapter-list"]
         local chap = properties["chapter"]
         local duration = properties["duration"]
         local _, album = album_from_path(properties["path"])
         if #chapters == 0 or not chap or not duration or not album then
-            redraw_lyrics()
-            return
+            return nil
         end
         chap = math.max(chap + 1, 1)
-        track_start = chapters[chap].time
+        local ts = chapters[chap].time
+        local tl
         if chap == #chapters then
-            track_length = duration - chapters[chap].time
+            tl = duration - chapters[chap].time
         else
-            track_length = chapters[chap + 1].time - chapters[chap].time
+            tl = chapters[chap + 1].time - chapters[chap].time
         end
         local title = string.match(chapters[chap].title, ".*/(%d+ .*)%..-")
-        local path = string.format("%s/%s - %s/%s.lyr",
+        local lyrics_path = string.format("%s/%s - %s/%s.lyr",
             g_lyrics_dir,
             album.artist,
             album.album,
             title)
+        return lyrics_path, ts, tl
+    end
+
+    local function fetch_lyrics()
+        offset = 0
+        lyrics = {}
+        local path, ts, tl = current_lyrics_filepath()
+        if not path then
+            redraw_lyrics()
+            return
+        end
+        track_start = ts
+        track_length = tl
         local f = io.open(path, "r")
         if not f then
-            msg.warn("Cannot open lyrics file " .. path)
+            msg.warn("Cannot find lyrics file")
             return
         end
         lyrics[1] = ''
@@ -1522,20 +1703,37 @@ do
         redraw_lyrics()
     end
 
+    local open_editor = function()
+        local lyrics_path, _, _ = current_lyrics_filepath()
+        mp.command_native({ name = "subprocess", playback_only = false, detach = true, args = {"foot", "--", "kak", "--", lyrics_path }})
+    end
+
+    local set_coarse_time_pos = function()
+        local value = math.max(0, properties["time-pos"])
+        value = value - (value % 0.2)
+        if value == time_pos_coarse then return end
+        time_pos_coarse = value
+        if autoscrolling then
+           autoscroll()
+        end
+    end
+
     local bindings = {
         {"a", function() autoscrolling = true autoscroll() end, {}},
-        {"UP", function() scroll(-25) end, {repeatable=true}},
-        {"DOWN", function() scroll(25) end, {repeatable=true}},
-        {"WHEEL_UP", function() scroll(-15) end, {repeatable=true}},
-        {"WHEEL_DOWN", function() scroll(15) end, {repeatable=true}},
+        {"e", function() open_editor() end, {}},
+        {"r", function() fetch_lyrics() end, {}},
+        {"UP", function() scroll(-10 * player_opts.lyrics_arrows_multiplier) end, {repeatable=true}},
+        {"DOWN", function() scroll(10 * player_opts.lyrics_arrows_multiplier) end, {repeatable=true}},
+        {"WHEEL_UP", function() scroll(-10 * player_opts.lyrics_scroll_multiplier) end, {repeatable=true}},
+        {"WHEEL_DOWN", function() scroll(10 * player_opts.lyrics_scroll_multiplier) end, {repeatable=true}},
     }
 
     this.set_active = function(active_now)
         active = active_now
         ass_text.background = get_background(position, size, focus)
         if active then
+            set_coarse_time_pos()
             fetch_lyrics()
-            autoscrolling = true
         else
             clear_lyrics()
         end
@@ -1575,14 +1773,7 @@ do
     this.prop_changed = {
         ["path"] = function(path) if path == '' then clear_lyrics() end end,
         ["chapter"] = function() fetch_lyrics() end,
-        ["time-pos"] = function(value)
-                           value = value - (value % 0.2)
-                           if value == time_pos_coarse then return end
-                           time_pos_coarse = value
-                           if autoscrolling then
-                               autoscroll()
-                           end
-                       end,
+        ["time-pos"] = function(value) set_coarse_time_pos() end,
     }
     this.mouse_move = function(mx, my) end
 
@@ -1639,28 +1830,30 @@ local focused_component = nil
 
 function layout_geometry(ww, wh)
     local ww, wh = mp.get_osd_size()
-    local x = global_offset
-    local y = global_offset
-    local w = ww - 2 * global_offset
-    local h = wh - 2 * global_offset
+    local cs = player_opts.component_spacing
+
+    local x = cs
+    local y = cs
+    local w = ww - 2 * cs
+    local h = wh - 2 * cs
 
     if active_layout == "BROWSE" then
         controls_component.set_geometry(x, y + h - 180, 180, 180)
-        local tw = w - 180 - global_offset
-        local tx = x + 180 + global_offset
+        local tw = w - 180 - cs
+        local tx = x + 180 + cs
         now_playing_component.set_geometry(tx, y + h - 180, tw, 180)
-        h = h - 180 - global_offset
+        h = h - 180 - cs
 
         queue_component.set_geometry(x + w - 200, y, 200, h)
-        w = w - 200 - global_offset
+        w = w - 200 - cs
         albums_component.set_geometry(x, y, w, h)
     elseif active_layout == "PLAYING" then
         now_playing_component.set_geometry(x, y, w, 180)
-        y = y + 180 + global_offset
-        h = h - (180 + global_offset)
+        y = y + 180 + cs
+        h = h - (180 + cs)
         controls_component.set_geometry(x, y, 180, 180)
-        x = x + 180 + global_offset
-        w = w - 180 - global_offset
+        x = x + 180 + cs
+        w = w - 180 - cs
         local lyrics_w = math.min(w, 600)
         lyrics_component.set_geometry(x + (w - lyrics_w) / 2, y, lyrics_w, h)
     elseif active_layout == "PLAYING_SMALL" then
@@ -1799,7 +1992,7 @@ mp.register_idle(function()
                 layout_geometry()
             else
                 started = true
-                set_active_layout(opts.default_layout)
+                set_active_layout(player_opts.default_layout)
             end
         end
     end
@@ -1833,15 +2026,12 @@ end)
 
 mp.commandv("enable-section", "music-player")
 
-local start_time = mp.get_time()
-local start_listener
-start_listener = mp.add_periodic_timer(0.05, function()
-    local time = mp.get_time()
-    if time - start_time > 3 then
-        start_listener:kill()
-        return
-    end
-    mp.commandv("script_message-to", "music_client", "music-client-start", opts.socket, mp.get_script_name())
+local pid = tostring(utils.getpid())
+
+mp.register_event("shutdown", function()
+    send_to_server({"script-message", "stop", pid})
+    client:close()
 end)
+send_to_server({"script-message", "start", pid, mp.get_script_name()})
 
 collectgarbage()

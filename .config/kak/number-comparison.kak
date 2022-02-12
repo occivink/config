@@ -6,11 +6,12 @@ Switches:
     -no-bounds-check: The surrounding with lookarounds is disabled
     -no-negative: The matching of negative numbers is disabled
     -no-decimal: The matching of decimal numbers is disabled
+    -base <base>: The input number is interpreted in base <base>, and the resulting regex will match numbers in the same base
     -register <reg>: The register <reg> (instead of /) will be used to store the result
     -prepend <pre>: The resulting regex is prefixed with <pre>
     -append <post>: The resulting regex is suffixed with <post>
 " -shell-script-candidates %{
-    printf '%s\n' -register -no-bounds-check -no-negative -no-decimal -prepend -append
+    printf '%s\n' -no-bounds-check -no-negative -no-decimal -base -register -prepend -append
 } %{
     eval %sh{
         NOAUTOCOMPARE=''
@@ -18,8 +19,6 @@ Switches:
 
         arg_num=0
         register='/'
-        op=''
-        number=''
         boundaries='y'
         prefix=''
         suffix=''
@@ -35,9 +34,20 @@ Switches:
                         echo 'fail "Missing argument to -register"'
                         exit 1
                     fi
-                    # the set-register will later check that it's a valid one
                     arg_num=$((arg_num + 1))
+                    # the set-register will later check that it's a valid one
                     register=$1
+                    shift
+                elif [ "$arg" = '-base' ]; then
+                    if [ $# -eq 0 ]; then
+                        echo 'fail "Missing argument to -base"'
+                        exit 1
+                    fi
+                    arg_num=$((arg_num + 1))
+                    if ! parse_base "$1"; then
+                        printf "fail \"Invalid base '%%arg{%s}'\"" "$arg_num"
+                        exit 1
+                    fi
                     shift
                 elif [ "$arg" = '-no-bounds-check' ]; then
                     boundaries='n'
@@ -97,15 +107,17 @@ Switches:
         # the generated regex shouldn't contain any ' ... I think
         printf "set-register %s '" "$register"
         printf '%s' "$prefix"
+        any_digit_no_bracket=${any_digit%]}
+        any_digit_no_bracket=${any_digit_no_bracket#[}
         if [ "$boundaries" = y ]; then
-            printf '(?<![0-9'
+            printf '(?<![%s' "$any_digit_no_bracket"
             [ "$with_negative" = 'y' ] && printf '-'
             [ "$with_decimal" = 'y' ] && printf '.'
             printf '])'
         fi
         compare "$op" "$number"
         if [ "$boundaries" = y ]; then
-            printf '(?![0-9'
+            printf '(?![%s' "$any_digit_no_bracket"
             [ "$with_decimal" = 'y' ] && printf '.'
             printf '])'
         fi
