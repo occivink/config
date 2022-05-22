@@ -144,14 +144,11 @@ source-here-or-in   sort-selections.kak        "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
+source-here-or-in   scrollbar.kak              "%val{config}"
 
 try %{ require-module x11 }
 
-#try %{
-#    addhl global/ scrollbar
-#    addhl global/scrollbar/ scrollbar-indicator blue,default gdb_location_flag
-#    addhl global/scrollbar/ scrollbar-indicator red,default gdb_breakpoints_flags
-#}
+hook global WinCreate .* %{ scrollbar-enable }
 
 set global tabstop 4
 set global indentwidth 4
@@ -267,6 +264,7 @@ map global normal <c-f> ': filetree-switch-or-start<ret>'
 map global normal <c-d> ': buffer-switcher<ret>'
 map global normal <c-u> ''
 
+define-command mkdir %{ nop %sh{ mkdir -p "$(dirname "$kak_buffile")" } }
 
 face global PrimaryCursorEol black,white+fg
 face global SecondaryCursorEol black,white+fg

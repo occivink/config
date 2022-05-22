@@ -3,7 +3,7 @@ sort-selections [-reverse] [<register>]: sort the selections
 Sorting is done numerically if possible, otherwise lexicographically
 If <register> is specified, the values of the register will be sorted instead,
 and the resulting order then applied to the selections.
-'%{
+' %{
     try %{
         exec -draft '<a-space>'
     } catch %{
@@ -32,11 +32,10 @@ and the resulting order then applied to the selections.
 
 define-command reverse-selections -docstring '
 reverse-selections: reverses the order of all selections
-'%{ sort-selections -reverse '#' }
+' %{ sort-selections -reverse '#' }
 
 define-command sort-selections-impl -hidden -params .. %{
     eval -save-regs '"' %{
-        reg dquote %val{selections} # in case the %sh fails, not great
         eval %sh{
 perl - "$@" <<'EOF'
 use strict;
