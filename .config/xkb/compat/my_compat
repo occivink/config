@@ -1,0 +1,59 @@
+xkb_compatibility "my_compat" {
+
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret.locking= False;
+
+    interpret Any+AnyOf(all) {
+        action= SetMods(modifiers=modMapMods);
+    };
+
+    interpret XF86Switch_VT_1+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=1,!same);
+    };
+    interpret XF86Switch_VT_2+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=2,!same);
+    };
+    interpret XF86Switch_VT_3+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=3,!same);
+    };
+    interpret XF86Switch_VT_4+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=4,!same);
+    };
+    interpret XF86Switch_VT_5+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=5,!same);
+    };
+    interpret XF86Switch_VT_6+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=6,!same);
+    };
+    interpret XF86Switch_VT_7+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=7,!same);
+    };
+    interpret XF86Switch_VT_8+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=8,!same);
+    };
+    interpret XF86Switch_VT_9+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=9,!same);
+    };
+    interpret XF86Switch_VT_10+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=10,!same);
+    };
+    interpret XF86Switch_VT_11+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=11,!same);
+    };
+    interpret XF86Switch_VT_12+AnyOfOrNone(all) {
+        repeat= True;
+        action= SwitchScreen(screen=12,!same);
+    };
+};

@@ -1,0 +1,64 @@
+xkb_types "my_types" {
+
+    type "ONE_LEVEL" {
+        level_name[Level1]= "";
+    };
+    type "TWO_LEVEL" {
+        level_name[Level1]= "";
+    };
+    type "ALPHABETIC" {
+        level_name[Level1]= "";
+    };
+    type "KEYPAD" {
+        level_name[Level1]= "";
+    };
+    type "SHIFT+ALT" {
+        level_name[Level1]= "";
+    };
+    type "PC_SUPER_LEVEL2" {
+        level_name[Level1]= "";
+    };
+    type "PC_CONTROL_LEVEL2" {
+        level_name[Level1]= "";
+    };
+    type "PC_ALT_LEVEL2" {
+        level_name[Level1]= "";
+    };
+    type "CTRL+ALT" {
+        modifiers= Control+Mod1;
+        map[Control+Mod1]= Level2;
+        level_name[Level1]= "";
+        level_name[Level2]= "";
+    };
+    type "LOCAL_EIGHT_LEVEL" {
+        level_name[Level1]= "";
+    };
+    type "THREE_LEVEL" {
+        level_name[Level1]= "";
+    };
+    type "EIGHT_LEVEL" {
+        level_name[Level1]= "";
+    };
+    type "EIGHT_LEVEL_ALPHABETIC" {
+        level_name[Level1]= "";
+    };
+    type "EIGHT_LEVEL_LEVEL_FIVE_LOCK" {
+        level_name[Level1]= "";
+    };
+    type "EIGHT_LEVEL_ALPHABETIC_LEVEL_FIVE_LOCK" {
+        level_name[Level1]= "";
+    };
+    type "EIGHT_LEVEL_SEMIALPHABETIC" {
+        level_name[Level1]= "";
+    };
+    type "FOUR_LEVEL" {
+        modifiers= Shift+Mod3+Mod5;
+        map[Shift]= Level2;
+        map[Mod3]= Level3;
+        map[Mod5]= Level4;
+        level_name[Level1]= "a";
+        level_name[Level2]= "b";
+        level_name[Level3]= "c";
+        level_name[Level4]= "d";
+    };
+};

@@ -1,0 +1,11 @@
+! model         = keycodes
+  *             = my_keycodes
+
+! layout        = symbols
+  *             = my_symbols
+
+! model         = types
+  *             = my_types
+
+! model         = compat
+  *             = my_compat
