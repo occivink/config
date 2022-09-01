@@ -210,6 +210,9 @@ map global normal c <a-c>
 map global normal <a-d> ''
 map global normal <a-c> ''
 
+map global normal <space> ','
+map global normal ',' <space>
+
 #swap ; and :
 map global normal ';' ':'
 map global normal ':' ';'

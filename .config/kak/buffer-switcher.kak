@@ -11,7 +11,7 @@ define-command buffer-switcher %{
             reg dquote %val{buflist}
 
             edit -scratch *buffer-switcher*
-            exec '<a-P>)<a-space>i<ret><esc>'
+            exec '<a-P>)<a-,>i<ret><esc>'
             exec '%<a-s>'
             # remove *debug* buffer
             exec -draft '<a-k>^\*debug\*$<ret>d'
@@ -33,7 +33,7 @@ define-command buffer-switcher %{
 define-command -hidden buffer-switcher-switch %{
     try buffer-switcher-delete-buffers
     try buffer-switcher-sort-buffers
-    exec '<space>;<a-x>H'
+    exec ',;xH'
     buffer %val{selection}
     try %{ delete-buffer *buffer-switcher* }
 }

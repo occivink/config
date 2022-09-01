@@ -22,7 +22,7 @@ local player_opts = {
     background_opacity = 'BB',
     background_color_focus = 'AAAAAA',
     background_color_idle = '666666',
-    background_border_size = '3',
+    background_border_size = 3,
     background_border_color = '000000',
     background_roundness = 2,
 
@@ -162,7 +162,12 @@ local function get_background(position, size, focused)
     ))
     a:pos(0, 0)
     a:draw_start()
-    a:round_rect_cw(position[1], position[2], position[1] + size[1], position[2] + size[2], player_opts.background_roundness)
+    if player_opts == 0 then
+        print("wowowo!")
+        a:rect_cw(position[1], position[2], position[1] + size[1], position[2] + size[2])
+    else
+        a:round_rect_cw(position[1], position[2], position[1] + size[1], position[2] + size[2], player_opts.background_roundness)
+    end
     return a.text
 end
 
@@ -1822,6 +1827,7 @@ local layouts = {
         controls_component,
     },
     PLAYING_SMALL = {
+        controls_component,
         now_playing_component,
     },
 }
@@ -1857,6 +1863,9 @@ function layout_geometry(ww, wh)
         local lyrics_w = math.min(w, 600)
         lyrics_component.set_geometry(x + (w - lyrics_w) / 2, y, lyrics_w, h)
     elseif active_layout == "PLAYING_SMALL" then
+        controls_component.set_geometry(x, y, h, h)
+        x = x + h + cs
+        w = w - h - cs
         now_playing_component.set_geometry(x, y, w, h)
     elseif active_layout == "EMPTY" then
     else
@@ -2027,6 +2036,8 @@ end)
 mp.commandv("enable-section", "music-player")
 
 local pid = tostring(utils.getpid())
+
+math.randomseed(os.time())
 
 mp.register_event("shutdown", function()
     send_to_server({"script-message", "stop", pid})
