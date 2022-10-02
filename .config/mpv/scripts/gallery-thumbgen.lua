@@ -1,3 +1,14 @@
+--[[
+mpv-gallery-view | https://github.com/occivink/mpv-gallery-view
+
+This mpv script implements a worker for generating gallery thumbnails.
+It is meant to be used by other scripts.
+Multiple copies of this script can be loaded by mpv.
+
+File placement: inside scripts directory
+Settings: script-opts/gallery_worker.conf
+]]
+
 local utils = require 'mp.utils'
 local msg = require 'mp.msg'
 
@@ -133,7 +144,7 @@ function thumbnail_command(input_path, width, height, take_thumbnail_at, output_
         input_path = ytdl_thumbnail_url(input_path)
     end
 
-    if input_path:find("^archive://") or input_path:find("^edl://") or input_path:find("%.edl$") then
+    if input_path:find("^archive://") or input_path:find("^edl://") then
         with_mpv = true
     end
 

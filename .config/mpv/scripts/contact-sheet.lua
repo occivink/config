@@ -1,13 +1,19 @@
+--[[
+mpv-gallery-view | https://github.com/occivink/mpv-gallery-view
+
+This mpv script generates and displays a contact sheet of a video.
+
+File placement: scripts/contact-sheet.lua
+Settings: script-opts/contact_sheet.conf
+Requires: script-modules/gallery-module.lua
+Default keybinding: c script-binding contact-sheet-toggle
+]]
+
 local utils = require 'mp.utils'
 local msg = require 'mp.msg'
 local options = require 'mp.options'
 
-local lib = mp.find_config_file('scripts/lib.disable')
-if not lib then
-    return
-end
--- lib can be nil if the folder does not exist or we're in --no-config mode
-package.path = package.path .. ';' .. lib .. '/?.lua;'
+package.path = mp.command_native({ "expand-path", "~~/script-modules/?.lua;" }) .. package.path
 require 'gallery'
 
 ON_WINDOWS = (package.config:sub(1,1) ~= "/")
@@ -39,8 +45,9 @@ gallery.config.align_text = false
 gallery.config.always_show_placeholders = false
 
 opts = {
-    thumbs_dir = ON_WINDOWS and "%APPDATA%\\mpv\\gallery-thumbs-dir" or "~/.mpv_thumbs_dir/",
+    thumbs_dir = ON_WINDOWS and "%APPDATA%\\mpv\\gallery-thumbs-dir" or "~/.cache/thumbnails/mpv-gallery/",
     generate_thumbnails_with_mpv = ON_WINDOWS,
+    mkdir_thumbs = true,
 
     --gallery_position = "{30, 30}",
     --gallery_size = "{tw + 4*sw, wh - 2*gy }",
@@ -117,7 +124,11 @@ function reload_config()
     end
     local res = utils.file_info(thumbs_dir)
     if not res or not res.is_dir then
-        msg.error(string.format("Thumbnail directory \"%s\" does not exist", thumbs_dir))
+        if opts.mkdir_thumbs then
+            utils.subprocess({ args = { "mkdir", thumbs_dir } })
+        else
+            msg.error(string.format("Thumbnail directory \"%s\" does not exist", thumbs_dir))
+        end
     end
 
     compute_geometry = get_geometry_function()

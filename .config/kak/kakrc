@@ -174,7 +174,7 @@ def -hidden backspace-with-indentwidth %{
         } catch %{
             # if there is nothing but horizontal whitespace between character to the left and beginning of line,
             # delete in increments of indentwidth
-            exec -draft "hGh<a-k>\A[ \t]+\z<ret>s(\t| {1,%opt{indentwidth}})<ret><space>d"
+            exec -draft "hGh<a-k>\A[ \t]+\z<ret>s(\t| {1,%opt{indentwidth}})<ret>,d"
         } catch %{
             # regular case, delete previous character
             exec -draft 'hd'
@@ -212,6 +212,8 @@ map global normal <a-c> ''
 
 map global normal <space> ','
 map global normal ',' <space>
+map global normal <a-space> '<a-,>'
+map global normal '<a-,>' <a-space>
 
 #swap ; and :
 map global normal ';' ':'
@@ -249,8 +251,8 @@ map global insert <a-F> '<esc>: phantom-selection-iterate-prev<ret>i'
 # move line up/down
 # not very mnemonic but whatever
 
-def -hidden move-lines-down %{ exec -draft '<a-x><a-_><a-:>Z;ezj<a-x>dzP' }
-def -hidden move-lines-up %{ exec -draft '<a-x><a-_><a-:><a-;>Z;bzk<a-x>dzp' }
+def -hidden move-lines-down %{ exec -draft 'x<a-_><a-:>Z;ezjxdzP' }
+def -hidden move-lines-up %{ exec -draft 'x<a-_><a-:><a-;>Z;bzkxdzp' }
 
 map global normal t     ': move-lines-down<ret>'
 map global normal <a-t> ': move-lines-up<ret>'
@@ -370,8 +372,8 @@ hook global GlobalSetOption gdb_session_started=false %{
     unmap global normal <F5>    ': gdb-continue<ret>'
 }
 
-def -hidden duplicate-before %{ exec 'y<a-:><a-;>i<space><esc>hR' }
-def -hidden duplicate-after %{ exec 'y<a-:>li<space><esc>hR' }
+def -hidden duplicate-before %{ exec 'y<a-:><a-;>i,<esc>hR' }
+def -hidden duplicate-after %{ exec 'y<a-:>li,<esc>hR' }
 
 try %{
     eval %sh{ [ "$XDG_SESSION_TYPE" != wayland ] && printf fail }
@@ -399,3 +401,6 @@ map -docstring "++"                   -- global user +     'a+1<esc>: math<ret>'
 map -docstring "--"                   -- global user -     'a-1<esc>: math<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }
+
+def send-copy-register -params 1 %{
+}

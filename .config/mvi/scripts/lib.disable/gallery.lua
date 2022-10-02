@@ -1,1 +1,0 @@
-../../../mpv/scripts/lib.disable/gallery.lua

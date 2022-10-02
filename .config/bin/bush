@@ -1,18 +1,18 @@
 #!/bin/sh
 
-edit=0
-run=0
-delete=0
+edit=1
+run=1
+delete=1
 
 while [ $# -gt 0 ]; do
-    if [ "$1" = '-e' ] || [ "$1" = '--edit' ]; then
-        edit=1
-    elif [ "$1" = '-r' ] || [ "$1" = '--run' ]; then
-        run=1
-    elif [ "$1" = '-d' ] || [ "$1" = '--delete' ]; then
-        delete=1
+    if [ "$1" = '--no-edit' ]; then
+        edit=0
+    elif [ "$1" = '--no-run' ]; then
+        run=0
+    elif [ "$1" = '--no-delete' ]; then
+        delete=0
     elif [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
-        printf 'bush [--edit] [--run] [--delete] FILES...\n'
+        printf 'bush [--no-edit] [--no-run] [--no-delete] FILES...\n'
         exit
     else
         [ "$1" = '--' ] && shift
