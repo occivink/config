@@ -13,7 +13,9 @@ set pagination off
 
 set auto-load safe-path /
 
-set index-cache on
+set index-cache enabled on
+
+set debuginfod enabled on
 
 skip -gfi /usr/include/c++/*
 skip -gfi /usr/include/c++/*/*
