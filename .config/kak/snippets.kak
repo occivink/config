@@ -1,4 +1,4 @@
-decl -hidden regex snippets_triggers_regex "\A\z" # doing <a-k>\A\z<ret> will always fail
+declare-option -hidden regex snippets_triggers_regex "\A\z" # doing <a-k>\A\z<ret> will always fail
 
 hook global WinSetOption 'snippets=$' %{
     set window snippets_triggers_regex "\A\z"
@@ -26,7 +26,7 @@ hook global WinSetOption 'snippets=.+$' %{
     }
 }
 
-def snippets-expand-trigger -params ..1 %{
+define-command snippets-expand-trigger -params ..1 %{
     eval -save-regs '/snc' %{
         # -draft so that we don't modify anything in case of failure
         eval -draft %{
@@ -37,11 +37,11 @@ def snippets-expand-trigger -params ..1 %{
             #
             # try %{
             #   reg / "\Atrig1\z"
-            #   exec -draft <space><a-k><ret>d
+            #   exec -draft <,><a-k><ret>d
             #   reg c "snipcommand1"
             # } catch %{
             #   reg / "\Atrig2\z"
-            #   exec -draft <space><a-k><ret>d
+            #   exec -draft <,><a-k><ret>d
             #   reg c "snipcommand2"
             # } catch %{
             #   ..
@@ -81,7 +81,7 @@ def snippets-expand-trigger -params ..1 %{
                     # in the arbitrary user input (snippet trigger and snippet name)
                     quadrupleupsinglequotes "$2"
                     printf "\\\z''\n"
-                    printf "exec -draft <space><a-k><ret>d\n"
+                    printf "exec -draft <,><a-k><ret>d\n"
                     printf "reg n ''"
                     quadrupleupsinglequotes "$1"
                     printf "''\n"
@@ -120,11 +120,11 @@ hook global WinSetOption 'snippets_auto_expand=true$' %{
     }
 }
 
-decl str-list snippets
+declare-option str-list snippets
 # this one must be declared after the hook, otherwise it might not be enabled right away
-decl bool snippets_auto_expand true
+declare-option bool snippets_auto_expand true
 
-def snippets-impl -hidden -params 1.. %{
+define-command snippets-impl -hidden -params 1.. %{
     eval %sh{
         use=$1
         shift 1
@@ -141,7 +141,7 @@ def snippets-impl -hidden -params 1.. %{
     }
 }
 
-def snippets -params 1 -shell-script-candidates %{
+define-command snippets -params 1 -shell-script-candidates %{
     eval set -- "$kak_quoted_opt_snippets"
     if [ $(($#%3)) -ne 0 ]; then exit; fi
     while [ $# -ne 0 ]; do
@@ -152,7 +152,7 @@ def snippets -params 1 -shell-script-candidates %{
     snippets-impl %arg{1} %opt{snippets}
 }
 
-def snippets-menu-impl -hidden -params .. %{
+define-command snippets-menu-impl -hidden -params .. %{
     eval %sh{
         if [ $(($#%3)) -ne 0 ]; then exit; fi
         printf 'menu'
@@ -166,11 +166,11 @@ def snippets-menu-impl -hidden -params .. %{
     }
 }
 
-def snippets-menu %{
+define-command snippets-menu %{
     snippets-menu-impl %opt{snippets}
 }
 
-def snippets-info %{
+define-command snippets-info %{
     info -title Snippets %sh{
         eval set -- "$kak_quoted_opt_snippets"
         if [ $(($#%3)) -ne 0 ]; then printf "Invalid 'snippets' value"; exit; fi
@@ -198,12 +198,12 @@ def snippets-info %{
     }
 }
 
-def snippets-insert -hidden -params 1 %<
+define-command snippets-insert -hidden -params 1 %<
     eval -save-regs 's' %<
         eval -draft -save-regs '"' %<
             # paste the snippet
             reg dquote %arg{1}
-            exec <a-P>
+            exec P
 
             # replace leading tabs with the appropriate indent
             try %<
@@ -220,8 +220,8 @@ def snippets-insert -hidden -params 1 %<
             # align everything with the current line
             eval -draft -itersel -save-regs '"' %<
                 try %<
-                    exec -draft -save-regs '/' '<a-s>)<space><a-x>s^\s+<ret>y'
-                    exec -draft '<a-s>)<a-space>P'
+                    exec -draft -save-regs '/' '<a-s>),xs^\s+<ret>y'
+                    exec -draft '<a-s>)<a-,>P'
                 >
             >
 
@@ -233,6 +233,7 @@ def snippets-insert -hidden -params 1 %<
                 # nonsense test text to check the regex
                 # qwldqwld {qldwlqwld} qlwdl$qwld {qwdlqwld}}qwdlqwldl}
                 # lqlwdl$qwldlqwdl$qwdlqwld {qwd$$lqwld} $qwdlqwld$
+                # ${asd.as.d.} lqwdlqwld $$${as.dqdqw}
 
                 # remove one $ from all $$, and leading $ from ${..}
                 exec -draft '<a-:><a-;>;d'

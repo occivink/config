@@ -1,0 +1,96 @@
+xkb_symbols "my_symbols" {
+
+    name[group1]="main";
+    key.type = "FOUR_LEVEL";
+
+    key <0>             { [               0 ] };
+    key <1>             { [               1 ] };
+    key <2>             { [               2 ] };
+    key <3>             { [               3 ] };
+    key <4>             { [               4 ] };
+    key <5>             { [               5 ] };
+    key <6>             { [               6 ] };
+    key <7>             { [               7 ] };
+    key <8>             { [               8 ] };
+    key <9>             { [               9 ] };
+
+    key <Q>             { [               q,               Q, w, e ] };
+    key <W>             { [               w,               W ] };
+    key <E>             { [               e,               E ] };
+    key <R>             { [               r,               R ] };
+    key <T>             { [               t,               T ] };
+    key <Y>             { [               y,               Y ] };
+    key <U>             { [               u,               U ] };
+    key <I>             { [               i,               I ] };
+    key <O>             { [               o,               O ] };
+    key <P>             { [               p,               P ] };
+
+    key <A>             { [               a,               A ] };
+    key <S>             { [               s,               S ] };
+    key <D>             { [               d,               D ] };
+    key <F>             { [               f,               F ] };
+    key <G>             { [               g,               G ] };
+    key <H>             { [               h,               H ] };
+    key <J>             { [               j,               J ] };
+    key <K>             { [               k,               K ] };
+    key <L>             { [               l,               L ] };
+
+    key <Z>             { [               z,               Z ] };
+    key <X>             { [               x,               X ] };
+    key <C>             { [               c,               C ] };
+    key <V>             { [               v,               V ] };
+    key <B>             { [               b,               B ] };
+    key <N>             { [               n,               N ] };
+    key <M>             { [               m,               M ] };
+
+    key <COMMA>         { [           comma,            comma ] };
+    key <PERIOD>        { [          period,         period ] };
+    key <SLASH>         { [           slash,        slash ] };
+    key <SEMICOLON>     { [       semicolon,           semicolon ] };
+
+    key <PAGE_UP>       { [           Prior, Home ] };
+    key <PAGE_DOWN>     { [            Next, End ] };
+
+    key <ENTER>         { type="ONE_LEVEL", symbols[Group1] = [          Return ] };
+    key <TAB>           { type="ONE_LEVEL", symbols[Group1] = [          Tab ] };
+    key <SPACE>         { type="ONE_LEVEL", symbols[Group1] = [           space ] };
+    key <ESCAPE>        { type="ONE_LEVEL", symbols[Group1] = [          Escape ] };
+
+    key <BACKSPACE>     { type="ONE_LEVEL", symbols[Group1] = [          BackSpace ] };
+    key <DELETE>        { type="ONE_LEVEL", symbols[Group1] = [          Delete ] };
+
+    key <CAPS>          { type="ONE_LEVEL", symbols[Group1] = [          Escape ] };
+
+    key <F01> { type= "CTRL+ALT", symbols[Group1]= [              F1, XF86Switch_VT_1 ] };
+    key <F02> { type= "CTRL+ALT", symbols[Group1]= [              F2, XF86Switch_VT_2 ] };
+    key <F03> { type= "CTRL+ALT", symbols[Group1]= [              F3, XF86Switch_VT_3 ] };
+    key <F04> { type= "CTRL+ALT", symbols[Group1]= [              F4, XF86Switch_VT_4 ] };
+    key <F05> { type= "CTRL+ALT", symbols[Group1]= [              F5, XF86Switch_VT_5 ] };
+    key <F06> { type= "CTRL+ALT", symbols[Group1]= [              F6, XF86Switch_VT_6 ] };
+    key <F07> { type= "CTRL+ALT", symbols[Group1]= [              F7, XF86Switch_VT_7 ] };
+    key <F08> { type= "CTRL+ALT", symbols[Group1]= [              F8, XF86Switch_VT_8 ] };
+    key <F09> { type= "CTRL+ALT", symbols[Group1]= [              F9, XF86Switch_VT_9 ] };
+    key <F10> { type= "CTRL+ALT", symbols[Group1]= [             F10, XF86Switch_VT_10 ] };
+    key <F11> { type= "CTRL+ALT", symbols[Group1]= [             F11, XF86Switch_VT_11 ] };
+    key <F12> { type= "CTRL+ALT", symbols[Group1]= [             F12, XF86Switch_VT_12 ] };
+
+    key <SHIFT_LEFT>    { type="ONE_LEVEL", symbols[Group1] = [         Shift_L ] };
+    key <SHIFT_RIGHT>   { type="ONE_LEVEL", symbols[Group1] = [         Shift_R ] };
+
+    key <CONTROL_LEFT>  { type="ONE_LEVEL", symbols[Group1] = [       Control_L ] };
+    key <CONTROL_RIGHT> { type="ONE_LEVEL", symbols[Group1] = [       Control_R ] };
+
+    key <ALT_LEFT>      { type="ONE_LEVEL", symbols[Group1] = [           Alt_L ] };
+    key <ALT_RIGHT>     { type="ONE_LEVEL", symbols[Group1] = [           Alt_R ] };
+
+    key <GUI_LEFT>      { type="ONE_LEVEL", symbols[Group1] = [         Super_L ] };
+    key <GUI_RIGHT>     { type="ONE_LEVEL", symbols[Group1] = [         Super_R ] };
+
+    modifier_map Shift { Shift_L };
+    modifier_map Mod1 { Alt_L, Alt_R };
+    modifier_map Control { Control_L, Control_R };
+    modifier_map Mod4 { Super_L };
+
+    modifier_map Mod3 { Shift_R };
+    modifier_map Mod5 { Super_R };
+};

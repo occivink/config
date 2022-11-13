@@ -6,9 +6,9 @@ declare-option str build_modeline_failure ""
 declare-option str build_modeline_success ""
 declare-option int build_clear_modeline_after 10
 declare-option int build_last_timestamp 0
+declare-option str build_shell_command "make"
 
 # but these are buffer-scoped
-declare-option str build_shell_command "make"
 declare-option str build_fifo
 declare-option int build_current_line 0
 declare-option regex build_error_pattern "^(?<file>[^\n]*?):(?<line>\d+):(?<column>\d+): (?<type>(fatal )?error):(?<error>[^\n]*?)"
@@ -44,13 +44,13 @@ All the optional arguments are forwarded to the specified command
     eval -try-client %opt{toolsclient} %{
         edit! -fifo %opt{build_fifo} -scroll *build*
 
-        hook -group build-trigger-user-hook BufClose .* %{
-            remove-hooks build-trigger-user-hook
-            trigger-user-hook build:finished
-        }
-        hook -group build-trigger-user-hook BufCloseFifo .* %{
-            remove-hooks build-trigger-user-hook
+        hook -group build-trigger-user-hook buffer BufClose .* %{
+            remove-hooks buffer build-trigger-user-hook
             trigger-user-hook build:interrupted
+        }
+        hook -group build-trigger-user-hook buffer BufCloseFifo .* %{
+            remove-hooks buffer build-trigger-user-hook
+            trigger-user-hook build:finished
         }
         hook -always -once buffer BufCloseFifo .* %{
             nop %sh{ rm -f "$kak_opt_build_fifo" }

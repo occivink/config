@@ -75,4 +75,3 @@ Create phantoms out of the current selections
         phantom-selection-store-and-highlight
     }
 }
-

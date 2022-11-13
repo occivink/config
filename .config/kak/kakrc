@@ -262,7 +262,7 @@ map global normal <a-T> ''
 
 map global normal <c-a> ': alt<ret>'
 map global normal <c-b> ': make<ret>'
-map global normal <c-v> ': eval -draft make<ret>'
+map global normal <c-v> ': eval -draft make ; echo "Build started" <ret>'
 map global normal <c-w> ': delete-buffer<ret>'
 map global normal <c-s> ': write<ret>'
 map global normal <c-n> ': edit -scratch<ret>'

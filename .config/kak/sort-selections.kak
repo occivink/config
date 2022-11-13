@@ -5,7 +5,7 @@ If <register> is specified, the values of the register will be sorted instead,
 and the resulting order then applied to the selections.
 ' %{
     try %{
-        exec -draft '<a-space>'
+        exec -draft '<a-space><esc><a-,><esc>'
     } catch %{
         fail 'Only one selection, cannot sort'
     }
@@ -34,13 +34,21 @@ define-command reverse-selections -docstring '
 reverse-selections: reverses the order of all selections
 ' %{ sort-selections -reverse '#' }
 
+define-command shuffle-selections -docstring '
+shuffle-selections: randomizes the order of all selections
+' %{
+    eval -save-regs '"' %{
+        eval reg dquote %sh{ echo "$kak_reg_hash" | tr ' ' '\n' | shuf | tr '\n' ' ' }
+        sort-selections '"'
+    }
+}
+
 define-command sort-selections-impl -hidden -params .. %{
     eval -save-regs '"' %{
         eval %sh{
 perl - "$@" <<'EOF'
 use strict;
 use warnings;
-use Text::ParseWords "shellwords";
 use Scalar::Util "looks_like_number";
 
 my $direction = shift;
@@ -48,6 +56,31 @@ my $how = shift;
 
 my $command_fifo_name = $ENV{"kak_command_fifo"};
 my $response_fifo_name = $ENV{"kak_response_fifo"};
+
+sub parse_shell_quoted {
+    my $str = shift;
+    my @res;
+    my $elem = "";
+    while (1) {
+        if ($str !~ m/\G'([\S\s]*?)'/gc) {
+            exit(1);
+        }
+        $elem .= $1;
+        if ($str =~ m/\G *$/gc) {
+            push(@res, $elem);
+            $elem = "";
+            last;
+        } elsif ($str =~ m/\G\\'/gc) {
+            $elem .= "'";
+        } elsif ($str =~ m/\G */gc) {
+            push(@res, $elem);
+            $elem = "";
+        } else {
+            exit(1);
+        }
+    }
+    return @res;
+}
 
 sub read_array {
     my $what = shift;
@@ -60,12 +93,12 @@ sub read_array {
     open (my $response_fifo, '<', $response_fifo_name);
     my $response_quoted = do { local $/; <$response_fifo> };
     close($response_fifo);
-    return shellwords($response_quoted);
+    return parse_shell_quoted($response_quoted);
 }
 
 sub all_numbers {
-    my @array = shift;
-    for my $val (@array) {
+    my $array_ref = shift;
+    for my $val (@$array_ref) {
         if (not looks_like_number($val)) {
             return 0;
         }
@@ -78,19 +111,19 @@ my @selections = read_array("%val{selections}");
 if ($how eq 'DIRECT') {
     my @sorted;
     if ($direction eq 'REVERSE') {
-        if (all_numbers(@selections)) {
+        if (all_numbers(\@selections)) {
             @sorted = sort { $b <=> $a; } @selections;
         } else {
             @sorted = sort { $b cmp $a; } @selections;
         }
     } else {
-        if (all_numbers(@selections)) {
+        if (all_numbers(\@selections)) {
             @sorted = sort { $a <=> $b; } @selections;
         } else {
             @sorted = sort { $a cmp $b; } @selections;
         }
     }
-    print("reg '\"'");
+    print("reg dquote");
     for my $sel (@sorted) {
         $sel =~ s/'/''/g;
         print(" '$sel'");
@@ -111,19 +144,19 @@ if ($how eq 'DIRECT') {
     }
     my @sorted;
     if ($direction eq 'REVERSE') {
-        if (all_numbers(@indices)) {
+        if (all_numbers(\@indices)) {
             @sorted = sort { @$b[0] <=> @$a[0]; } @pairs;
         } else {
             @sorted = sort { @$b[0] cmp @$a[0]; } @pairs;
         }
     } else {
-        if (all_numbers(@indices)) {
+        if (all_numbers(\@indices)) {
             @sorted = sort { @$a[0] <=> @$b[0]; } @pairs;
         } else {
             @sorted = sort { @$a[0] cmp @$b[0]; } @pairs;
         }
     }
-    print("reg '\"'");
+    print("reg dquote");
     for my $pair (@sorted) {
         my $sel = @$pair[1];
         $sel =~ s/'/''/g;
