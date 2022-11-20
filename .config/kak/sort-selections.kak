@@ -38,7 +38,7 @@ define-command shuffle-selections -docstring '
 shuffle-selections: randomizes the order of all selections
 ' %{
     eval -save-regs '"' %{
-        eval reg dquote %sh{ echo "$kak_reg_hash" | tr ' ' '\n' | shuf | tr '\n' ' ' }
+        eval reg dquote %sh{ seq "$kak_selection_count" | shuf | tr '\n' ' ' }
         sort-selections '"'
     }
 }

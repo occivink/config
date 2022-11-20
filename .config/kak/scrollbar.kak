@@ -7,73 +7,111 @@ declare-option -hidden line-specs scrollbar_flags
 
 # I've chosen some default colours and scrollbar character styles which work
 # well for my colour schemes; please customize them at your leisure.
-face global Scrollbar red@Default
-face global ScrollThumb red@SecondarySelection
+face global Scrollbar +d@Default             # Set our Scrollbar face and character
+face global ScrollbarSel +r@PrimarySelection # Show selections within the scrollbar
+face global ScrollbarHL +r@SecondaryCursor   # For selections outside of the scrollbar
+declare-option str scrollbar_char '▓'
+declare-option str scrollbar_sel_char '█'
 
-declare-option str selection_chars " - = #"
-
-# Generate the line-specs option that draws the scrollbar.
+# Gather arguments to send to our C script.
+# The C program will process this information and return a string for our line-desc
+# object. See the C file for more details.
 define-command update-scrollbar -hidden -override %{
     eval %sh{
         awk '
-            # Convert a buffer-coordinate (1..height)
-            # to a bar coordinate (view_top..view_top+view_height)
-            function buffer_to_bar(line,    ratio) {
-                ratio = (line - 1) / buffer_height
-                return int(ratio * view_height + 0.5) + view_top
+            # Convert a position a document to a position in our list of flags
+            function get_flag_pos(doc_pos,    rel_pos, flag_pos) {
+                rel_pos  = (buffer_height>1) ? (doc_pos-1) / (buffer_height-1) : 0
+                flag_pos = int(bar_height*rel_pos + 0.5)
+                return flag_pos
             }
-            # Extract CURSORLINE from a selection description of the form:
-            # ANCHORLINE.ANCHORCOL,CURSORLINE.CURSORCOL
-            function get_cursorline(selection_desc,     result) {
-                split(selection_desc, result, /,/)
-                split(result[2], result, /\./)
-                return result[1]
-            }
-            BEGIN {
-                # Get the viewport dimensions from Kakoune.
-                split(ENVIRON["kak_window_range"], view_rect)
-                view_top    = view_rect[1] + 1 # convert from zero based
-                view_height = view_rect[3]
-                view_bottom = view_top + view_height - 1
-                buffer_height = ENVIRON["kak_buf_line_count"]
-                # Figure out how many cursors are in the part of the buffer
-                # that corresponds to each line of the viewport.
-                split(ENVIRON["kak_selections_desc"], selections_desc)
-                for (i in selections_desc) {
-                    cursor_line = get_cursorline(selections_desc[i])
-                    view_line = buffer_to_bar(cursor_line)
-                    selections[view_line]++
+
+            # Set the base flags which represent our scrollbar
+            function set_scrollbar_flags(start, end,    i, flags_start, flags_end) {
+                flags_start = get_flag_pos(start)
+                flags_end   = get_flag_pos(end)
+                for (i=flags_start; i<=flags_end; i++) {
+                    flags_by_line[i] = 1
                 }
-                # Which lines of the viewport correspond to the visible area
-                # of the buffer?
-                thumb_top = buffer_to_bar(view_top)
-                thumb_bottom = buffer_to_bar(view_bottom)
-                # Start setting the flags option.
-                printf "set-option window scrollbar_flags %s",
-                    ENVIRON["kak_timestamp"]
-                # Each line of the viewport will use a selection flag
-                # chosen from the selection_chars option.
-                split(ENVIRON["kak_opt_selection_chars"], sel_chars)
-                # For each line of the viewport...
-                for (i = view_top; i <= view_bottom; i++) {
-                    # Choose a flag symbol based on the number of selections
-                    if (selections[i] > length(sel_chars)) {
-                        count = length(sel_chars)
+            }
+
+            # Set the flags which represent our current selections
+            function set_selection_flags(input,
+                    i, selections, selection, anchor, cursor, anchor_line, cursor_line,
+                    sel_start, sel_end, flags_start, flags_end) {
+
+                split(input, selections)
+
+                for (i in selections) {
+                    # Get start & end of selection from one selection_desc value
+                    split(selections[i], selection, /,/)
+                    split(selection[1], anchor, /\./)
+                    split(selection[2], cursor, /\./)
+                    anchor_line = anchor[1]
+                    cursor_line = cursor[1]
+
+                    # Make sure we are looping low to high
+                    if (anchor_line <= cursor_line) {
+                        sel_start = anchor_line
+                        sel_end = cursor_line
                     } else {
-                        count = selections[i]
+                        sel_start = cursor_line
+                        sel_end = anchor_line
                     }
-                    flag = sprintf("%1s", sel_chars[count])
-                    # Choose a face based on whether this line is in the
-                    # scroll thumb or not.
-                    if (thumb_top <= i && i <= thumb_bottom) {
-                        face = "{ScrollThumb}"
-                    } else {
-                        face = "{Scrollbar}"
+
+                    # Convert to values in our flags list
+                    flags_start = get_flag_pos(sel_start)
+                    flags_end = get_flag_pos(sel_end)
+
+                    # Loop through selected lines
+                    for (i=flags_start; i<=flags_end; i++) {
+                        if (flags_by_line[i] == 0) {
+                            flags_by_line[i] = 2 # Outside scrollbar
+                        } else if (flags_by_line[i] == 1) {
+                            flags_by_line[i] = 3 # Inside scrollbar
+                        }
                     }
-                    # Add this flag to the option.
-                    printf " %%{%d|%s%s}", i, face, flag
+                }
+            }
+
+            function print_flag_string(    i, formats, fmt_i) {
+                printf "set-option buffer scrollbar_flags %d", timestamp
+                split(" " bar_char " " sel_format2 " " sel_format1, formats)
+                for (i = 0; i <= bar_height; i++) {
+                    fmt_i = flags_by_line[i];
+                    if (fmt_i) printf " %d|%s", (i+bar_start), formats[fmt_i]
                 }
                 print ""
+            }
+
+            BEGIN {
+                # Initialize argument variables
+                raw_window_range = ENVIRON["kak_window_range"]
+                sel_str = ENVIRON["kak_selections_desc"]
+                bar_char = ENVIRON["kak_opt_scrollbar_char"]
+                sel_char = ENVIRON["kak_opt_scrollbar_sel_char"]
+                buffer_height = ENVIRON["kak_buf_line_count"]
+                timestamp = ENVIRON["kak_timestamp"]
+
+                # window_range is y x height width
+                split(raw_window_range, window_range)
+                bar_start = window_range[1] + 1
+                bar_height = window_range[3]
+                bar_end = bar_start + bar_height
+
+                # Create selection format strings
+                bar_format = bar_char
+                sel_format1 = "{ScrollbarSel}" sel_char
+                sel_format2 = "{ScrollbarHL}" sel_char
+
+                # Process scrollbar flags
+                set_scrollbar_flags(bar_start, bar_end)
+
+                # Process selection flags
+                set_selection_flags(sel_str)
+
+                # Output our formatted line-spec string
+                print_flag_string()
             }
         '
     }

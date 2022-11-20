@@ -312,18 +312,8 @@ hook global InsertIdle '' update-curword
 addhl global/ show-whitespaces
 addhl global/ wrap -word -marker "↳ "
 
-
 def reload-all -docstring "Reload all open buffers" %{
     eval -buffer * edit!
-}
-
-def scratch -docstring "Open a scratch buffer" -params ..1 %{
-    try %{
-        eval %sh{ [ -z "$1" ] && printf fail }
-        edit -scratch %arg{1}
-    } catch %{
-        edit -scratch
-    }
 }
 
 def kakrc -docstring "Open kakrc"         %{ edit ~/.config/kak/kakrc }
@@ -403,5 +393,13 @@ map -docstring "--"                   -- global user -     'a-1<esc>: math<ret>'
 
 try %{ source "%val{config}/dayjob.kak" }
 
-def send-copy-register -params 1 %{
+define-command send-selections-to -params 1 %{
+    try %{
+        eval %sh{ printf '' | kak -p "$1" || printf 'fail' }
+        echo -quoting kakoune -to-shell-script "kak -p '%arg{1}'" 'set-register' 'dquote' %val{selections}
+        echo -markup "{Information}Sent %val{selection_count} selection(s) to session '%arg{1}'"
+    } catch %{
+        echo -markup "{Error}Session '%arg{1}' does not seem to exist"
+    }
 }
+complete-command -menu send-selections-to shell-script-candidates %{ kak -l | grep -E -v "(^$kak_session|\(dead\))$" }
