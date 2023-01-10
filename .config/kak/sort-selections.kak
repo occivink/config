@@ -97,6 +97,7 @@ sub read_array {
 }
 
 sub all_numbers {
+    return 0;
     my $array_ref = shift;
     for my $val (@$array_ref) {
         if (not looks_like_number($val)) {

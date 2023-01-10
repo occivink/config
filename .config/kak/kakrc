@@ -139,6 +139,7 @@ source-here-or-in   gdb.kak                    "%val{config}"
 source-here-or-in   number-comparison.kak      "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   select-unique.kak          "%val{config}"
+source-here-or-in   set-operations.kak         "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets.kak               "%val{config}"
 source-here-or-in   sort-selections.kak        "%val{config}"
@@ -363,8 +364,8 @@ hook global GlobalSetOption gdb_session_started=false %{
     unmap global normal <F5>    ': gdb-continue<ret>'
 }
 
-def -hidden duplicate-before %{ exec 'y<a-:><a-;>i,<esc>hR' }
-def -hidden duplicate-after %{ exec 'y<a-:>li,<esc>hR' }
+def -hidden duplicate-before %{ exec 'yP' }
+def -hidden duplicate-after %{ exec 'yp' }
 
 try %{
     eval %sh{ [ "$XDG_SESSION_TYPE" != wayland ] && printf fail }
