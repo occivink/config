@@ -1,0 +1,135 @@
+#!/bin/sh
+
+op="$1"
+str="$2"
+
+if [ "$op" = 'to' ]; then
+    # TODO check if it's a number
+
+    charcount="${#str}"
+    if [ $((charcount % 2)) -eq 1 ]; then
+        str=0$str
+    fi
+
+    two_digits=''
+    as_mofa=''
+    while [ ${#str} -gt 0 ]; do
+        next=${str#?}
+        char=${str%"$next"}
+        str=$next
+        two_digits=$two_digits$char
+        if [ ${#two_digits} -eq 1 ]; then
+            : # noop
+        elif [ ${#two_digits} -eq 2 ]; then
+            #if [ ! "${two_digits%?}" -le 9 ]; then
+            #    printf "Invalid digit '%s'\n" "${two_digits%?}" >&2
+            #    exit 2
+            #elif [ ! "${two_digits#?}" -le 9 ]; then
+            #    printf "Invalid digit '%s'\n" "${two_digits%#}" >&2
+            #    exit 2
+            #fi
+            div5=$((two_digits / 5))
+            mod5=$((two_digits % 5))
+            two_digits=''
+            case $div5 in
+                0) letter1=b ;;
+                1) letter1=c ;;
+                2) letter1=d ;;
+                3) letter1=f ;;
+                4) letter1=g ;;
+                5) letter1=h ;;
+                6) letter1=j ;;
+                7) letter1=k ;;
+                8) letter1=l ;;
+                9) letter1=m ;;
+                10) letter1=n ;;
+                11) letter1=p ;;
+                12) letter1=r ;;
+                13) letter1=s ;;
+                14) letter1=t ;;
+                15) letter1=v ;;
+                16) letter1=w ;;
+                17) letter1=x ;;
+                18) letter1=y ;;
+                19) letter1=z ;;
+                *) exit 3 ;;
+            esac
+            case $mod5 in
+                0) letter2=a ;;
+                1) letter2=e ;;
+                2) letter2=i ;;
+                3) letter2=o ;;
+                4) letter2=u ;;
+                *) exit 3 ;;
+            esac
+            as_mofa=$as_mofa$letter1$letter2
+        else
+            exit 2
+        fi
+    done
+    printf '%s\n' "$as_mofa"
+elif [ "$op" = 'from' ]; then
+    charcount="${#str}"
+    if [ $((charcount % 2)) -eq 1 ]; then
+        printf "Invalid mofafeogli string '%s'\n" "$str" >&2
+        exit 1
+    fi
+
+    two_letters=''
+    as_number=''
+    while [ ${#str} -gt 0 ]; do
+        next=${str#?}
+        char=${str%"$next"}
+        str=$next
+        two_letters=$two_letters$char
+        if [ ${#two_letters} -eq 1 ]; then
+            : # noop
+        elif [ ${#two_letters} -eq 2 ]; then
+            letter1=${two_letters%?}
+            letter2=${two_letters#?}
+            two_letters=''
+            case "$letter1" in
+                b) div5=0 ;;
+                c) div5=1 ;;
+                d) div5=2 ;;
+                f) div5=3 ;;
+                g) div5=4 ;;
+                h) div5=5 ;;
+                j) div5=6 ;;
+                k) div5=7 ;;
+                l) div5=8 ;;
+                m) div5=9 ;;
+                n) div5=10 ;;
+                p) div5=11 ;;
+                r) div5=12 ;;
+                s) div5=13 ;;
+                t) div5=14 ;;
+                v) div5=15 ;;
+                w) div5=16 ;;
+                x) div5=17 ;;
+                y) div5=18 ;;
+                z) div5=19 ;;
+                *) printf "Invalid mofafegoli character '%s'\n" "$letter1" >&2
+                   exit 1 ;;
+            esac
+            case "$letter2" in
+                a) mod5=0 ;;
+                e) mod5=1 ;;
+                i) mod5=2 ;;
+                o) mod5=3 ;;
+                u) mod5=4 ;;
+                *) printf "Invalid mofafegoli character '%s'\n" "$letter2" >&2
+                   exit 1 ;;
+            esac
+            two_digits=$((div5 * 5 + mod5))
+            [ "$as_number" != '' ] && [ "$div5" -lt 2 ] && two_digits=0$two_digits
+            as_number=$as_number$two_digits
+        else
+            exit 2
+        fi
+    done
+    printf '%s\n' "$as_number"
+else
+    echo "mofafegoli [to|from] NUMBER" >&2
+    exit 1
+fi

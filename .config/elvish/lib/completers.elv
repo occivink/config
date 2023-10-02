@@ -1,29 +1,5 @@
 use re
 
-# useless as of yet since completer output is sorted
-#complete-filename-sorted = {|prefix|
-#    if (> (count $cmd) 2) { return }
-#
-#    # this looks more complex than it should be but there are lots of edge cases
-#    path = $cmd[1]
-#    dir base = (if (re:match '/' $path) {
-#        re:replace '/[^/]*$' '/' $path
-#        re:replace '.*/' '' $path
-#    } else {
-#        put './' $path
-#    })
-#    # show hidden directories if last path component starts with '.'
-#    # uses ls so that we get resolving of symlinks
-#    flags = [-p -L (if (has-prefix $base '.') { put -a })]
-#    try { e:ls $@flags $dir 2> /dev/null } except _ { }  |
-#        each {|i| if (re:match '/$' $i) { 
-#               edit:complex-candidate (path-clean $dir$i)/ &style="blue;bold"
-#           } else { 
-#               edit:complex-candidate (path-clean $dir$i)
-#           } 
-#        }
-#}
-
 set edit:completion:arg-completer[kak] = {|@cmd|
     if (eq $cmd[-2] -c) {
         kak -l
@@ -39,6 +15,36 @@ set edit:completion:arg-completer[ssh] = {|@cmd|
             var _ host = (re:split &max=2 'Host\s+' $line)
             put $host
         }
+    }
+}
+
+set edit:completion:arg-completer[cd] = {|@cmd|
+    if (> (count $cmd) 2) {
+        return
+    }
+    if (== (count $cmd) 1) { # no arg
+        put */
+        return
+    }
+    use str
+    var arg = $cmd[-1]
+    var parent_dir cur_dir
+    {
+        var last_slash = (str:last-index $arg '/')
+        if (== $last_slash -1) {
+            set parent_dir = ''
+            set cur_dir = $arg
+        } else {
+            set parent_dir = $arg[..(+ $last_slash 1)]
+            set cur_dir = $arg[(+ $last_slash 1)..]
+        }
+    }
+    if (str:has-suffix $cur_dir '/') {
+        put $parent_dir$cur_dir/*/
+    } elif (str:has-prefix $cur_dir '.') {
+        put $parent_dir*[match-hidden][nomatch-ok]/
+    } else {
+        put $parent_dir*[nomatch-ok]/
     }
 }
 
@@ -65,37 +71,11 @@ set edit:completion:arg-completer[systemctl] = {|@cmd|
     }
 }
 
-set edit:completion:arg-completer[ffmpeg] = {|@cmd|
-    if (eq (count $cmd) 2) {
-        put -i -ss
-    } elif (eq $cmd[-2] -i) {
-        edit:complete-filename $cmd[-1]
-    } elif (eq $cmd[-2] -map) {
-        edit:complete-filename $cmd[-1]
-    }
-}
-
-# kind of lazy, but what else do you need really?
-var pac_completer = {|paccmd~ @cmd|
-    if (eq (count $cmd) 2) {
-        put -S -Syu -Rns -Qdt
-    } else {
-        var operation = $cmd[1]
-        if (re:match "^(-S|--sync$)" $operation) {
-            paccmd -Ssq
-        } elif (re:match "^(-R|--remove$)" $operation) {
-            paccmd -Qsq
-        }
-    }
-}
-set edit:completion:arg-completer[pacman] = {|@cmd| $pac_completer (external pacman) $@cmd }
-set edit:completion:arg-completer[trizen] = {|@cmd| $pac_completer (external pacaur) $@cmd }
-
 # git
 var git_completer = {|gitcmd~ @cmd|
     # "discard" and "unstage" are local aliases
     if (eq (count $cmd) 2) {
-        put add stage unstage show status commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag fetch
+        put add stage unstage show status commit discard fetch pull push merge rebase clone init mv reset rm bisect grep log branch checkout diff tag switch
     } else {
         var subcommand = $cmd[1]
         if (has-value [add stage] $subcommand) {

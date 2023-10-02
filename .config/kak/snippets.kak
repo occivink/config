@@ -1,11 +1,14 @@
+provide-module snippets %§
+
 declare-option -hidden regex snippets_triggers_regex "\A\z" # doing <a-k>\A\z<ret> will always fail
+
 hook global WinSetOption 'snippets=$' %{
     set window snippets_triggers_regex "\A\z"
 }
 hook global WinSetOption 'snippets=.+$' %{
     set window snippets_triggers_regex %sh{
         eval set -- "$kak_quoted_opt_snippets"
-        if [ $(($#%3)) -ne 0 ]; then printf '\\\A\\\z'; exit; fi
+        if [ $(($#%3)) -ne 0 ]; then printf '\A\z'; exit; fi
         res=""
         while [ $# -ne 0 ]; do
             if [ -n "$2" ]; then
@@ -18,9 +21,9 @@ hook global WinSetOption 'snippets=.+$' %{
             shift 3
         done
         if [ -z "$res" ]; then
-            printf "\\\A\\\z"
+            printf '\A\z'
         else
-            printf '(%s)' "$res"
+            printf '(?:%s)' "$res"
         fi
     }
 }
@@ -36,15 +39,16 @@ define-command snippets-expand-trigger -params ..1 %{
             #
             # try %{
             #   reg / "\Atrig1\z"
-            #   exec -draft <,><a-k><ret>d
+            #   exec -draft <a-k><ret>d
             #   reg c "snipcommand1"
             # } catch %{
             #   reg / "\Atrig2\z"
-            #   exec -draft <,><a-k><ret>d
+            #   exec -draft <a-k><ret>d
             #   reg c "snipcommand2"
             # } catch %{
             #   ..
             # }
+
             eval %sh{
                 quadrupleupsinglequotes()
                 {
@@ -76,11 +80,11 @@ define-command snippets-expand-trigger -params ..1 %{
                     fi
                     # put the trigger into %reg{/} as \Atrig\z
                     printf "reg / ''\\\A"
-                    # we`re at two levels of nested single quotes (one for try ".." catch "..", one for reg "..")
+                    # we're at two levels of nested single quotes (one for try ".." catch "..", one for reg "..")
                     # in the arbitrary user input (snippet trigger and snippet name)
                     quadrupleupsinglequotes "$2"
                     printf "\\\z''\n"
-                    printf "exec -draft <,><a-k><ret>d\n"
+                    printf "exec -draft <a-k><ret>d\n"
                     printf "reg n ''"
                     quadrupleupsinglequotes "$1"
                     printf "''\n"
@@ -108,12 +112,9 @@ hook global WinSetOption 'snippets_auto_expand=true$' %{
     hook -group snippets-auto-expand window InsertChar .* %{
         try %{
             snippets-expand-trigger %{
-                # we don't have to reset %reg{/} since the internal command does it
-                # but normally we should
-                reg / "%opt{snippets_triggers_regex}\z"
-                # select the 10 previous character and abort if it doesn't end with a trigger
-                # \z makes it so the trigger must be anchored to the cursor to be considered
-                exec ';h10Hs<ret>'
+                reg / "(%opt{snippets_triggers_regex})|."
+                exec -save-regs '' ';<a-/><ret>'
+                eval -draft -verbatim menu "%reg{1}" ''
             }
         }
     }
@@ -232,6 +233,7 @@ define-command snippets-insert -hidden -params 1 %<
                 # nonsense test text to check the regex
                 # qwldqwld {qldwlqwld} qlwdl$qwld {qwdlqwld}}qwdlqwldl}
                 # lqlwdl$qwldlqwdl$qwdlqwld {qwd$$lqwld} $qwdlqwld$
+                #  ${asdsa}}asd} ${}}}
                 # ${asd.as.d.} lqwdlqwld $$${as.dqdqw}
 
                 # remove one $ from all $$, and leading $ from ${..}
@@ -288,3 +290,7 @@ define-command snippets-insert -hidden -params 1 %<
         try %{ select %reg{s} }
     >
 >
+
+§
+
+require-module snippets

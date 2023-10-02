@@ -48,6 +48,7 @@ define-command -hidden surround-impl -params 1 %{
             Q|\")                    printf 'surround-add \\" \\"' ;;
             q|\')                    printf "surround-add \\\\' \\\\'" ;;
             g|\`)                    printf "surround-add \` \`" ;;
+            \<ret\>)                 printf "surround-add <ret> <ret>" ;;
             \<space\>)               printf "surround-add ' ' ' '" ;;
             c)                       printf "surround-custom" ;;
             \<backspace\>|\<del\>|d) printf "surround-del" ;;

@@ -1,0 +1,18 @@
+#!/bin/sh
+output=$(mktemp -t -u filetree-dirnav-XXXXX)
+kak -n -e '
+    source "%val{config}/filetree.kak"
+    filetree -only-dirs -no-report
+    map buffer normal <ret> %{: filetree-select-path-component ; filetree-eval-on-fullpath %{echo -to-file %{'"$output"'} %reg{p}} ; quit<ret>}
+    map buffer normal <esc> %{: quit<ret>}
+    '
+if [ ! -f "$output" ]; then 
+    exit 1
+fi
+dir=$(cat "$output")
+rm -f "$output"
+if [ ! -d "$dir" ]; then
+    echo "'$dir' does not exist" >&2
+    exit 1
+fi
+printf '%s' "$dir"

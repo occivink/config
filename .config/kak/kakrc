@@ -56,7 +56,7 @@ decl -hidden bool gdb_debug true
 #source-here-or-in dart.kak             "%val{runtime}/rc/filetype"
  source-here-or-in diff.kak             "%val{runtime}/rc/filetype"
 #source-here-or-in d.kak                "%val{runtime}/rc/filetype"
-#source-here-or-in dockerfile.kak       "%val{runtime}/rc/filetype"
+ source-here-or-in dockerfile.kak       "%val{runtime}/rc/filetype"
 #source-here-or-in elixir.kak           "%val{runtime}/rc/filetype"
 #source-here-or-in elm.kak              "%val{runtime}/rc/filetype"
  source-here-or-in etc.kak              "%val{runtime}/rc/filetype"
@@ -139,7 +139,7 @@ source-here-or-in   gdb.kak                    "%val{config}"
 source-here-or-in   number-comparison.kak      "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   select-unique.kak          "%val{config}"
-source-here-or-in   set-operations.kak         "%val{config}"
+#source-here-or-in   set-operations.kak         "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets.kak               "%val{config}"
 source-here-or-in   sort-selections.kak        "%val{config}"
@@ -150,7 +150,7 @@ source-here-or-in   scrollbar.kak              "%val{config}"
 
 try %{ require-module x11 }
 
-hook global WinCreate .* %{ scrollbar-enable }
+#hook global WinCreate .* %{ scrollbar-enable }
 
 set global tabstop 4
 set global indentwidth 4
@@ -196,7 +196,7 @@ try %{
     set global modelinefmt '\{%val{cursor_line},%val{cursor_char_column}} %val{bufname} {{mode_info}} {{context_info}} {default,default}- %val{client}@[%val{session}]'
 }
 try %{ set global makecmd 'make --jobs=8' }
-try %{ set global grepcmd 'ag --filename --column --ignore tags --ignore build --ignore buildDebug' }
+try %{ set global grepcmd 'rg --smart-case --with-filename --line-number --column --no-ignore-parent' }
 
 # TODO: revisit one day
 #hook global ModeChange ".*:prompt" %{ face global StatusLine black,green }
@@ -267,7 +267,7 @@ map global normal <c-v> ': eval -draft make ; echo "Build started" <ret>'
 map global normal <c-w> ': delete-buffer<ret>'
 map global normal <c-s> ': write<ret>'
 map global normal <c-n> ': edit -scratch<ret>'
-map global normal <c-f> ': filetree-switch-or-start<ret>'
+map global normal <c-f> ': filetree-switch-or-start -files-first -consider-gitignore<ret>'
 map global normal <c-d> ': buffer-switcher<ret>'
 map global normal <c-u> ''
 
