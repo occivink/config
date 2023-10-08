@@ -1,29 +1,21 @@
-decl str clippy_sentence
-decl str clippy_title
-def make-clippy-say -params ..1 %{
-    set global clippy_sentence ''
-    set global clippy_title %arg{1}
-    make-clippy-say-impl
-}
-def -hidden make-clippy-say-impl %{
-    on-key %{
-        eval %sh{
-            if [ "$kak_key" = "<esc>" ]; then
-                printf 'info -title $kak_opt_clippy_title'
-                exit
-            elif [ $kak_key = '<space>' ]; then kak_key=' '
-            elif [ $kak_key = '<minus>' ]; then kak_key='-'
-            elif [ $kak_key = '<ret>' ]; then kak_key="\n"
-            elif [ $kak_key = '<lt>' ]; then kak_key="<"
-            elif [ $kak_key = '<gt>' ]; then kak_key=">"
-            elif [ $kak_key = "'" ]; then kak_key="''"
-            fi
-            printf "
-                set -add global clippy_sentence '%s'
-                info %%opt{clippy_sentence}
-                make-clippy-say-impl
-            " "$kak_key"
-        }
+declare-option -hidden str demo_script_path %val{source}
+
+define-command demo-perform -params 1 %{
+    eval %sh{
+        if [ ! -f "$1" ]; then
+            echo "echo -debug 'No demo script found'"
+            exit 1
+        fi
+        sh_script="${kak_opt_demo_script_path%/*}/kak_demo.sh"
+        if [ ! -f "$sh_script" ]; then
+            echo "echo -debug 'No helper script found'"
+            exit 1
+        fi
+        {
+            sh "$sh_script" "$kak_session" "$kak_client" < "$1"
+        } >/dev/null 2>&1 </dev/null &
+        printf "map global normal <c-x> ': quit! 1<ret>'\n"
+        printf "map global insert <c-x> '<esc>: quit! 1<ret> '\n"
+        printf "map global prompt <c-x> '<esc>: quit! 1<ret> '\n"
     }
 }
-

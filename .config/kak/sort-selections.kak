@@ -1,3 +1,5 @@
+provide-module sort-selections %{
+
 define-command sort-selections -params ..2 -docstring '
 sort-selections [-reverse] [<register>]: sort the selections
 Sorting is done numerically if possible, otherwise lexicographically
@@ -170,3 +172,6 @@ EOF
     }
 }
 
+}
+
+require-module sort-selections

@@ -1,3 +1,5 @@
+provide-module select-unique %{
+
 define-command select-unique -override -params .. -docstring '
 select-unique [-strict] [-reverse]: filter selections based on uniqueness
 ' -shell-script-candidates %{
@@ -156,3 +158,7 @@ print(" ;");
 EOF
     }
 }
+
+}
+
+require-module select-unique

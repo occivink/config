@@ -41,7 +41,6 @@ decl -hidden bool gdb_debug true
  source-here-or-in man.kak              "%val{runtime}/rc/tools"
  source-here-or-in spell.kak            "%val{runtime}/rc/tools"
 #source-here-or-in jedi.kak             "%val{runtime}/rc/tools/python"
-#source-here-or-in go-tools.kak         "%val{runtime}/rc/tools/go"
 #source-here-or-in racer.kak            "%val{runtime}/rc/tools/rust"
 
  source-here-or-in arch-linux.kak       "%val{runtime}/rc/filetype"
@@ -131,23 +130,27 @@ decl -hidden bool gdb_debug true
 source-here-or-in   buffers-info.kak           "%val{config}"
 source-here-or-in   buffer-switcher.kak        "%val{config}"
 source-here-or-in   build.kak                  "%val{config}"
+source-here-or-in   demo.kak                   "%val{config}"
 source-here-or-in   expand.kak                 "%val{config}"
 source-here-or-in   filetree.kak               "%val{config}"
 source-here-or-in   find.kak                   "%val{config}"
 source-here-or-in   friendly-session-names.kak "%val{config}"
 source-here-or-in   gdb.kak                    "%val{config}"
+source-here-or-in   mpv.kak                    "%val{config}"
 source-here-or-in   number-comparison.kak      "%val{config}"
 source-here-or-in   phantom-selection.kak      "%val{config}"
 source-here-or-in   select-unique.kak          "%val{config}"
-#source-here-or-in   set-operations.kak         "%val{config}"
+source-here-or-in   set-operations.kak         "%val{config}"
 source-here-or-in   single-process-pipe.kak    "%val{config}"
 source-here-or-in   snippets.kak               "%val{config}"
 source-here-or-in   sort-selections.kak        "%val{config}"
+source-here-or-in   replace-map.kak            "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
-source-here-or-in   scrollbar.kak              "%val{config}"
+#source-here-or-in   scrollbar.kak              "%val{config}"
 
+require-module filetree
 try %{ require-module x11 }
 
 #hook global WinCreate .* %{ scrollbar-enable }
@@ -182,6 +185,7 @@ def -hidden backspace-with-indentwidth %{
             exec -draft 'hd'
         }
     }
+
 }
 map global insert <backspace> '<a-;>: backspace-with-indentwidth<ret>'
 map global insert <s-backspace> '<a-;>: backspace-with-indentwidth<ret>'
@@ -403,4 +407,5 @@ define-command send-selections-to -params 1 %{
         echo -markup "{Error}Session '%arg{1}' does not seem to exist"
     }
 }
+
 complete-command -menu send-selections-to shell-script-candidates %{ kak -l | grep -E -v "(^$kak_session|\(dead\))$" }

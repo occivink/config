@@ -18,18 +18,19 @@ define-command -hidden phantom-selection-store-and-highlight %{
 define-command -hidden phantom-selection-iterate-impl -params 1 %{
     eval -save-regs ^ %{
         reg ^ %opt{phantom_selections}
-
-        try %{ exec <a-z>a }
-        exec %arg{1}
-        # keep the main selection and put all the other in the mark
         try %{
+            exec z
+            exec %arg{1}
+            # keep the main selection and put all the other in the mark
             # a recent change to Kakoune swaps <space> with "," (and
             # <a-space> with <a-,>). Try both to make sure we clear selections
             # both with and without this breaking change. Pad them with <esc>
             # to cancel out the key with the other behavior.
             exec -save-regs '' 'Z'
             phantom-selection-store-and-highlight
-            exec <space><esc>,<esc>
+            exec '<space><esc><,><esc>'
+        } catch %{
+            fail 'No phantom selections'
         }
     }
 }
@@ -59,8 +60,10 @@ Select all phantom selections
     eval -save-regs ^ %{
         reg ^ %opt{phantom_selections}
         try %{
-            exec <a-z>a
+            exec z
             echo ""
+        } catch %{
+            fail 'No phantom selections'
         }
     }
 }

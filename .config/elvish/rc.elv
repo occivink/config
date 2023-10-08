@@ -16,6 +16,7 @@ fn cp {|@args| e:cp --no-clobber $@args }
 fn mv {|@args| e:mv --no-clobber $@args }
 fn k {|@args| e:kak $@args }
 fn g {|@args| e:git $@args }
+fn cal {|@args| e:cal --monday $@args }
 fn fzf {|@args| e:fzf --height 40% $@args }
 
 set edit:prompt = {

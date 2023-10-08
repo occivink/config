@@ -468,9 +468,9 @@ complete-command -menu filetree-edit shell-script-candidates %{
 }
 
 define-command filetree-goto -params 1.. -docstring '
-filetree-edit: edit the specified files.
-The completions are provided by the *filetree* buffer.
+filetree-goto: select the specified path elements in the *filetree* buffer
 ' %{
+    buffer *filetree*
     eval select %sh{
         script="${kak_opt_filetree_script_path%/*}/filetree.perl"
         echo "write '$kak_response_fifo'" > "$kak_command_fifo"
