@@ -89,7 +89,7 @@ if ($operation eq "flatten-all") {
     read_line_by_line(\&callback3);
 } elsif ($operation eq "process") {
 
-    my $repetition = int($ENV{"kak_opt_filetree_indentation_level"});
+    my $repetition = int($ENV{"kak_opt_filetree_indentation_level"} or 3);
     my $first = 1;
 
     while (my $input = <STDIN>) {
@@ -111,7 +111,7 @@ if ($operation eq "flatten-all") {
             $out .= $1 . $2 x $repetition . ' ';
         }
         my $type = '';
-        if ($input =~ m/\G\[([-dl]).{9}\]  /gc) {
+        if ($input =~ m/\G\[([-sdl]).{9}\]  /gc) {
             $type = $1;
         }
         if ($type eq 'l') {

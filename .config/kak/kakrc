@@ -25,7 +25,7 @@ hook global KakBegin .* %{
     }
 }
 
-decl -hidden bool gdb_debug true
+#decl -hidden bool gdb_debug true
 
  source-here-or-in autorestore.kak      "%val{runtime}/rc/tools"
 #source-here-or-in autowrap.kak         "%val{runtime}/rc/tools"
@@ -61,7 +61,7 @@ decl -hidden bool gdb_debug true
  source-here-or-in etc.kak              "%val{runtime}/rc/filetype"
 #source-here-or-in exherbo.kak          "%val{runtime}/rc/filetype"
 #source-here-or-in fish.kak             "%val{runtime}/rc/filetype"
-#source-here-or-in gas.kak              "%val{runtime}/rc/filetype"
+ source-here-or-in gas.kak              "%val{runtime}/rc/filetype"
  source-here-or-in git.kak              "%val{runtime}/rc/filetype"
  source-here-or-in go.kak               "%val{runtime}/rc/filetype"
 #source-here-or-in haml.kak             "%val{runtime}/rc/filetype"
@@ -148,7 +148,6 @@ source-here-or-in   replace-map.kak            "%val{config}"
 source-here-or-in   sudo-write.kak             "%val{config}"
 source-here-or-in   surround.kak               "%val{config}"
 source-here-or-in   vertical-selection.kak     "%val{config}"
-#source-here-or-in   scrollbar.kak              "%val{config}"
 
 require-module filetree
 try %{ require-module x11 }

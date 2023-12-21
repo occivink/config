@@ -3,13 +3,18 @@ provide-module mpv %{
 declare-option str mpv_socket
 declare-option str mpv_program 'mpv'
 
-define-command mpv-start %{
+define-command mpv-start -params .. %{
     try %{ mpv-close }
     eval %sh{
         socket=$(mktemp -u -t kak-mpv-XXXXX)
         printf "set-option global mpv_socket '%s'" "$socket"
         {
-            "$kak_opt_mpv_program" --profile=noblacklist --idle --force-window "--input-ipc-server=$socket"
+            if [ $# -gt 0 ]; then
+                program="$@"
+            else
+                program="$kak_opt_mpv_program"
+            fi
+            $kak_opt_mpv_program --profile=noblacklist --idle --force-window "--input-ipc-server=$socket"
         } >/dev/null 2>&1 </dev/null &
     }
 }
