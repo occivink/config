@@ -39,7 +39,12 @@ hook global KakBegin .* %{
 #source-here-or-in lint.kak             "%val{runtime}/rc/tools"
  source-here-or-in make.kak             "%val{runtime}/rc/tools"
  source-here-or-in man.kak              "%val{runtime}/rc/tools"
+ 
  source-here-or-in spell.kak            "%val{runtime}/rc/tools"
+ source-here-or-in patch.kak            "%val{runtime}/rc/tools"
+ source-here-or-in jump.kak             "%val{runtime}/rc/tools"
+ source-here-or-in menu.kak             "%val{runtime}/rc/tools"
+ source-here-or-in fifo.kak             "%val{runtime}/rc/tools"
 #source-here-or-in jedi.kak             "%val{runtime}/rc/tools/python"
 #source-here-or-in racer.kak            "%val{runtime}/rc/tools/rust"
 

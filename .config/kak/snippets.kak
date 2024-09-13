@@ -5,6 +5,7 @@ declare-option -hidden regex snippets_triggers_regex "\A\z" # doing <a-k>\A\z<re
 hook global WinSetOption 'snippets=$' %{
     set window snippets_triggers_regex "\A\z"
 }
+
 hook global WinSetOption 'snippets=.+$' %{
     set window snippets_triggers_regex %sh{
         eval set -- "$kak_quoted_opt_snippets"
@@ -114,6 +115,7 @@ hook global WinSetOption 'snippets_auto_expand=true$' %{
             snippets-expand-trigger %{
                 reg / "(%opt{snippets_triggers_regex})|."
                 exec -save-regs '' ';<a-/><ret>'
+                # this fails if the register 1 (which is any of the matching snippets) is empty
                 eval -draft -verbatim menu "%reg{1}" ''
             }
         }
@@ -233,7 +235,6 @@ define-command snippets-insert -hidden -params 1 %<
                 # nonsense test text to check the regex
                 # qwldqwld {qldwlqwld} qlwdl$qwld {qwdlqwld}}qwdlqwldl}
                 # lqlwdl$qwldlqwdl$qwdlqwld {qwd$$lqwld} $qwdlqwld$
-                #  ${asdsa}}asd} ${}}}
                 # ${asd.as.d.} lqwdlqwld $$${as.dqdqw}
 
                 # remove one $ from all $$, and leading $ from ${..}

@@ -14,7 +14,7 @@ define-command mpv-start -params .. %{
             else
                 program="$kak_opt_mpv_program"
             fi
-            $kak_opt_mpv_program --profile=noblacklist --idle --force-window "--input-ipc-server=$socket"
+            $program --profile=noblacklist --idle --force-window "--input-ipc-server=$socket"
         } >/dev/null 2>&1 </dev/null &
     }
 }

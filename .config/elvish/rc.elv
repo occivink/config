@@ -24,7 +24,7 @@ set edit:prompt = {
     # abbreviate path by shortening the parent directories
     styled " "(re:replace '([^/])[^/]*/' '$1/' (tilde-abbr $pwd))" "  bg-blue bold
     if (not-eq $E:SSH_CLIENT "") {
-        styled " "(cat /etc/hostname)" " "white;bg-red;bold"
+        styled " "(cat /etc/hostname)" " "white bg-red bold"
     }
     styled " λ " white bg-green bold
     put " "

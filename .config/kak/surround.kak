@@ -41,22 +41,22 @@ define-command -hidden surround-impl -params 1 %{
     info
     eval %sh{
         case "$1" in
-            B|{|})                   printf "surround-add { }" ;;
-            b|\(|\))                 printf "surround-add ( )" ;;
-            r|[|])                   printf "surround-add [ ]" ;;
-            a|\<lt\>|\<gt\>)         printf "surround-add <lt> <gt>" ;;
-            Q|\")                    printf 'surround-add \\" \\"' ;;
-            q|\')                    printf "surround-add \\\\' \\\\'" ;;
-            g|\`)                    printf "surround-add \` \`" ;;
-            \<ret\>)                 printf "surround-add <ret> <ret>" ;;
-            \<space\>)               printf "surround-add ' ' ' '" ;;
-            c)                       printf "surround-custom" ;;
-            \<backspace\>|\<del\>|d) printf "surround-del" ;;
-            h|\<left\>)              printf "surround-move H L" ;;
-            l|\<right\>)             printf "surround-move L H" ;;
-            k|\<up\>)                printf "surround-move K J" ;;
-            j|\<down\>)              printf "surround-move J K" ;;
-            *)                       printf "fail" ;;
+            B|{|})                   printf '%s' "surround-add { }" ;;
+            b|\(|\))                 printf '%s' "surround-add ( )" ;;
+            r|[|])                   printf '%s' "surround-add [ ]" ;;
+            a|\<lt\>|\<gt\>)         printf '%s' "surround-add <lt> <gt>" ;;
+            Q|\"|\<dquote\>)         printf '%s' 'surround-add %{"} %{"}' ;;
+            q|\'|\<quote\>)          printf '%s' "surround-add %{'} %{'}" ;;
+            g|\`)                    printf '%s' "surround-add %{`} %{`}" ;;
+            \<ret\>)                 printf '%s' "surround-add <ret> <ret>" ;;
+            \<space\>)               printf '%s' "surround-add ' ' ' '" ;;
+            c)                       printf '%s' "surround-custom" ;;
+            \<backspace\>|\<del\>|d) printf '%s' "surround-del" ;;
+            h|\<left\>)              printf '%s' "surround-move H L" ;;
+            l|\<right\>)             printf '%s' "surround-move L H" ;;
+            k|\<up\>)                printf '%s' "surround-move K J" ;;
+            j|\<down\>)              printf '%s' "surround-move J K" ;;
+            *)                       printf '%s' "fail" ;;
         esac
     }
 }
@@ -68,6 +68,7 @@ define-command -hidden surround-custom %{
 define-command -hidden surround-add -params 2 %{
     exec "i%arg{1}<esc>Ha%arg{2}" <esc>
 }
+
 define-command -hidden surround-del %{
     exec "i<del><esc>a<backspace><esc>"
 }

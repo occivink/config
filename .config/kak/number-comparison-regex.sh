@@ -318,7 +318,7 @@ print_number()
 # print a regex repetition
 # if only one argument is passed, of exactly {$1} times
 # if two arguments are passed, of {$1,$2} times
-# if $2 is omitted, it is considered inf
+# if $2 is empty, it is considered inf
 # * or + are used whenever possible
 print_repeat()
 {
@@ -354,8 +354,8 @@ any_zero()
 
 any_number()
 {
+    # for base 10, '\d+(\.\d*)?|\.\d+'
     if [ "$with_decimal" = 'y' ]; then
-        # for base 10, '\d+(\.\d*)?|\.\d+'
         printf '%s+(\.%s*)?|\.%s+' "$any_digit" "$any_digit" "$any_digit"
     else
         printf '%s+' "$any_digit"
@@ -364,8 +364,8 @@ any_number()
 
 any_positive_number()
 {
+    # for base 10, '0*[1-9]\d*(\.\d*)?|0*\.0*[1-9]\d*'
     if [ "$with_decimal" = 'y' ]; then
-        # for base 10, '0*[1-9]\d*(\.\d*)?|0*\.0*[1-9]\d*'
         printf '0*%s%s*(\.%s*)?|0*\.0*%s%s*' "$any_nonzero_digit" "$any_digit" "$any_digit" "$any_nonzero_digit" "$any_digit"
     else
         printf '0*%s%s*' "$any_nonzero_digit" "$any_digit"
@@ -504,17 +504,16 @@ lt()
     fi
 
     if [ "$with_decimal" = 'y' ] && [ "$dec" != "" ]; then
-        [ "$had_int" = y ] && printf '|'
-
         # then, numbers that have the same integral part, but a smaller decimal part
-        if [ "$int" = 0 ]; then
-            # in the case of 0.xxx, the integral part is optional
-            printf '0|'
-        else
+        if [ "$had_int" = 'y' ]; then
+            printf '|'
             print_number "$int"
+            # the decimal part is of course optional, since no decimal part => smaller
+            printf '((\.0*)?|\.('
+        else
+            # in the case of 0.xxx, the integral part is optional
+            printf '(0|\.0*|\.('
         fi
-        # the decimal part is of course optional, since no decimal part => smaller
-        printf '((\.0*)?|\.('
 
         digitsbefore=''
         digitsafter=''

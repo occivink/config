@@ -1,60 +1,83 @@
 provide-module sort-selections %{
 
-define-command sort-selections -params ..2 -docstring '
-sort-selections [-reverse] [<register>]: sort the selections
+define-command sort-selections -params .. -docstring '
+sort-selections [<switches>]: sort the selections based on their content
 Sorting is done numerically if possible, otherwise lexicographically
-If <register> is specified, the values of the register will be sorted instead,
-and the resulting order then applied to the selections.
-' %{
+Switches:
+    -reverse: reverse the sort order
+    -register <register>: sort the register content instead, and apply the order to the selections
+                          the number of elements in the register must match the number of selections
+    -force-numeric: force sorting by numeric order, and fail if not all input are numbers
+    -force-lexicographic: force sorting by lexicographic order, even if all input are numbers
+    -dry-run: only check if input parameters are valid, do not sort
+' -shell-script-candidates %{
+    printf '%s\n' -reverse -force-numeric -force-lexicographic -register -dry-run
+} %{
     try %{
         exec -draft '<a-space><esc><a-,><esc>'
     } catch %{
         fail 'Only one selection, cannot sort'
     }
     eval %sh{
-        if [ $# -eq 2 ]; then
-            if [ "$1" != '-reverse' ]; then
-                printf 'fail "Invalid flag %%arg{1}"'
+        reverse=0
+        type=0        # 0=auto / 1=numeric / 2=lexicographic
+        register=''
+        dry_run=0
+        while [ $# -ne 0 ]; do
+            arg_num=$((arg_num + 1))
+            arg=$1
+            shift
+            if [ "$arg" = '-reverse' ]; then
+                reverse=1
+            elif [ "$arg" = '-force-numeric' ]; then
+                type=1
+            elif [ "$arg" = '-force-lexicographic' ]; then
+                type=2
+            elif [ "$arg" = '-register' ]; then
+                if [ $# -eq 0 ]; then
+                    echo 'fail "Missing argument to -register"'
+                    exit 1
+                fi
+                arg_num=$((arg_num + 1))
+                register=$1
+                [ "$register" = "'" ] && register="''"
+                printf "nop -- %%reg'%s'\n" "$register"
+                shift
+            elif [ "$arg" = '-dry-run' ]; then
+                dry_run=1
             else
-                printf "try %%{ nop -- %%reg{%s} } catch %%{ fail 'Invalid register ''%s''' }\n" "$2" "$2"
-                printf "sort-selections-impl REVERSE INDICES %%{%s}" "$2"
+                printf "fail \"Unrecognized argument '%%arg{%s}'\"" "$arg_num"
+                exit 1
             fi
-        elif [ $# -eq 1 ]; then
-            if [ "$1" = '-reverse' ]; then
-                printf 'sort-selections-impl REVERSE DIRECT'
-            else
-                printf "try %%{ nop -- %%reg{%s} } catch %%{ fail 'Invalid register ''%s''' }\n" "$1" "$1"
-                printf "sort-selections-impl NORMAL INDICES %%{%s}" "$1"
-            fi
-        else
-            printf 'sort-selections-impl NORMAL DIRECT'
-        fi
+        done
+        printf "sort-selections-impl '%s' '%s' '%s' '%s'" "$reverse" "$type" "$register" "$dry_run"
     }
 }
 
 define-command reverse-selections -docstring '
 reverse-selections: reverses the order of all selections
-' %{ sort-selections -reverse '#' }
+' %{ sort-selections -reverse -register '#' }
 
 define-command shuffle-selections -docstring '
 shuffle-selections: randomizes the order of all selections
 ' %{
     eval -save-regs '"' %{
         eval reg dquote %sh{ seq "$kak_selection_count" | shuf | tr '\n' ' ' }
-        sort-selections '"'
+        sort-selections -register dquote
     }
 }
 
-define-command sort-selections-impl -hidden -params .. %{
-    eval -save-regs '"' %{
-        eval %sh{
-perl - "$@" <<'EOF'
+define-command sort-selections-impl -hidden -params 4 %{
+    eval -save-regs '"' %sh{
+perl - "$1" "$2" "$3" "$4" <<'EOF'
 use strict;
 use warnings;
 use Scalar::Util "looks_like_number";
 
-my $direction = shift;
-my $how = shift;
+my $reverse = shift;
+my $type = shift;
+my $register = shift;
+my $dry_run = shift;
 
 my $command_fifo_name = $ENV{"kak_command_fifo"};
 my $response_fifo_name = $ENV{"kak_response_fifo"};
@@ -65,7 +88,8 @@ sub parse_shell_quoted {
     my $elem = "";
     while (1) {
         if ($str !~ m/\G'([\S\s]*?)'/gc) {
-            exit(1);
+            print("echo -debug error1");
+            exit;
         }
         $elem .= $1;
         if ($str =~ m/\G *$/gc) {
@@ -78,7 +102,8 @@ sub parse_shell_quoted {
             push(@res, $elem);
             $elem = "";
         } else {
-            exit(1);
+            print("echo -debug error2");
+            exit;
         }
     }
     return @res;
@@ -98,7 +123,7 @@ sub read_array {
     return parse_shell_quoted($response_quoted);
 }
 
-sub all_numbers {
+sub are_all_numbers {
     my $array_ref = shift;
     for my $val (@$array_ref) {
         if (not looks_like_number($val)) {
@@ -108,67 +133,108 @@ sub all_numbers {
     return 1;
 }
 
-my @selections = read_array("%val{selections}");
-
-if ($how eq 'DIRECT') {
-    my @sorted;
-    if ($direction eq 'REVERSE') {
-        if (all_numbers(\@selections)) {
-            @sorted = sort { $b <=> $a; } @selections;
+sub should_sort_by_number {
+    my $wanted_sort_type = shift;
+    my $array_ref = shift;
+    if ($wanted_sort_type == 0) { # auto
+        return are_all_numbers($array_ref);
+    } elsif ($wanted_sort_type == 1) { # want numeric, need to check, can fail
+        if (are_all_numbers($array_ref) == 1) {
+            return 1;
         } else {
-            @sorted = sort { $b cmp $a; } @selections;
+            return -1;
         }
+    } elsif ($wanted_sort_type == 2) { # want lexicographic, no check
+        return 0;
     } else {
-        if (all_numbers(\@selections)) {
-            @sorted = sort { $a <=> $b; } @selections;
-        } else {
-            @sorted = sort { $a cmp $b; } @selections;
-        }
-    }
-    print("reg dquote");
-    for my $sel (@sorted) {
-        $sel =~ s/'/''/g;
-        print(" '$sel'");
-    }
-    print(" ;");
-} else {
-    my $register_name = shift;
-
-    my @indices = read_array("%reg{$register_name}");
-
-    if (scalar(@indices) != scalar(@selections)) {
-        print('fail "The register must contain as many values as selections"');
+        print("echo -debug error3");
         exit;
     }
-    my @pairs;
-    for my $i (0 .. scalar(@indices) - 1) {
-        push(@pairs, [ $indices[$i], $selections[$i] ] );
-    }
-    my @sorted;
-    if ($direction eq 'REVERSE') {
-        if (all_numbers(\@indices)) {
-            @sorted = sort { @$b[0] <=> @$a[0]; } @pairs;
-        } else {
-            @sorted = sort { @$b[0] cmp @$a[0]; } @pairs;
-        }
-    } else {
-        if (all_numbers(\@indices)) {
-            @sorted = sort { @$a[0] <=> @$b[0]; } @pairs;
-        } else {
-            @sorted = sort { @$a[0] cmp @$b[0]; } @pairs;
-        }
-    }
-    print("reg dquote");
-    for my $pair (@sorted) {
-        my $sel = @$pair[1];
-        $sel =~ s/'/''/g;
-        print(" '$sel'");
-    }
-    print(" ;");
 }
-EOF
+
+my @selections = read_array("%val{selections}");
+my $by_number;
+
+if ($register eq '') {
+    my @sorted;
+    $by_number = should_sort_by_number($type, \@selections);
+    if ($by_number == -1) {
+        printf("fail 'The selections must all be valid numbers' ;");
+        exit;
+    }
+    if ($dry_run == 0) {
+        if ($reverse == 1) {
+            if ($by_number == 1) {
+                @sorted = sort { $b <=> $a; } @selections;
+            } else {
+                @sorted = sort { $b cmp $a; } @selections;
+            }
+        } else {
+            if ($by_number == 1) {
+                @sorted = sort { $a <=> $b; } @selections;
+            } else {
+                @sorted = sort { $a cmp $b; } @selections;
+            }
         }
-        exec R
+        print("reg dquote");
+        for my $sel (@sorted) {
+            $sel =~ s/'/''/g;
+            print(" '$sel'");
+        }
+        print(" ;");
+        print("exec R ;");
+    }
+} else {
+    my @indices = read_array("%reg'$register'");
+
+    if (scalar(@indices) != scalar(@selections)) {
+        print("fail 'The register must contain as many values as selections' ;");
+        exit;
+    }
+    $by_number = should_sort_by_number($type, \@indices);
+    if ($by_number == -1) {
+        printf("fail 'The register values must all be valid numbers' ;");
+        exit;
+    }
+    if ($dry_run == 0) {
+        my @pairs;
+        for my $i (0 .. scalar(@indices) - 1) {
+            push(@pairs, [ $indices[$i], $selections[$i] ] );
+        }
+        my @sorted;
+        if ($reverse == 1) {
+            if ($by_number == 1) {
+                @sorted = sort { @$b[0] <=> @$a[0]; } @pairs;
+            } else {
+                @sorted = sort { @$b[0] cmp @$a[0]; } @pairs;
+            }
+        } else {
+            if ($by_number == 1) {
+                @sorted = sort { @$a[0] <=> @$b[0]; } @pairs;
+            } else {
+                @sorted = sort { @$a[0] cmp @$b[0]; } @pairs;
+            }
+        }
+        print("reg dquote");
+        for my $pair (@sorted) {
+            my $sel = @$pair[1];
+            $sel =~ s/'/''/g;
+            print(" '$sel'");
+        }
+        print(" ;");
+        print("exec R ;");
+    }
+}
+
+my $how = ($by_number == 1 ? "numerically" : "lexicographically");
+my $target = ($register eq '' ? "content" : "index");
+my $count = scalar(@selections);
+print("echo -markup '{Information}Sorted $count selections $how by $target");
+if ($dry_run != 0) {
+    print(" (dry-run)");
+}
+print("' ;");
+EOF
     }
 }
 

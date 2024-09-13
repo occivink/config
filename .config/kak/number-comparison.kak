@@ -1,4 +1,6 @@
-declare-option -hidden str number_comparison_helper_script %sh{ printf '%s/%s' "${kak_source%/*}" "number-comparison-regex.sh" }
+declare-option -hidden str number_comparison_script_path %val{source}
+
+provide-module number-comparison %{
 
 define-command number-comparison -params .. -docstring "
 number-comparison [<switches>] <operator> <number>: Generates a regular expression that matches a number range
@@ -15,7 +17,7 @@ Switches:
 } %{
     eval %sh{
         NOAUTOCOMPARE=''
-        . "$kak_opt_number_comparison_helper_script"
+        . "${kak_opt_number_comparison_script_path%/*}/number-comparison-regex.sh"
 
         arg_num=0
         register='/'
@@ -126,3 +128,7 @@ Switches:
         printf "echo -markup \"{Information}{\}register '%s' set to '%%reg{%s}'\"\n" "$register" "$register"
     }
 }
+
+}
+
+require-module number-comparison

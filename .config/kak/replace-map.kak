@@ -1,8 +1,8 @@
 provide-module replace-map %{
 
-define-command replace-map -params 1.. -docstring '
-replace-map [<switches>] <register>: replaces the current selections with new values from a key-value map
-The map used for lookups is specified using the content of <register>
+define-command replace-map -params .. -docstring '
+replace-map [<switches>]: replaces the current selections with new values from a key-value map
+The map used for lookups is specified using the content of the copy register (", or dquote)
 Switches:
     -map-order <order>: specify the order in which the keys and values occur in the register. Possible values are:
                         kvkv: keys and values are interleaved, keys first (default)
@@ -12,17 +12,17 @@ Switches:
     -not-found-keep: if a selection does not appear in the keys of the map, keep it as-is
     -not-found-value <value>: if a selection does not appear in the keys of the map, replace it with <value>
     -allow-duplicate-keys: allow the same key to occur multiple times, in which case the value specified last prevails
-    -select-found: only keep the selections who appeared in the keys of the map
-    -select-not-found: only keep the selections who did not appear in the keys of the map
+    -select-found: only keep the selections which appeared in the keys of the map
+    -select-not-found: only keep the selections which did not appear in the keys of the map
+    -map-register <register>: use the specified register as lookup map, instead of dquote
     -target-register <register>: do not replace, put the results into the specified register instead
     -dry-run: do not replace, only check if input parameters are valid (and select if applicable)
 ' -shell-script-candidates %{
     printf '%s\n'  -map-order -not-found-keep -not-found-value -allow-duplicate-keys \
-        -select-found -select-not-found -target-register -dry-run
+        -select-found -select-not-found -map-register -target-register -dry-run
 } %{
     eval %sh{
-        has_map_register=0
-        map_register=''
+        map_register='dquote'
         map_order=kvkv
         not_found_mode=0 # 0 = fail / 1 = keep / 2 = fallback
         not_found_fallback_value=''
@@ -58,29 +58,31 @@ Switches:
                 select_mode=1
             elif [ "$arg" = '-select-not-found' ]; then
                 select_mode=2
-            elif [ "$arg" = '-target-register' ]; then
-                [ $# -eq 0 ] && echo 'fail "Missing argument to -register"' && exit 1
+            elif [ "$arg" = '-map-register' ] || [ "$arg" = '-target-register' ]; then
+                [ $# -eq 0 ] && echo "fail \"Missing argument to $arg\"" && exit 1
                 arg_num=$((arg_num + 1))
-                target_register="$1"
-                [ "$target_register" = "'" ] && target_register="''"
-                printf "nop -- %%reg'%s'\n" "$target_register" # validate target register
+                case "$1" in
+                    "'") register="''" ;;
+                    *"'"*) printf "fail \"Invalid register '%%arg{%s}'\"" "$arg_num" # need to early exit here, otherwise the %reg'' call won't work
+                           exit 1
+                           ;;
+                    *) register="$1" ;;
+                esac
+                printf "nop -- %%reg'%s'\n" "$register" # actually validate it
+                                                        # TODO make a pretty failure message
+                if [ "$arg" = '-map-register' ]; then
+                    map_register="$register"
+                elif [ "$arg" = '-target-register' ]; then
+                    target_register="$register"
+                fi
                 shift
             elif [ "$arg" = '-dry-run' ]; then
                 dry_run=1
-            elif [ "$has_map_register" -eq 0 ]; then
-                has_map_register=1
-                map_register="$arg"
-                [ "$map_register" = "'" ] && map_register="''"
-                printf "nop -- %%reg'%s'\n" "$map_register" # validate map register
             else
                 printf "fail \"Unrecognized argument '%%arg{%s}'\"" "$arg_num"
                 exit 1
             fi
         done
-        if [ "$has_map_register" -eq 0 ]; then
-            printf "fail 'Missing map register'"
-            exit 1
-        fi
 
         printf "replace-map-impl"
         printf " '%s'" "$map_register" "$map_order" "$not_found_mode"
@@ -239,7 +241,7 @@ if ($dry_run == 0) {
     if ($target_register eq '') {
         print("reg dquote");
     } else {
-        # safe, target_register was already validated (and cannot be ')
+        # safe, target_register was already validated and escaped
         print("reg '$target_register'");
     }
     for my $result (@results) {
@@ -265,7 +267,7 @@ if ($select_mode != 0) {
     }
 }
 
-print("echo '{Information}Replaced $found_keys selections");
+print("echo -markup '{Information}Replaced $found_keys selections");
 if ($dry_run != 0) {
     print(" (dry-run)");
 }

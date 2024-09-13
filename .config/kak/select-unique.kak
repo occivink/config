@@ -77,6 +77,9 @@ sub read_array {
 my @selections = read_array("%val{selections}");
 my @selections_desc = read_array("%val{selections_desc}");
 
+# in %val{selections_desc}, the main selection is at the front
+# we just put it back in its place, so that it matches %val{selections}
+
 #print("echo -debug BAD ;");
 #for my $desc (@selections_desc) {
 #    print("echo -debug $desc ;");
